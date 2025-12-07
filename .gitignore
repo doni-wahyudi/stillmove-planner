@@ -1,0 +1,23 @@
+# Supabase credentials (if you create a local config)
+js/config.local.js
+
+# Node modules (if using any dev tools)
+node_modules/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.local

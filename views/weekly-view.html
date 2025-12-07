@@ -1,0 +1,227 @@
+<div class="weekly-view" role="region" aria-label="Weekly planning view">
+    <!-- Week Selector -->
+    <div class="view-header">
+        <div class="week-selector" role="group" aria-label="Week navigation">
+            <button id="prev-week-btn" class="nav-btn" aria-label="Go to previous week">
+                <span aria-hidden="true">←</span>
+            </button>
+            <h2 id="current-week-range" aria-live="polite">Week of Jan 1 - Jan 7, 2025</h2>
+            <button id="next-week-btn" class="nav-btn" aria-label="Go to next week">
+                <span aria-hidden="true">→</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="weekly-content">
+        <!-- Left Sidebar -->
+        <div class="sidebar-section">
+            <!-- Weekly Goals -->
+            <div class="weekly-goals">
+                <h3>Weekly Goals</h3>
+                <div id="weekly-goals-container" class="weekly-goals-container">
+                    <!-- Weekly goals will be dynamically added here -->
+                </div>
+                <button id="add-weekly-goal-btn" class="btn-secondary">+ Add Goal</button>
+            </div>
+
+            <!-- Color Category Legend -->
+            <div class="category-legend">
+                <div class="category-legend-header">
+                    <h3>Categories</h3>
+                    <button id="manage-categories-btn" class="btn-icon" aria-label="Manage categories" title="Manage categories">⚙️</button>
+                </div>
+                <div class="category-list" id="category-list">
+                    <!-- Categories will be dynamically loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Schedule Grid -->
+        <div class="schedule-section">
+            <div class="schedule-grid">
+                <!-- Day Headers -->
+                <div class="schedule-header">
+                    <div class="time-column-header"></div>
+                    <div class="day-header" data-day="1">
+                        <div class="day-name">Monday</div>
+                        <div class="day-date"></div>
+                    </div>
+                    <div class="day-header" data-day="2">
+                        <div class="day-name">Tuesday</div>
+                        <div class="day-date"></div>
+                    </div>
+                    <div class="day-header" data-day="3">
+                        <div class="day-name">Wednesday</div>
+                        <div class="day-date"></div>
+                    </div>
+                    <div class="day-header" data-day="4">
+                        <div class="day-name">Thursday</div>
+                        <div class="day-date"></div>
+                    </div>
+                    <div class="day-header" data-day="5">
+                        <div class="day-name">Friday</div>
+                        <div class="day-date"></div>
+                    </div>
+                    <div class="day-header" data-day="6">
+                        <div class="day-name">Saturday</div>
+                        <div class="day-date"></div>
+                    </div>
+                    <div class="day-header" data-day="0">
+                        <div class="day-name">Sunday</div>
+                        <div class="day-date"></div>
+                    </div>
+                </div>
+
+                <!-- Time Slots Grid -->
+                <div id="time-slots-grid" class="time-slots-grid">
+                    <!-- Time slots will be dynamically generated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Sections (Expandable) -->
+    <div class="daily-sections">
+        <h3>Daily Details</h3>
+        <div id="daily-sections-container" class="daily-sections-container">
+            <!-- Daily sections for each day will be dynamically added here -->
+        </div>
+    </div>
+</div>
+
+<!-- Weekly Goal Template -->
+<template id="weekly-goal-template">
+    <div class="weekly-goal-item" data-goal-id="">
+        <div class="goal-priority-indicator"></div>
+        <input type="checkbox" class="goal-checkbox" />
+        <input type="text" class="goal-text" placeholder="Goal description" />
+        <select class="goal-priority">
+            <option value="Urgent">Urgent</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+        </select>
+        <button class="delete-goal-btn" aria-label="Delete goal">×</button>
+    </div>
+</template>
+
+<!-- Time Block Template -->
+<template id="time-block-template">
+    <div class="time-block" data-block-id="" draggable="true">
+        <div class="time-block-content">
+            <div class="time-block-time"></div>
+            <div class="time-block-activity"></div>
+        </div>
+        <div class="time-block-resize-handle"></div>
+    </div>
+</template>
+
+<!-- Daily Section Template -->
+<template id="daily-section-template">
+    <div class="daily-section" data-date="">
+        <div class="daily-section-header">
+            <h4 class="daily-section-date"></h4>
+            <button class="toggle-daily-section">▼</button>
+        </div>
+        <div class="daily-section-content">
+            <!-- Checklist -->
+            <div class="daily-checklist">
+                <h5>Checklist</h5>
+                <div class="checklist-items"></div>
+                <button class="add-checklist-item-btn">+ Add Item</button>
+            </div>
+
+            <!-- Mini Journal -->
+            <div class="daily-journal">
+                <h5>Journal</h5>
+                <textarea class="journal-text" placeholder="What happened today?" rows="3"></textarea>
+            </div>
+
+            <!-- Gratitude -->
+            <div class="daily-gratitude">
+                <h5>Gratitude</h5>
+                <textarea class="gratitude-text" placeholder="What are you grateful for?" rows="2"></textarea>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Checklist Item Template -->
+<template id="checklist-item-template">
+    <div class="checklist-item">
+        <input type="checkbox" class="checklist-checkbox" />
+        <input type="text" class="checklist-text" placeholder="Task" />
+        <button class="delete-checklist-btn" aria-label="Delete">×</button>
+    </div>
+</template>
+
+<!-- Time Block Editor Modal -->
+<div id="time-block-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modal-title">Add Time Block</h3>
+            <button class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="block-date">Date</label>
+                <input type="date" id="block-date" required />
+            </div>
+            <div class="form-group">
+                <label for="block-start-time">Start Time</label>
+                <input type="time" id="block-start-time" step="1800" required />
+            </div>
+            <div class="form-group">
+                <label for="block-end-time">End Time</label>
+                <input type="time" id="block-end-time" step="1800" />
+            </div>
+            <div class="form-group">
+                <label for="block-activity">Activity</label>
+                <input type="text" id="block-activity" placeholder="Activity description" required />
+            </div>
+            <div class="form-group">
+                <label for="block-category">Category</label>
+                <select id="block-category">
+                    <!-- Categories will be dynamically loaded -->
+                </select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="save-time-block-btn" class="btn-primary">Save</button>
+            <button id="delete-time-block-btn" class="btn-danger" style="display: none;">Delete</button>
+            <button class="btn-secondary modal-close">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Category Manager Modal -->
+<div id="category-manager-modal" class="modal" style="display: none;">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <h3>Manage Categories</h3>
+            <button class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="category-manager-list" class="category-manager-list">
+                <!-- Category items will be dynamically loaded -->
+            </div>
+            <button id="add-category-btn" class="btn-secondary">+ Add New Category</button>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-primary modal-close">Done</button>
+        </div>
+    </div>
+</div>
+
+<!-- Category Item Template for Manager -->
+<template id="category-manager-item-template">
+    <div class="category-manager-item" data-category-id="">
+        <div class="category-manager-color-preview"></div>
+        <input type="text" class="category-manager-name" placeholder="Category name" />
+        <div class="category-manager-colors">
+            <input type="color" class="category-color-start" title="Start color" />
+            <span>→</span>
+            <input type="color" class="category-color-end" title="End color" />
+        </div>
+        <button class="delete-category-btn" aria-label="Delete category">×</button>
+    </div>
+</template>

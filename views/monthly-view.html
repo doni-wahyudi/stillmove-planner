@@ -1,0 +1,155 @@
+<div class="monthly-view" role="region" aria-label="Monthly planning view">
+    <!-- Month/Year Selector -->
+    <div class="view-header">
+        <div class="month-selector" role="group" aria-label="Month navigation">
+            <button id="prev-month-btn" class="nav-btn" aria-label="Go to previous month">
+                <span aria-hidden="true">←</span>
+            </button>
+            <h2 id="current-month-year" aria-live="polite">January 2025</h2>
+            <button id="next-month-btn" class="nav-btn" aria-label="Go to next month">
+                <span aria-hidden="true">→</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Top Row: Calendar + Categories -->
+    <div class="monthly-content-top">
+        <!-- Calendar Grid -->
+        <section class="calendar-section" aria-labelledby="calendar-heading">
+            <h3 id="calendar-heading" class="sr-only">Monthly Calendar</h3>
+            <div class="calendar-grid" role="grid" aria-label="Monthly calendar">
+                <div class="calendar-header" role="row">
+                    <div class="day-label" role="columnheader">Sun</div>
+                    <div class="day-label" role="columnheader">Mon</div>
+                    <div class="day-label" role="columnheader">Tue</div>
+                    <div class="day-label" role="columnheader">Wed</div>
+                    <div class="day-label" role="columnheader">Thu</div>
+                    <div class="day-label" role="columnheader">Fri</div>
+                    <div class="day-label" role="columnheader">Sat</div>
+                </div>
+                <div id="calendar-days" class="calendar-days" role="rowgroup">
+                    <!-- Calendar days will be dynamically added here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Categories Sidebar -->
+        <aside class="categories-sidebar" aria-label="Categories">
+            <section class="category-legend" aria-labelledby="categories-heading">
+                <div class="category-legend-header">
+                    <h3 id="categories-heading">Categories</h3>
+                    <button id="manage-categories-btn" class="btn-icon" aria-label="Manage categories" title="Manage categories">⚙️</button>
+                </div>
+                <div class="category-list" id="category-list" role="list" aria-label="Activity categories">
+                    <!-- Categories will be dynamically loaded here -->
+                </div>
+            </section>
+        </aside>
+    </div>
+
+    <!-- Bottom Row: Checklist + Notes -->
+    <div class="monthly-content-bottom">
+        <!-- Monthly Checklist -->
+        <section class="monthly-checklist" aria-labelledby="checklist-heading">
+            <h3 id="checklist-heading">Monthly Checklist</h3>
+            <div id="checklist-container" class="checklist-container" role="list" aria-label="Monthly checklist items">
+                <!-- Checklist items will be dynamically added here -->
+            </div>
+            <button id="add-checklist-item-btn" class="btn-secondary" aria-label="Add new checklist item">+ Add Item</button>
+        </section>
+
+        <!-- Notes -->
+        <section class="monthly-notes" aria-labelledby="notes-heading">
+            <h3 id="notes-heading">Notes</h3>
+            <textarea 
+                id="monthly-notes-text" 
+                placeholder="Add notes for this month..."
+                rows="6"
+                aria-label="Monthly notes"
+            ></textarea>
+        </section>
+    </div>
+
+    <!-- Action Plan Section -->
+    <section class="action-plan-section" aria-labelledby="action-plan-heading">
+        <h3 id="action-plan-heading">Action Plan Realization</h3>
+        <div id="action-plan-container" class="action-plan-container" role="list" aria-label="Action plan items">
+            <!-- Action plan items will be dynamically added here -->
+        </div>
+        <button id="add-action-plan-btn" class="btn-primary" aria-label="Add new action plan">+ Add Action Plan</button>
+    </section>
+</div>
+
+<!-- Calendar Day Template -->
+<template id="calendar-day-template">
+    <div class="calendar-day" data-date="">
+        <div class="day-number"></div>
+        <div class="day-events"></div>
+    </div>
+</template>
+
+<!-- Checklist Item Template -->
+<template id="checklist-item-template">
+    <div class="checklist-item">
+        <input type="checkbox" class="checklist-checkbox" />
+        <input type="text" class="checklist-text" placeholder="Checklist item" />
+        <button class="delete-checklist-btn" aria-label="Delete item">×</button>
+    </div>
+</template>
+
+<!-- Action Plan Item Template -->
+<template id="action-plan-item-template">
+    <div class="action-plan-item">
+        <div class="action-plan-row">
+            <div class="action-plan-field">
+                <label>Goal</label>
+                <input type="text" class="action-goal" placeholder="Goal description" />
+            </div>
+            <div class="action-plan-field">
+                <label>Progress</label>
+                <input type="range" class="action-progress" min="0" max="100" value="0" />
+                <span class="progress-value">0%</span>
+            </div>
+        </div>
+        <div class="action-plan-row">
+            <div class="action-plan-field full-width">
+                <label>Evaluation</label>
+                <textarea class="action-evaluation" placeholder="Evaluation notes" rows="2"></textarea>
+            </div>
+        </div>
+        <button class="delete-action-plan-btn" aria-label="Delete action plan">×</button>
+    </div>
+</template>
+
+<!-- Category Manager Modal -->
+<div id="category-manager-modal" class="modal" style="display: none;">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <h3>Manage Categories</h3>
+            <button class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="category-manager-list" class="category-manager-list">
+                <!-- Category items will be dynamically loaded -->
+            </div>
+            <button id="add-category-btn" class="btn-secondary">+ Add New Category</button>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-primary modal-close">Done</button>
+        </div>
+    </div>
+</div>
+
+<!-- Category Item Template for Manager -->
+<template id="category-manager-item-template">
+    <div class="category-manager-item" data-category-id="">
+        <div class="category-manager-color-preview"></div>
+        <input type="text" class="category-manager-name" placeholder="Category name" />
+        <div class="category-manager-colors">
+            <input type="color" class="category-color-start" title="Start color" />
+            <span>→</span>
+            <input type="color" class="category-color-end" title="End color" />
+        </div>
+        <button class="delete-category-btn" aria-label="Delete category">×</button>
+    </div>
+</template>

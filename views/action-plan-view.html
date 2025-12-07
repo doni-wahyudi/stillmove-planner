@@ -1,0 +1,107 @@
+<div class="action-plan-view" role="region" aria-label="Action plan view">
+    <!-- Month/Year Selector -->
+    <div class="view-header">
+        <div class="month-selector" role="group" aria-label="Month navigation">
+            <button id="prev-month-btn" class="nav-btn" aria-label="Go to previous month">
+                <span aria-hidden="true">←</span>
+            </button>
+            <h2 id="current-month-year" aria-live="polite">January 2025</h2>
+            <button id="next-month-btn" class="nav-btn" aria-label="Go to next month">
+                <span aria-hidden="true">→</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Action Plan Table -->
+    <div class="action-plan-content">
+        <div class="action-plan-table-container" role="region" aria-label="Action plans table" tabindex="0">
+            <table class="action-plan-table" role="table" aria-label="Action plans">
+                <thead role="rowgroup">
+                    <tr role="row">
+                        <th role="columnheader" scope="col">Life Area</th>
+                        <th role="columnheader" scope="col">Specific Action</th>
+                        <th role="columnheader" scope="col">Frequency</th>
+                        <th role="columnheader" scope="col">Success Criteria</th>
+                        <th role="columnheader" scope="col">Progress</th>
+                        <th role="columnheader" scope="col">Evaluation</th>
+                        <th role="columnheader" scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="action-plan-tbody" role="rowgroup">
+                    <!-- Action plan rows will be dynamically added here -->
+                </tbody>
+            </table>
+        </div>
+
+        <button id="add-action-plan-btn" class="btn-primary" aria-label="Add new action plan">+ Add Action Plan</button>
+    </div>
+</div>
+
+<!-- Action Plan Row Template -->
+<template id="action-plan-row-template">
+    <tr class="action-plan-row" data-id="">
+        <td>
+            <input type="text" class="input-life-area" placeholder="Life area" />
+        </td>
+        <td>
+            <input type="text" class="input-specific-action" placeholder="Specific action" />
+        </td>
+        <td>
+            <input type="text" class="input-frequency" placeholder="Frequency" />
+        </td>
+        <td>
+            <textarea class="input-success-criteria" placeholder="Success criteria" rows="2"></textarea>
+        </td>
+        <td class="progress-cell">
+            <input type="range" class="input-progress" min="0" max="100" value="0" />
+            <span class="progress-value">0%</span>
+        </td>
+        <td>
+            <textarea class="input-evaluation" placeholder="Evaluation notes" rows="2"></textarea>
+        </td>
+        <td class="actions-cell">
+            <button class="btn-save" aria-label="Save action plan">💾</button>
+            <button class="btn-delete" aria-label="Delete action plan">🗑️</button>
+        </td>
+    </tr>
+</template>
+
+<!-- Edit Modal -->
+<div id="edit-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Edit Action Plan</h3>
+            <button class="modal-close" aria-label="Close modal">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="edit-life-area">Life Area</label>
+                <input type="text" id="edit-life-area" class="form-input" placeholder="e.g., Career, Health, Relationships" />
+            </div>
+            <div class="form-group">
+                <label for="edit-specific-action">Specific Action</label>
+                <input type="text" id="edit-specific-action" class="form-input" placeholder="What specific action will you take?" />
+            </div>
+            <div class="form-group">
+                <label for="edit-frequency">Frequency</label>
+                <input type="text" id="edit-frequency" class="form-input" placeholder="e.g., Daily, Weekly, Monthly" />
+            </div>
+            <div class="form-group">
+                <label for="edit-success-criteria">Success Criteria</label>
+                <textarea id="edit-success-criteria" class="form-input" placeholder="How will you measure success?" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="edit-progress">Progress: <span id="progress-display">0%</span></label>
+                <input type="range" id="edit-progress" class="progress-slider" min="0" max="100" value="0" />
+            </div>
+            <div class="form-group">
+                <label for="edit-evaluation">Evaluation</label>
+                <textarea id="edit-evaluation" class="form-input" placeholder="Reflect on your progress and learnings" rows="4"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="modal-cancel-btn" class="btn-secondary">Cancel</button>
+            <button id="modal-save-btn" class="btn-primary">Save</button>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,135 @@
+<div class="annual-view" role="region" aria-label="Annual planning view">
+    <!-- Year Selector -->
+    <div class="view-header">
+        <div class="year-selector" role="group" aria-label="Year navigation">
+            <button id="prev-year-btn" class="nav-btn" aria-label="Go to previous year">
+                <span aria-hidden="true">←</span>
+            </button>
+            <h2 id="current-year" aria-live="polite">2025</h2>
+            <button id="next-year-btn" class="nav-btn" aria-label="Go to next year">
+                <span aria-hidden="true">→</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="annual-content">
+        <!-- Left Column: Last Year Reflection -->
+        <section class="reflection-section" aria-labelledby="reflection-heading">
+            <h3 id="reflection-heading">Last Year Reflection</h3>
+            <textarea 
+                id="last-year-reflection" 
+                placeholder="Reflect on your achievements, challenges, and lessons learned from last year..."
+                rows="10"
+                aria-label="Last year reflection notes"
+            ></textarea>
+        </section>
+
+        <!-- Center Column: Annual Goals -->
+        <section class="goals-section" aria-labelledby="goals-heading">
+            <h3 id="goals-heading">Annual Goals</h3>
+            <div id="goals-container" class="goals-container" role="list" aria-label="Annual goals list">
+                <!-- Goal cards will be dynamically added here -->
+            </div>
+            <button id="add-goal-btn" class="btn-primary" aria-label="Add new annual goal">+ Add Goal</button>
+        </section>
+
+        <!-- Right Column: Vision Board & Bucket List -->
+        <div class="vision-section">
+            <section aria-labelledby="vision-heading">
+                <h3 id="vision-heading">Vision Board</h3>
+                <div id="vision-board" class="vision-board">
+                    <textarea 
+                        id="vision-text" 
+                        placeholder="Describe your vision for this year..."
+                        rows="6"
+                        aria-label="Vision board description"
+                    ></textarea>
+                </div>
+            </section>
+
+            <section aria-labelledby="bucket-list-heading">
+                <h3 id="bucket-list-heading">Bucket List</h3>
+                <div id="bucket-list" class="bucket-list">
+                    <textarea 
+                        id="bucket-list-text" 
+                        placeholder="List your bucket list items for this year..."
+                        rows="6"
+                        aria-label="Bucket list items"
+                    ></textarea>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Reading Journey Section -->
+    <section class="reading-section" aria-labelledby="reading-heading">
+        <h3 id="reading-heading">Reading Journey (50 Books)</h3>
+        <div class="reading-controls">
+            <button id="add-book-btn" class="btn-secondary" aria-label="Add new book to reading list">+ Add Book</button>
+            <div class="reading-stats" role="status" aria-live="polite" aria-label="Reading progress">
+                <span id="books-completed">0</span> / 50 books completed
+            </div>
+        </div>
+        <div id="reading-list" class="reading-list" role="list" aria-label="Reading list">
+            <!-- Book entries will be dynamically added here -->
+        </div>
+    </section>
+</div>
+
+<!-- Goal Card Template -->
+<template id="goal-card-template">
+    <div class="goal-card" data-goal-id="" role="listitem">
+        <div class="goal-header">
+            <input type="text" class="goal-title" placeholder="Goal Title" aria-label="Goal title" />
+            <select class="goal-category" aria-label="Goal category">
+                <option value="Personal">Personal</option>
+                <option value="Career">Career</option>
+                <option value="Health">Health</option>
+                <option value="Finance">Finance</option>
+                <option value="Learning">Learning</option>
+                <option value="Relationships">Relationships</option>
+                <option value="Other">Other</option>
+            </select>
+            <button class="delete-goal-btn" aria-label="Delete this goal">×</button>
+        </div>
+        <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Goal progress">
+            <div class="progress-fill" style="width: 0%" aria-hidden="true"></div>
+            <span class="progress-text" aria-live="polite">0%</span>
+        </div>
+        <div class="sub-goals-container">
+            <h4>Sub-Goals</h4>
+            <ul class="sub-goals-list" data-sortable="true" role="list" aria-label="Sub-goals list">
+                <!-- Sub-goals will be added here -->
+            </ul>
+            <button class="add-sub-goal-btn" aria-label="Add new sub-goal">+ Add Sub-Goal</button>
+        </div>
+    </div>
+</template>
+
+<!-- Sub-Goal Item Template -->
+<template id="sub-goal-template">
+    <li class="sub-goal-item" draggable="true" role="listitem">
+        <span class="drag-handle" aria-label="Drag to reorder" role="button" tabindex="0">⋮⋮</span>
+        <input type="checkbox" class="sub-goal-checkbox" aria-label="Mark sub-goal as complete" />
+        <input type="text" class="sub-goal-text" placeholder="Sub-goal description" aria-label="Sub-goal description" />
+        <button class="delete-sub-goal-btn" aria-label="Delete this sub-goal">×</button>
+    </li>
+</template>
+
+<!-- Book Entry Template -->
+<template id="book-template">
+    <div class="book-entry" data-book-id="" role="listitem">
+        <div class="book-number" aria-label="Book number"></div>
+        <input type="text" class="book-title" placeholder="Book Title" aria-label="Book title" />
+        <input type="text" class="book-author" placeholder="Author" aria-label="Book author" />
+        <input type="checkbox" class="book-completed" aria-label="Mark book as completed" />
+        <div class="book-rating" role="group" aria-label="Book rating">
+            <span class="star" data-rating="1" role="button" tabindex="0" aria-label="Rate 1 star">☆</span>
+            <span class="star" data-rating="2" role="button" tabindex="0" aria-label="Rate 2 stars">☆</span>
+            <span class="star" data-rating="3" role="button" tabindex="0" aria-label="Rate 3 stars">☆</span>
+            <span class="star" data-rating="4" role="button" tabindex="0" aria-label="Rate 4 stars">☆</span>
+            <span class="star" data-rating="5" role="button" tabindex="0" aria-label="Rate 5 stars">☆</span>
+        </div>
+        <button class="delete-book-btn" aria-label="Delete this book">×</button>
+    </div>
+</template>

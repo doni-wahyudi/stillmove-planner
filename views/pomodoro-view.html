@@ -1,0 +1,40 @@
+<!-- Pomodoro Timer View -->
+<div class="pomodoro-view" role="region" aria-label="Pomodoro timer">
+    <div class="view-header">
+        <h2>Pomodoro Timer</h2>
+        <p>Stay focused with the Pomodoro technique</p>
+    </div>
+
+    <div class="pomodoro-container">
+        <!-- Timer Display -->
+        <div class="timer-display" role="timer" aria-live="polite" aria-atomic="true">
+            <div class="timer-circle">
+                <svg class="timer-progress" viewBox="0 0 200 200" aria-hidden="true">
+                    <circle class="timer-progress-bg" cx="100" cy="100" r="90"></circle>
+                    <circle class="timer-progress-bar" cx="100" cy="100" r="90"></circle>
+                </svg>
+                <div class="timer-content">
+                    <div class="timer-mode" id="timer-mode" aria-label="Timer mode">Focus</div>
+                    <div class="timer-time" id="timer-time" aria-label="Time remaining">25:00</div>
+                    <div class="timer-session" id="timer-session" aria-label="Session count">Session 0/4</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timer Controls -->
+        <div class="timer-controls" role="group" aria-label="Timer controls">
+            <button id="start-pause-btn" class="btn btn-primary btn-large" aria-label="Start timer">
+                <span id="start-pause-text">Start</span>
+            </button>
+            <button id="reset-btn" class="btn btn-secondary" aria-label="Reset timer">Reset</button>
+        </div>
+
+        <!-- Session History -->
+        <section class="session-history" aria-labelledby="session-history-heading">
+            <h3 id="session-history-heading">Today's Sessions</h3>
+            <div id="session-history-list" class="session-list" role="list" aria-label="Completed sessions">
+                <p class="empty-state" role="status">No completed sessions yet. Start your first Pomodoro!</p>
+            </div>
+        </section>
+    </div>
+</div>

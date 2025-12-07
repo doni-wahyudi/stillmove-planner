@@ -1,0 +1,201 @@
+<div class="habits-view" role="region" aria-label="Habits tracking view">
+    <!-- Header with Month/Year Selector -->
+    <div class="view-header">
+        <div class="month-year-selector" role="group" aria-label="Month navigation">
+            <button id="habits-prev-month-btn" class="nav-btn" aria-label="Go to previous month">
+                <span aria-hidden="true">←</span>
+            </button>
+            <h2 id="habits-current-month-year" aria-live="polite">January 2025</h2>
+            <button id="habits-next-month-btn" class="nav-btn" aria-label="Go to next month">
+                <span aria-hidden="true">→</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Tab Switcher -->
+    <div class="tabs" role="tablist" aria-label="Habit tracking options">
+        <button class="tab-btn active" data-tab="daily-habits" role="tab" aria-selected="true" aria-controls="daily-habits-tab" id="daily-habits-tab-btn">Daily Habits</button>
+        <button class="tab-btn" data-tab="weekly-habits" role="tab" aria-selected="false" aria-controls="weekly-habits-tab" id="weekly-habits-tab-btn">Weekly Habits</button>
+        <button class="tab-btn" data-tab="wellness" role="tab" aria-selected="false" aria-controls="wellness-tab" id="wellness-tab-btn">Wellness Trackers</button>
+    </div>
+
+    <!-- Daily Habits Tab -->
+    <div id="daily-habits-tab" class="tab-content active" role="tabpanel" aria-labelledby="daily-habits-tab-btn">
+        <div class="habits-container">
+            <section class="habits-sidebar" aria-labelledby="daily-habits-heading">
+                <h3 id="daily-habits-heading">Daily Habits (30 max)</h3>
+                <div id="daily-habits-list" class="habits-list" role="list" aria-label="Daily habits list">
+                    <!-- Habit names will be added here -->
+                </div>
+                <button id="add-daily-habit-btn" class="btn-secondary" aria-label="Add new daily habit">+ Add Habit</button>
+            </section>
+
+            <div class="habits-grid-container">
+                <div id="daily-habits-grid" class="habits-grid" role="grid" aria-label="Daily habits tracking grid">
+                    <!-- Grid will be generated dynamically -->
+                </div>
+            </div>
+
+            <aside class="habits-progress" aria-labelledby="daily-progress-heading">
+                <h3 id="daily-progress-heading">Progress</h3>
+                <div class="progress-item">
+                    <span>7 Days:</span>
+                    <span id="daily-progress-7" class="progress-value" role="status" aria-live="polite" aria-label="7 day progress">0%</span>
+                </div>
+                <div class="progress-item">
+                    <span>14 Days:</span>
+                    <span id="daily-progress-14" class="progress-value" role="status" aria-live="polite" aria-label="14 day progress">0%</span>
+                </div>
+                <div class="progress-item">
+                    <span>21 Days:</span>
+                    <span id="daily-progress-21" class="progress-value" role="status" aria-live="polite" aria-label="21 day progress">0%</span>
+                </div>
+                <div class="progress-item">
+                    <span>28 Days:</span>
+                    <span id="daily-progress-28" class="progress-value" role="status" aria-live="polite" aria-label="28 day progress">0%</span>
+                </div>
+                <div class="progress-item">
+                    <span>Monthly:</span>
+                    <span id="daily-progress-monthly" class="progress-value" role="status" aria-live="polite" aria-label="Monthly progress">0%</span>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Weekly Habits Tab -->
+    <div id="weekly-habits-tab" class="tab-content">
+        <div class="habits-container">
+            <div class="habits-sidebar">
+                <h3>Weekly Habits (10 max)</h3>
+                <div id="weekly-habits-list" class="habits-list">
+                    <!-- Habit names will be added here -->
+                </div>
+                <button id="add-weekly-habit-btn" class="btn-secondary">+ Add Habit</button>
+            </div>
+
+            <div class="habits-grid-container">
+                <div id="weekly-habits-grid" class="habits-grid">
+                    <!-- Grid will be generated dynamically -->
+                </div>
+            </div>
+
+            <div class="habits-progress">
+                <h3>Progress</h3>
+                <div class="progress-item">
+                    <span>7 Days:</span>
+                    <span id="weekly-progress-7" class="progress-value">0%</span>
+                </div>
+                <div class="progress-item">
+                    <span>14 Days:</span>
+                    <span id="weekly-progress-14" class="progress-value">0%</span>
+                </div>
+                <div class="progress-item">
+                    <span>21 Days:</span>
+                    <span id="weekly-progress-21" class="progress-value">0%</span>
+                </div>
+                <div class="progress-item">
+                    <span>28 Days:</span>
+                    <span id="weekly-progress-28" class="progress-value">0%</span>
+                </div>
+                <div class="progress-item">
+                    <span>Monthly:</span>
+                    <span id="weekly-progress-monthly" class="progress-value">0%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wellness Tab -->
+    <div id="wellness-tab" class="tab-content">
+        <div class="wellness-container">
+            <!-- Mood Tracker -->
+            <div class="wellness-section">
+                <h3>Mood Tracker</h3>
+                <div id="mood-grid" class="mood-grid">
+                    <!-- Mood grid will be generated dynamically -->
+                </div>
+                <div class="mood-selector">
+                    <button class="mood-btn" data-mood="🥰">🥰</button>
+                    <button class="mood-btn" data-mood="😁">😁</button>
+                    <button class="mood-btn" data-mood="😶">😶</button>
+                    <button class="mood-btn" data-mood="😵">😵</button>
+                    <button class="mood-btn" data-mood="😩">😩</button>
+                </div>
+                <div id="mood-distribution" class="mood-distribution">
+                    <!-- Mood counts will be displayed here -->
+                </div>
+            </div>
+
+            <!-- Sleep Tracker -->
+            <div class="wellness-section">
+                <h3>Sleep Tracker</h3>
+                <div class="sleep-input-container">
+                    <label>
+                        Date:
+                        <input type="date" id="sleep-date" />
+                    </label>
+                    <label>
+                        Bedtime:
+                        <input type="time" id="sleep-bedtime" />
+                    </label>
+                    <label>
+                        Wake Time:
+                        <input type="time" id="sleep-wake-time" />
+                    </label>
+                    <button id="save-sleep-btn" class="btn-primary">Save</button>
+                </div>
+                <div id="sleep-duration" class="sleep-duration">
+                    Duration: <span id="sleep-hours">0</span> hours
+                </div>
+                <div id="sleep-list" class="sleep-list">
+                    <!-- Sleep entries will be listed here -->
+                </div>
+            </div>
+
+            <!-- Water Tracker -->
+            <div class="wellness-section">
+                <h3>Water Tracker</h3>
+                <div class="water-input-container">
+                    <label>
+                        Date:
+                        <input type="date" id="water-date" />
+                    </label>
+                    <label>
+                        Daily Goal (glasses):
+                        <input type="number" id="water-goal" value="8" min="1" max="20" />
+                    </label>
+                </div>
+                <div id="water-counter" class="water-counter">
+                    <button id="water-decrease-btn" class="water-btn">-</button>
+                    <div class="water-display">
+                        <span id="water-glasses">0</span> / <span id="water-goal-display">8</span> glasses
+                    </div>
+                    <button id="water-increase-btn" class="water-btn">+</button>
+                </div>
+                <div id="water-percentage" class="water-percentage">
+                    Progress: <span id="water-progress">0</span>%
+                </div>
+                <div id="water-list" class="water-list">
+                    <!-- Water entries will be listed here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Habit Item Template -->
+<template id="habit-item-template">
+    <div class="habit-item" data-habit-id="">
+        <input type="text" class="habit-name" placeholder="Habit name" maxlength="50" />
+        <button class="delete-habit-btn" aria-label="Delete habit">×</button>
+    </div>
+</template>
+
+<!-- Weekly Habit Item Template -->
+<template id="weekly-habit-item-template">
+    <div class="habit-item" data-habit-id="">
+        <input type="text" class="habit-name" placeholder="Habit name" maxlength="50" />
+        <input type="number" class="habit-target" min="1" max="7" value="7" title="Target days per week" />
+        <button class="delete-habit-btn" aria-label="Delete habit">×</button>
+    </div>
+</template>

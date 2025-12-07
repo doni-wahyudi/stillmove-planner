@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Performance Optimization Tests</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+        }
+        
+        h2 {
+            color: #666;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        
+        .test-result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .test-result.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        #virtual-scroll-container {
+            height: 400px;
+            border: 1px solid #ddd;
+            overflow: auto;
+            background: white;
+        }
+        
+        .lazy-image {
+            width: 200px;
+            height: 150px;
+            margin: 10px;
+            background: #f0f0f0;
+            display: inline-block;
+        }
+        
+        .lazy-image.loaded {
+            background: #e0e0e0;
+        }
+        
+        #stats-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>Performance Optimization Tests</h1>
+    
+    <!-- Cache Test -->
+    <div class="test-section">
+        <h2>1. Cache Manager Test</h2>
+        <button onclick="testCache()">Test Cache</button>
+        <button onclick="showCacheStats()">Show Cache Stats</button>
+        <div id="cache-results"></div>
+    </div>
+    
+    <!-- Debounce Test -->
+    <div class="test-section">
+        <h2>2. Debounce Test</h2>
+        <p>Type in the input below. The save function will be called 300ms after you stop typing.</p>
+        <input type="text" id="debounce-input" placeholder="Type something...">
+        <div id="debounce-results"></div>
+    </div>
+    
+    <!-- Throttle Test -->
+    <div class="test-section">
+        <h2>3. Throttle Test</h2>
+        <p>Scroll in the box below. The scroll handler is throttled to 100ms.</p>
+        <div id="throttle-scroll-box" style="height: 200px; overflow: auto; border: 1px solid #ddd; padding: 10px;">
+            <div style="height: 1000px;">
+                <p>Scroll me!</p>
+                <p>Keep scrolling...</p>
+                <p>More content...</p>
+                <p>Even more content...</p>
+                <p>You're doing great!</p>
+                <p>Almost there...</p>
+                <p>Keep going...</p>
+                <p>More scrolling...</p>
+                <p>You made it!</p>
+            </div>
+        </div>
+        <div id="throttle-results"></div>
+    </div>
+    
+    <!-- Virtual Scrolling Test -->
+    <div class="test-section">
+        <h2>4. Virtual Scrolling Test</h2>
+        <button onclick="testVirtualScroll()">Load 1000 Items</button>
+        <div id="virtual-scroll-container"></div>
+        <div id="virtual-scroll-results"></div>
+    </div>
+    
+    <!-- Image Lazy Loading Test -->
+    <div class="test-section">
+        <h2>5. Image Lazy Loading Test</h2>
+        <button onclick="testLazyLoading()">Add Lazy Images</button>
+        <div id="lazy-images-container"></div>
+        <div id="lazy-load-results"></div>
+    </div>
+    
+    <!-- Performance Monitor Test -->
+    <div class="test-section">
+        <h2>6. Performance Monitor Test</h2>
+        <button onclick="testPerformanceMonitor()">Run Performance Test</button>
+        <button onclick="showPerformanceReport()">Show Report</button>
+        <div id="performance-results"></div>
+    </div>
+    
+    <!-- DOM Batcher Test -->
+    <div class="test-section">
+        <h2>7. DOM Batcher Test</h2>
+        <button onclick="testDOMBatcher()">Test DOM Batching</button>
+        <div id="dom-batcher-results"></div>
+    </div>
+    
+    <!-- Overall Stats -->
+    <div class="test-section">
+        <h2>Overall Statistics</h2>
+        <button onclick="showAllStats()">Show All Stats</button>
+        <div id="stats-display"></div>
+    </div>
+
+    <script type="module">
+        import { 
+            CacheManager, 
+            cacheManager,
+            debounce, 
+            throttle,
+            VirtualScroller,
+            ImageLazyLoader,
+            imageLazyLoader,
+            PerformanceMonitor,
+            performanceMonitor,
+            DOMBatcher,
+            domBatcher
+        } from './js/performance.js';
+        
+        import { createDebouncedTextHandler, createThrottledScrollHandler } from './js/input-handlers.js';
+        
+        // Make functions available globally for onclick handlers
+        window.testCache = testCache;
+        window.showCacheStats = showCacheStats;
+        window.testVirtualScroll = testVirtualScroll;
+        window.testLazyLoading = testLazyLoading;
+        window.testPerformanceMonitor = testPerformanceMonitor;
+        window.showPerformanceReport = showPerformanceReport;
+        window.testDOMBatcher = testDOMBatcher;
+        window.showAllStats = showAllStats;
+        
+        // Test 1: Cache Manager
+        function testCache() {
+            const results = document.getElementById('cache-results');
+            results.innerHTML = '<div class="test-result info">Running cache tests...</div>';
+            
+            // Test basic cache operations
+            cacheManager.set('test1', { data: 'value1' });
+            cacheManager.set('test2', { data: 'value2' });
+            cacheManager.set('test3', { data: 'value3' });
+            
+            const val1 = cacheManager.get('test1');
+            const val2 = cacheManager.get('test2');
+            const val3 = cacheManager.get('nonexistent');
+            
+            let html = '<div class="test-result success">Cache tests completed!</div>';
+            html += `<div class="test-result info">Retrieved test1: ${JSON.stringify(val1)}</div>`;
+            html += `<div class="test-result info">Retrieved test2: ${JSON.stringify(val2)}</div>`;
+            html += `<div class="test-result info">Retrieved nonexistent: ${val3}</div>`;
+            
+            // Test invalidation
+            cacheManager.invalidate('test');
+            const val4 = cacheManager.get('test1');
+            html += `<div class="test-result info">After invalidation, test1: ${val4}</div>`;
+            
+            results.innerHTML = html;
+        }
+        
+        function showCacheStats() {
+            const results = document.getElementById('cache-results');
+            const stats = cacheManager.getStats();
+            results.innerHTML = `<div class="test-result success">Cache Stats: ${JSON.stringify(stats, null, 2)}</div>`;
+        }
+        
+        // Test 2: Debounce
+        const debounceInput = document.getElementById('debounce-input');
+        const debounceResults = document.getElementById('debounce-results');
+        let debounceCallCount = 0;
+        
+        const debouncedHandler = createDebouncedTextHandler((value) => {
+            debounceCallCount++;
+            debounceResults.innerHTML = `<div class="test-result success">Debounced function called ${debounceCallCount} times. Value: "${value}"</div>`;
+        }, 300);
+        
+        debounceInput.addEventListener('input', debouncedHandler);
+        
+        // Test 3: Throttle
+        const throttleBox = document.getElementById('throttle-scroll-box');
+        const throttleResults = document.getElementById('throttle-results');
+        let throttleCallCount = 0;
+        
+        const throttledHandler = createThrottledScrollHandler(() => {
+            throttleCallCount++;
+            throttleResults.innerHTML = `<div class="test-result success">Throttled scroll handler called ${throttleCallCount} times</div>`;
+        }, 100);
+        
+        throttleBox.addEventListener('scroll', throttledHandler);
+        
+        // Test 4: Virtual Scrolling
+        let virtualScroller = null;
+        
+        function testVirtualScroll() {
+            const container = document.getElementById('virtual-scroll-container');
+            const results = document.getElementById('virtual-scroll-results');
+            
+            // Generate 1000 items
+            const items = Array.from({ length: 1000 }, (_, i) => ({
+                id: i,
+                name: `Item ${i + 1}`,
+                description: `This is item number ${i + 1}`
+            }));
+            
+            // Create virtual scroller
+            virtualScroller = new VirtualScroller(container, {
+                itemHeight: 60,
+                bufferSize: 5,
+                renderItem: (item) => {
+                    return `
+                        <div style="padding: 10px; border-bottom: 1px solid #eee;">
+                            <strong>${item.name}</strong>
+                            <div style="color: #666; font-size: 14px;">${item.description}</div>
+                        </div>
+                    `;
+                }
+            });
+            
+            virtualScroller.setItems(items);
+            results.innerHTML = '<div class="test-result success">Loaded 1000 items with virtual scrolling!</div>';
+        }
+        
+        // Test 5: Image Lazy Loading
+        function testLazyLoading() {
+            const container = document.getElementById('lazy-images-container');
+            const results = document.getElementById('lazy-load-results');
+            
+            // Create placeholder images
+            let html = '';
+            for (let i = 1; i <= 10; i++) {
+                html += `<img class="lazy-image" data-src="https://via.placeholder.com/200x150?text=Image+${i}" alt="Image ${i}">`;
+            }
+            container.innerHTML = html;
+            
+            // Observe all lazy images
+            imageLazyLoader.observeAll('.lazy-image');
+            
+            results.innerHTML = '<div class="test-result success">Added 10 lazy-loading images. Scroll to see them load!</div>';
+        }
+        
+        // Test 6: Performance Monitor
+        async function testPerformanceMonitor() {
+            const results = document.getElementById('performance-results');
+            results.innerHTML = '<div class="test-result info">Running performance tests...</div>';
+            
+            // Simulate some operations
+            await performanceMonitor.measure('Test Operation 1', async () => {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }, 'apiCall');
+            
+            await performanceMonitor.measure('Test Operation 2', async () => {
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }, 'render');
+            
+            await performanceMonitor.measure('Test Operation 3', async () => {
+                await new Promise(resolve => setTimeout(resolve, 75));
+            }, 'viewTransition');
+            
+            results.innerHTML = '<div class="test-result success">Performance tests completed! Click "Show Report" to see results.</div>';
+        }
+        
+        function showPerformanceReport() {
+            const results = document.getElementById('performance-results');
+            const report = performanceMonitor.getReport();
+            results.innerHTML = `<div class="test-result success"><pre>${JSON.stringify(report, null, 2)}</pre></div>`;
+        }
+        
+        // Test 7: DOM Batcher
+        function testDOMBatcher() {
+            const results = document.getElementById('dom-batcher-results');
+            const testDiv = document.createElement('div');
+            testDiv.style.height = '100px';
+            testDiv.style.background = '#f0f0f0';
+            testDiv.style.padding = '10px';
+            testDiv.textContent = 'Test element';
+            results.appendChild(testDiv);
+            
+            let readHeight = 0;
+            
+            // Schedule reads and writes
+            domBatcher.read(() => {
+                readHeight = testDiv.offsetHeight;
+            });
+            
+            domBatcher.write(() => {
+                testDiv.style.height = '150px';
+            });
+            
+            domBatcher.read(() => {
+                const newHeight = testDiv.offsetHeight;
+                results.innerHTML += `<div class="test-result success">Original height: ${readHeight}px, New height: ${newHeight}px</div>`;
+            });
+        }
+        
+        // Show all stats
+        function showAllStats() {
+            const display = document.getElementById('stats-display');
+            
+            const cacheStats = cacheManager.getStats();
+            const perfReport = performanceMonitor.getReport();
+            
+            display.textContent = `
+=== CACHE STATISTICS ===
+${JSON.stringify(cacheStats, null, 2)}
+
+=== PERFORMANCE REPORT ===
+${JSON.stringify(perfReport, null, 2)}
+            `;
+        }
+        
+        // Initial message
+        console.log('Performance optimization tests loaded. Use the buttons to run tests.');
+    </script>
+</body>
+</html>

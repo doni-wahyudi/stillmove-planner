@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Component Tests - Daily Planner</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <div style="padding: 2rem; max-width: 1200px; margin: 0 auto;">
+        <h1>Shared UI Components Test</h1>
+        
+        <section style="margin: 2rem 0; padding: 1rem; border: 1px solid #ddd; border-radius: 8px;">
+            <h2>Modal Component</h2>
+            <button id="test-modal" class="btn-primary">Show Modal</button>
+            <button id="test-confirm" class="btn-secondary">Show Confirm</button>
+            <button id="test-alert" class="btn-secondary">Show Alert</button>
+        </section>
+
+        <section style="margin: 2rem 0; padding: 1rem; border: 1px solid #ddd; border-radius: 8px;">
+            <h2>Toast Component</h2>
+            <button id="test-toast-success" class="btn-primary">Success Toast</button>
+            <button id="test-toast-error" class="btn-secondary">Error Toast</button>
+            <button id="test-toast-warning" class="btn-secondary">Warning Toast</button>
+            <button id="test-toast-info" class="btn-secondary">Info Toast</button>
+        </section>
+
+        <section style="margin: 2rem 0; padding: 1rem; border: 1px solid #ddd; border-radius: 8px;">
+            <h2>Progress Bar Component</h2>
+            <div id="progress-container"></div>
+            <button id="test-progress" class="btn-primary" style="margin-top: 1rem;">Update Progress</button>
+        </section>
+
+        <section style="margin: 2rem 0; padding: 1rem; border: 1px solid #ddd; border-radius: 8px;">
+            <h2>Calendar Component</h2>
+            <div id="calendar-container"></div>
+        </section>
+
+        <section style="margin: 2rem 0; padding: 1rem; border: 1px solid #ddd; border-radius: 8px;">
+            <h2>Spinner Component</h2>
+            <button id="test-spinner" class="btn-primary">Show Loading Spinner</button>
+            <div id="spinner-container" style="margin-top: 1rem;"></div>
+        </section>
+    </div>
+
+    <!-- Component Scripts -->
+    <script src="components/modal.js"></script>
+    <script src="components/toast.js"></script>
+    <script src="components/progress-bar.js"></script>
+    <script src="components/calendar.js"></script>
+    <script src="components/spinner.js"></script>
+
+    <script>
+        // Test Modal
+        document.getElementById('test-modal').addEventListener('click', () => {
+            Modal.show({
+                title: 'Test Modal',
+                content: '<p>This is a test modal with custom content.</p>',
+                buttons: [
+                    {
+                        text: 'Cancel',
+                        className: 'btn-secondary',
+                        onClick: () => console.log('Cancel clicked')
+                    },
+                    {
+                        text: 'OK',
+                        className: 'btn-primary',
+                        primary: true,
+                        onClick: () => console.log('OK clicked')
+                    }
+                ]
+            });
+        });
+
+        document.getElementById('test-confirm').addEventListener('click', () => {
+            Modal.confirm(
+                'Are you sure you want to proceed?',
+                () => console.log('Confirmed'),
+                () => console.log('Cancelled')
+            );
+        });
+
+        document.getElementById('test-alert').addEventListener('click', () => {
+            Modal.alert('This is an alert message!', () => console.log('Alert closed'));
+        });
+
+        // Test Toast
+        document.getElementById('test-toast-success').addEventListener('click', () => {
+            Toast.success('Operation completed successfully!');
+        });
+
+        document.getElementById('test-toast-error').addEventListener('click', () => {
+            Toast.error('An error occurred!');
+        });
+
+        document.getElementById('test-toast-warning').addEventListener('click', () => {
+            Toast.warning('This is a warning message!');
+        });
+
+        document.getElementById('test-toast-info').addEventListener('click', () => {
+            Toast.info('Here is some information.');
+        });
+
+        // Test Progress Bar
+        let progressValue = 0;
+        const progressContainer = document.getElementById('progress-container');
+        
+        // Create different progress bars
+        const linearProgress = ProgressBar.create({ value: 45, showLabel: true });
+        progressContainer.appendChild(linearProgress);
+        
+        const circularProgress = ProgressBar.createCircular({ value: 65, size: 120 });
+        progressContainer.appendChild(circularProgress);
+
+        document.getElementById('test-progress').addEventListener('click', () => {
+            progressValue = (progressValue + 10) % 110;
+            ProgressBar.update(linearProgress, progressValue);
+            ProgressBar.updateCircular(circularProgress, progressValue);
+        });
+
+        // Test Calendar
+        const calendarContainer = document.getElementById('calendar-container');
+        const today = new Date();
+        const calendar = Calendar.create({
+            year: today.getFullYear(),
+            month: today.getMonth() + 1,
+            selectedDate: today,
+            onDateClick: (date, cell) => {
+                console.log('Date clicked:', date);
+                Toast.info(`Selected: ${date.toLocaleDateString()}`);
+            }
+        });
+        calendarContainer.appendChild(calendar);
+
+        // Test Spinner
+        document.getElementById('test-spinner').addEventListener('click', () => {
+            const spinner = Spinner.show({ text: 'Loading...' });
+            setTimeout(() => {
+                Spinner.hide(spinner);
+                Toast.success('Loading complete!');
+            }, 2000);
+        });
+
+        const spinnerContainer = document.getElementById('spinner-container');
+        spinnerContainer.appendChild(Spinner.create({ size: 'small' }));
+        spinnerContainer.appendChild(Spinner.createDots({ size: 'medium' }));
+        spinnerContainer.appendChild(Spinner.createProgress(75, { size: 'medium' }));
+    </script>
+</body>
+</html>

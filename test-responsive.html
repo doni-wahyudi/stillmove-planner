@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responsive Design Test - Daily Planner</title>
+    <link rel="stylesheet" href="css/main.css">
+    <style>
+        .test-section {
+            margin: 2rem 0;
+            padding: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+        }
+        .test-section h3 {
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .test-item {
+            padding: 1rem;
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Navigation Test -->
+        <nav class="main-nav">
+            <div class="nav-brand">
+                <h1>Daily Planner</h1>
+            </div>
+            <button class="mobile-menu-toggle" onclick="toggleMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="#" class="active">Annual</a></li>
+                <li><a href="#">Monthly</a></li>
+                <li><a href="#">Weekly</a></li>
+                <li><a href="#">Habits</a></li>
+                <li><a href="#">Action Plan</a></li>
+            </ul>
+            <div class="user-menu">
+                <button class="user-menu-btn" onclick="toggleUserMenu()">User Menu</button>
+                <div class="user-dropdown hidden" id="userDropdown">
+                    <a href="#">Profile</a>
+                    <a href="#">Settings</a>
+                    <button>Sign Out</button>
+                </div>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <div id="view-container">
+                <div class="view-header">
+                    <h2>Responsive Design Test</h2>
+                    <p>Testing all styling and responsive features</p>
+                </div>
+
+                <!-- Button Tests -->
+                <div class="test-section">
+                    <h3>Button Styles & Focus States</h3>
+                    <div class="test-grid">
+                        <button class="btn-primary">Primary Button</button>
+                        <button class="btn-secondary">Secondary Button</button>
+                        <button class="btn-primary" disabled>Disabled Primary</button>
+                        <button class="btn-secondary" disabled>Disabled Secondary</button>
+                    </div>
+                </div>
+
+                <!-- Form Input Tests -->
+                <div class="test-section">
+                    <h3>Form Inputs & Focus States</h3>
+                    <div class="form-group">
+                        <label for="test-input">Normal Input</label>
+                        <input type="text" id="test-input" class="form-input" placeholder="Type here...">
+                    </div>
+                    <div class="form-group">
+                        <label for="test-input-error">Error Input</label>
+                        <input type="text" id="test-input-error" class="form-input error" placeholder="Error state">
+                    </div>
+                    <div class="form-group">
+                        <label for="test-input-disabled">Disabled Input</label>
+                        <input type="text" id="test-input-disabled" class="form-input" placeholder="Disabled" disabled>
+                    </div>
+                </div>
+
+                <!-- Card Tests -->
+                <div class="test-section">
+                    <h3>Card Hover Effects</h3>
+                    <div class="test-grid">
+                        <div class="goal-card">
+                            <h4>Goal Card 1</h4>
+                            <p>Hover over this card to see the animation</p>
+                        </div>
+                        <div class="goal-card">
+                            <h4>Goal Card 2</h4>
+                            <p>Cards should lift on hover</p>
+                        </div>
+                        <div class="goal-card">
+                            <h4>Goal Card 3</h4>
+                            <p>With smooth transitions</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar Tests -->
+                <div class="test-section">
+                    <h3>Progress Bars</h3>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" style="width: 75%;"></div>
+                        </div>
+                        <span class="progress-bar-label">75%</span>
+                    </div>
+                    <br>
+                    <div class="progress-bar-container progress-bar-small">
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" style="width: 50%;"></div>
+                        </div>
+                        <span class="progress-bar-label">50%</span>
+                    </div>
+                </div>
+
+                <!-- Checkbox Tests -->
+                <div class="test-section">
+                    <h3>Checkboxes & Touch Targets</h3>
+                    <div class="checklist-container">
+                        <div class="checklist-item">
+                            <input type="checkbox" class="checklist-checkbox" id="check1">
+                            <label for="check1">Checkbox with proper touch target</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" class="checklist-checkbox" id="check2" checked>
+                            <label for="check2">Checked checkbox</label>
+                        </div>
+                        <div class="checklist-item">
+                            <input type="checkbox" class="checklist-checkbox" id="check3">
+                            <label for="check3">Another checkbox</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Animation Tests -->
+                <div class="test-section">
+                    <h3>Animations</h3>
+                    <button class="btn-primary" onclick="testAnimation('fadeIn')">Test Fade In</button>
+                    <button class="btn-primary" onclick="testAnimation('slideInRight')">Test Slide Right</button>
+                    <button class="btn-primary" onclick="testAnimation('slideInLeft')">Test Slide Left</button>
+                    <div id="animationTest" class="test-item" style="margin-top: 1rem;">
+                        Animation Test Box
+                    </div>
+                </div>
+
+                <!-- Utility Classes Tests -->
+                <div class="test-section">
+                    <h3>Utility Classes</h3>
+                    <div class="flex flex-col gap-md">
+                        <div class="flex items-center justify-between p-md rounded-md shadow-sm" style="background: var(--surface-color);">
+                            <span class="font-bold">Flex Layout</span>
+                            <span class="text-sm text-secondary">With utilities</span>
+                        </div>
+                        <div class="text-center p-lg rounded-lg shadow-md" style="background: var(--surface-color);">
+                            <p class="text-xl font-bold">Centered Text</p>
+                            <p class="text-sm">With shadow and padding</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Toast Test -->
+                <div class="test-section">
+                    <h3>Toast Notifications</h3>
+                    <button class="btn-primary" onclick="showToast('success')">Success Toast</button>
+                    <button class="btn-primary" onclick="showToast('error')">Error Toast</button>
+                    <button class="btn-primary" onclick="showToast('warning')">Warning Toast</button>
+                    <button class="btn-primary" onclick="showToast('info')">Info Toast</button>
+                </div>
+
+                <!-- Responsive Test Info -->
+                <div class="test-section">
+                    <h3>Responsive Design Testing</h3>
+                    <p><strong>Instructions:</strong></p>
+                    <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                        <li>Resize your browser window to test responsive breakpoints</li>
+                        <li>Test on mobile (< 768px), tablet (768px - 1024px), and desktop (> 1024px)</li>
+                        <li>Verify touch targets are at least 44x44px on mobile</li>
+                        <li>Check that navigation collapses to hamburger menu on mobile</li>
+                        <li>Test keyboard navigation with Tab key</li>
+                        <li>Verify focus states are visible</li>
+                        <li>Test with screen reader if available</li>
+                    </ul>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        function toggleMenu() {
+            const menu = document.getElementById('navMenu');
+            const toggle = document.querySelector('.mobile-menu-toggle');
+            menu.classList.toggle('active');
+            toggle.classList.toggle('active');
+        }
+
+        function toggleUserMenu() {
+            const dropdown = document.getElementById('userDropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        function testAnimation(animationClass) {
+            const box = document.getElementById('animationTest');
+            box.className = 'test-item';
+            setTimeout(() => {
+                box.classList.add('view-fade-in');
+                if (animationClass !== 'fadeIn') {
+                    box.classList.add(animationClass);
+                }
+            }, 10);
+        }
+
+        function showToast(type) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            const icons = {
+                success: '✓',
+                error: '✕',
+                warning: '⚠',
+                info: 'ℹ'
+            };
+            
+            const messages = {
+                success: 'Operation completed successfully!',
+                error: 'An error occurred. Please try again.',
+                warning: 'Warning: Please review your input.',
+                info: 'Here is some information for you.'
+            };
+            
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <span class="toast-icon">${icons[type]}</span>
+                    <span class="toast-message">${messages[type]}</span>
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('toast-show'), 10);
+            
+            setTimeout(() => {
+                toast.classList.remove('toast-show');
+                toast.classList.add('toast-hide');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Add scroll effect to navigation
+        let lastScroll = 0;
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('.main-nav');
+            const currentScroll = window.pageYOffset;
+            
+            if (currentScroll > 50) {
+                nav.classList.add('scrolled');
+            } else {
+                nav.classList.remove('scrolled');
+            }
+            
+            lastScroll = currentScroll;
+        });
+
+        // Close user menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const userMenu = document.querySelector('.user-menu');
+            const dropdown = document.getElementById('userDropdown');
+            
+            if (!userMenu.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        console.log('✓ Responsive design test page loaded');
+        console.log('✓ CSS variables configured');
+        console.log('✓ Animations ready');
+        console.log('✓ Focus states enabled');
+        console.log('✓ Touch targets optimized');
+    </script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stillmove Planner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/main.css">
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <!-- Skip to main content link for keyboard users -->
+    <a href="#main-content" class="skip-to-main">Skip to main content</a>
+    
+    <div id="app" role="application" aria-label="Daily Planner Application">
+        <!-- Navigation -->
+        <nav class="main-nav" role="navigation" aria-label="Main navigation">
+            <div class="nav-brand">
+                <h1>Stillmove Planner</h1>
+            </div>
+            <button id="mobile-menu-toggle" class="mobile-menu-toggle" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-menu" id="nav-menu" role="menubar" aria-label="Main menu">
+                <li role="none"><a href="#weekly" data-view="weekly" role="menuitem" aria-label="Navigate to Weekly view">Weekly</a></li>
+                <li role="none"><a href="#monthly" data-view="monthly" role="menuitem" aria-label="Navigate to Monthly view">Monthly</a></li>
+                <li role="none"><a href="#annual" data-view="annual" role="menuitem" aria-label="Navigate to Annual view">Annual</a></li>
+                <li role="none"><a href="#habits" data-view="habits" role="menuitem" aria-label="Navigate to Habits view">Habits</a></li>
+                <li role="none"><a href="#action-plan" data-view="action-plan" role="menuitem" aria-label="Navigate to Action Plan view">Action Plan</a></li>
+                <li role="none"><a href="#pomodoro" data-view="pomodoro" role="menuitem" aria-label="Navigate to Pomodoro Timer view">Pomodoro</a></li>
+            </ul>
+            <div class="user-menu">
+                <button id="user-menu-btn" class="user-menu-btn" aria-haspopup="true" aria-expanded="false" aria-label="User menu">
+                    <span id="user-email" aria-live="polite"></span>
+                </button>
+                <div id="user-dropdown" class="user-dropdown hidden" role="menu" aria-label="User menu options">
+                    <a href="#profile" role="menuitem" aria-label="View profile">Profile</a>
+                    <a href="#settings" data-view="settings" role="menuitem" aria-label="Open settings">Settings</a>
+                    <button id="sign-out-btn" role="menuitem" aria-label="Sign out of application">Sign Out</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main id="main-content" class="main-content" role="main" aria-label="Main content">
+            <!-- Views will be loaded here dynamically -->
+            <div id="view-container" role="region" aria-live="polite"></div>
+        </main>
+
+        <!-- Loading Spinner -->
+        <div id="loading-spinner" class="loading-spinner hidden" role="status" aria-live="polite" aria-label="Loading">
+            <div class="spinner" aria-hidden="true"></div>
+            <span class="sr-only">Loading content, please wait...</span>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toast-container" class="toast-container" role="region" aria-live="polite" aria-label="Notifications"></div>
+    </div>
+
+    <!-- Scripts -->
+    <!-- Shared UI Components -->
+    <script src="components/modal.js"></script>
+    <script src="components/toast.js"></script>
+    <script src="components/progress-bar.js"></script>
+    <script src="components/calendar.js"></script>
+    <script src="components/spinner.js"></script>
+    
+    <!-- Accessibility -->
+    <script src="js/accessibility.js"></script>
+    
+    <!-- Application Scripts -->
+    <script type="module" src="js/config.js"></script>
+    <script type="module" src="js/supabase-client.js"></script>
+    <script type="module" src="js/error-handler.js"></script>
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module Test - Daily Planner</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #00ff00;
+        }
+        .test {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #333;
+        }
+        .pass { background: #002200; }
+        .fail { background: #220000; color: #ff0000; }
+        .info { background: #002244; color: #00aaff; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Module Loading Test</h1>
+    <div id="results"></div>
+
+    <script type="module">
+        const results = document.getElementById('results');
+        
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test ${type}`;
+            div.textContent = message;
+            results.appendChild(div);
+        }
+
+        async function runTests() {
+            log('Starting module tests...', 'info');
+            
+            // Test 1: Supabase CDN
+            try {
+                if (typeof supabase !== 'undefined') {
+                    log('✓ Supabase CDN loaded', 'pass');
+                } else {
+                    log('✗ Supabase CDN not loaded', 'fail');
+                }
+            } catch (e) {
+                log('✗ Supabase CDN error: ' + e.message, 'fail');
+            }
+
+            // Test 2: Config module
+            try {
+                const config = await import('./js/config.js');
+                log('✓ Config module loaded', 'pass');
+                log(`  URL: ${config.SUPABASE_URL.substring(0, 30)}...`, 'info');
+            } catch (e) {
+                log('✗ Config module failed: ' + e.message, 'fail');
+            }
+
+            // Test 3: Supabase client
+            try {
+                const supabaseClient = await import('./js/supabase-client.js');
+                log('✓ Supabase client module loaded', 'pass');
+                const client = supabaseClient.getSupabaseClient();
+                log('✓ Supabase client initialized', 'pass');
+            } catch (e) {
+                log('✗ Supabase client failed: ' + e.message, 'fail');
+            }
+
+            // Test 4: Auth service
+            try {
+                const authService = await import('./js/auth-service.js');
+                log('✓ Auth service module loaded', 'pass');
+                const session = await authService.default.getSession();
+                if (session) {
+                    log('✓ User is authenticated: ' + session.user.email, 'pass');
+                } else {
+                    log('⚠ No active session (not signed in)', 'info');
+                }
+            } catch (e) {
+                log('✗ Auth service failed: ' + e.message, 'fail');
+            }
+
+            // Test 5: Data service
+            try {
+                const dataService = await import('./js/data-service.js');
+                log('✓ Data service module loaded', 'pass');
+                log('  Testing database connection...', 'info');
+                
+                const habits = await dataService.default.getDailyHabits();
+                log(`✓ Database connected! Found ${habits.length} habits`, 'pass');
+            } catch (e) {
+                log('✗ Data service failed: ' + e.message, 'fail');
+                log('  Error details: ' + e.stack, 'fail');
+            }
+
+            // Test 6: Views
+            try {
+                const annualView = await import('./views/annual-view.js');
+                log('✓ Annual view module loaded', 'pass');
+            } catch (e) {
+                log('✗ Annual view failed: ' + e.message, 'fail');
+            }
+
+            try {
+                const habitsView = await import('./views/habits-view.js');
+                log('✓ Habits view module loaded', 'pass');
+            } catch (e) {
+                log('✗ Habits view failed: ' + e.message, 'fail');
+            }
+
+            try {
+                const actionPlanView = await import('./views/action-plan-view.js');
+                log('✓ Action Plan view module loaded', 'pass');
+            } catch (e) {
+                log('✗ Action Plan view failed: ' + e.message, 'fail');
+            }
+
+            log('=== Tests Complete ===', 'info');
+            log('If you see failures above, check the browser console (F12) for more details', 'info');
+        }
+
+        runTests();
+    </script>
+</body>
+</html>

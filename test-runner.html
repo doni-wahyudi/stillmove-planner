@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property-Based Tests - Daily Planner</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+        .test-suite {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-case {
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #ddd;
+            background: #f9f9f9;
+        }
+        .test-case.pass {
+            border-left-color: #4caf50;
+            background: #f1f8f4;
+        }
+        .test-case.fail {
+            border-left-color: #f44336;
+            background: #fef1f0;
+        }
+        .test-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .test-result {
+            font-size: 0.9em;
+            color: #666;
+        }
+        .summary {
+            background: #333;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .error-details {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Property-Based Tests - Daily Planner Application</h1>
+    <button onclick="runTests()">Run Tests</button>
+    <div id="test-results"></div>
+
+    <!-- Load fast-check from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/fast-check@3.15.0/lib/bundle.js"></script>
+    
+    <script type="module">
+        import { calculateGoalProgress } from './js/utils.js';
+
+        // Make functions available globally for the test runner
+        window.calculateGoalProgress = calculateGoalProgress;
+        window.fc = fc;
+    </script>
+
+    <script>
+        let testResults = [];
+
+        function assert(condition, message) {
+            if (!condition) {
+                throw new Error(message || 'Assertion failed');
+            }
+        }
+
+        function expect(actual) {
+            return {
+                toBe(expected) {
+                    if (actual !== expected) {
+                        throw new Error(`Expected ${expected} but got ${actual}`);
+                    }
+                },
+                toBeGreaterThanOrEqual(expected) {
+                    if (actual < expected) {
+                        throw new Error(`Expected ${actual} to be >= ${expected}`);
+                    }
+                },
+                toBeLessThanOrEqual(expected) {
+                    if (actual > expected) {
+                        throw new Error(`Expected ${actual} to be <= ${expected}`);
+                    }
+                }
+            };
+        }
+
+        async function runTests() {
+            testResults = [];
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<p>Running tests...</p>';
+
+            // Test Suite: Goal Progress Calculation
+            await runTestSuite('Goal Progress Calculation', [
+                {
+                    name: 'Property 15: Goal progress calculation - progress equals (completed / total) × 100',
+                    test: testProperty15
+                },
+                {
+                    name: 'Empty sub-goals array returns 0% progress',
+                    test: testEmptyArray
+                },
+                {
+                    name: 'Null or undefined input returns 0% progress',
+                    test: testNullUndefined
+                },
+                {
+                    name: 'All completed sub-goals returns 100% progress',
+                    test: testAllCompleted
+                },
+                {
+                    name: 'No completed sub-goals returns 0% progress',
+                    test: testNoneCompleted
+                },
+                {
+                    name: 'Half completed sub-goals returns 50% progress',
+                    test: testHalfCompleted
+                }
+            ]);
+
+            displayResults();
+        }
+
+        async function runTestSuite(suiteName, tests) {
+            for (const test of tests) {
+                try {
+                    await test.test();
+                    testResults.push({
+                        suite: suiteName,
+                        name: test.name,
+                        passed: true
+                    });
+                } catch (error) {
+                    testResults.push({
+                        suite: suiteName,
+                        name: test.name,
+                        passed: false,
+                        error: error.message
+                    });
+                }
+            }
+        }
+
+        /**
+         * Feature: daily-planner-app, Property 15: Goal progress calculation
+         * Validates: Requirements 2.3
+         */
+        function testProperty15() {
+            return new Promise((resolve, reject) => {
+                try {
+                    fc.assert(
+                        fc.property(
+                            fc.array(
+                                fc.record({
+                                    text: fc.string({ minLength: 1, maxLength: 100 }),
+                                    completed: fc.boolean()
+                                }),
+                                { minLength: 1, maxLength: 20 }
+                            ),
+                            (subGoals) => {
+                                const completedCount = subGoals.filter(sg => sg.completed === true).length;
+                                const totalCount = subGoals.length;
+                                const expectedProgress = Math.round((completedCount / totalCount) * 100 * 100) / 100;
+                                
+                                const actualProgress = window.calculateGoalProgress(subGoals);
+                                
+                                expect(actualProgress).toBe(expectedProgress);
+                                expect(actualProgress).toBeGreaterThanOrEqual(0);
+                                expect(actualProgress).toBeLessThanOrEqual(100);
+                            }
+                        ),
+                        { numRuns: 100 }
+                    );
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }
+
+        function testEmptyArray() {
+            expect(window.calculateGoalProgress([])).toBe(0);
+        }
+
+        function testNullUndefined() {
+            expect(window.calculateGoalProgress(null)).toBe(0);
+            expect(window.calculateGoalProgress(undefined)).toBe(0);
+        }
+
+        function testAllCompleted() {
+            const subGoals = [
+                { text: 'Goal 1', completed: true },
+                { text: 'Goal 2', completed: true },
+                { text: 'Goal 3', completed: true }
+            ];
+            expect(window.calculateGoalProgress(subGoals)).toBe(100);
+        }
+
+        function testNoneCompleted() {
+            const subGoals = [
+                { text: 'Goal 1', completed: false },
+                { text: 'Goal 2', completed: false },
+                { text: 'Goal 3', completed: false }
+            ];
+            expect(window.calculateGoalProgress(subGoals)).toBe(0);
+        }
+
+        function testHalfCompleted() {
+            const subGoals = [
+                { text: 'Goal 1', completed: true },
+                { text: 'Goal 2', completed: true },
+                { text: 'Goal 3', completed: false },
+                { text: 'Goal 4', completed: false }
+            ];
+            expect(window.calculateGoalProgress(subGoals)).toBe(50);
+        }
+
+        function displayResults() {
+            const resultsDiv = document.getElementById('test-results');
+            const passed = testResults.filter(r => r.passed).length;
+            const failed = testResults.filter(r => !r.passed).length;
+            const total = testResults.length;
+
+            let html = '<div class="test-suite">';
+            html += '<h2>Goal Progress Calculation Tests</h2>';
+
+            testResults.forEach(result => {
+                const cssClass = result.passed ? 'pass' : 'fail';
+                html += `<div class="test-case ${cssClass}">`;
+                html += `<div class="test-name">${result.passed ? '✓' : '✗'} ${result.name}</div>`;
+                if (!result.passed) {
+                    html += `<div class="error-details">${result.error}</div>`;
+                }
+                html += '</div>';
+            });
+
+            html += '</div>';
+
+            html += `<div class="summary">`;
+            html += `<h3>Test Summary</h3>`;
+            html += `<p>Total: ${total} | Passed: ${passed} | Failed: ${failed}</p>`;
+            html += `<p>Success Rate: ${Math.round((passed / total) * 100)}%</p>`;
+            html += '</div>';
+
+            resultsDiv.innerHTML = html;
+        }
+
+        // Auto-run tests on load
+        window.addEventListener('load', () => {
+            setTimeout(runTests, 500);
+        });
+    </script>
+</body>
+</html>

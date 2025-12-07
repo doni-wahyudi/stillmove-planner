@@ -1,0 +1,71 @@
+<div class="settings-view">
+    <div class="view-header">
+        <h2>Settings</h2>
+    </div>
+
+    <div class="settings-content">
+        <!-- Export Section -->
+        <section class="settings-section">
+            <h3>Export Data</h3>
+            <p>Download all your planner data as a JSON file for backup or transfer.</p>
+            <button id="export-data-btn" class="btn btn-primary">
+                <span class="btn-icon">📥</span>
+                Export All Data
+            </button>
+            <div id="export-status" class="status-message"></div>
+        </section>
+
+        <!-- Import Section -->
+        <section class="settings-section">
+            <h3>Import Data</h3>
+            <p>Import previously exported data. Choose whether to merge with existing data or replace it.</p>
+            
+            <div class="import-controls">
+                <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                <button id="import-file-btn" class="btn btn-secondary">
+                    <span class="btn-icon">📤</span>
+                    Choose File
+                </button>
+                <span id="selected-file-name" class="file-name"></span>
+            </div>
+
+            <div class="import-mode" id="import-mode-section" style="display: none;">
+                <label>Import Mode:</label>
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="import-mode" value="merge" checked>
+                        Merge with existing data
+                    </label>
+                    <label>
+                        <input type="radio" name="import-mode" value="replace">
+                        Replace existing data
+                    </label>
+                </div>
+                <button id="import-data-btn" class="btn btn-primary">Import Data</button>
+            </div>
+
+            <div id="import-status" class="status-message"></div>
+        </section>
+
+        <!-- Profile Section -->
+        <section class="settings-section">
+            <h3>Profile</h3>
+            <div class="profile-info">
+                <label for="display-name">Display Name:</label>
+                <input type="text" id="display-name" class="form-input" placeholder="Your name">
+                
+                <label for="timezone">Timezone:</label>
+                <select id="timezone" class="form-select">
+                    <option value="UTC">UTC</option>
+                    <option value="America/New_York">Eastern Time</option>
+                    <option value="America/Chicago">Central Time</option>
+                    <option value="America/Denver">Mountain Time</option>
+                    <option value="America/Los_Angeles">Pacific Time</option>
+                </select>
+                
+                <button id="save-profile-btn" class="btn btn-primary">Save Profile</button>
+            </div>
+            <div id="profile-status" class="status-message"></div>
+        </section>
+    </div>
+</div>
