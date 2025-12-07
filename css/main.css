@@ -3749,17 +3749,21 @@ select:focus-visible,
 
 /* Daily Sections */
 .daily-sections {
-    background: white;
-    border-radius: 16px;
-    padding: 1.5rem;
+    background: #fffef9;
+    border-radius: 4px;
+    padding: 1.75rem;
     margin: 1.5rem;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        inset 0 0 40px rgba(166, 124, 82, 0.02);
+    border: 1px solid rgba(166, 124, 82, 0.2);
+    border-left: 4px solid rgba(166, 124, 82, 0.3);
 }
 
 .daily-sections h3 {
     font-size: 1.2rem;
-    font-weight: 600;
-    color: #2d3748;
+    font-weight: 700;
+    color: #111827;
     margin-bottom: 1rem;
     display: flex;
     align-items: center;
@@ -3778,16 +3782,21 @@ select:focus-visible,
 }
 
 .daily-section {
-    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    background: #fffef9;
     border-radius: 12px;
-    border: 2px solid #e2e8f0;
+    border: 1px solid rgba(166, 124, 82, 0.2);
+    border-left: 4px solid rgba(166, 124, 82, 0.3);
     overflow: hidden;
     transition: all 0.3s ease;
+    box-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        inset 0 0 40px rgba(166, 124, 82, 0.02);
 }
 
 .daily-section:hover {
-    border-color: #667eea;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 15px rgba(166, 124, 82, 0.2);
+    transform: translateY(-3px);
 }
 
 .daily-section-header {
@@ -3795,7 +3804,7 @@ select:focus-visible,
     justify-content: space-between;
     align-items: center;
     padding: 1rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #a67c52 0%, #d4a574 100%);
     cursor: pointer;
 }
 
@@ -3857,9 +3866,9 @@ select:focus-visible,
 .add-checklist-item-btn {
     width: 100%;
     padding: 0.5rem;
-    background: rgba(102, 126, 234, 0.1);
-    color: #667eea;
-    border: 1px dashed #667eea;
+    background: rgba(166, 124, 82, 0.1);
+    color: var(--primary-color);
+    border: 1px dashed var(--primary-color);
     border-radius: 6px;
     font-size: 0.85rem;
     cursor: pointer;
@@ -3867,7 +3876,7 @@ select:focus-visible,
 }
 
 .add-checklist-item-btn:hover {
-    background: rgba(102, 126, 234, 0.2);
+    background: rgba(166, 124, 82, 0.2);
 }
 
 .journal-text,
@@ -3880,13 +3889,15 @@ select:focus-visible,
     font-size: 0.85rem;
     resize: vertical;
     transition: all 0.2s ease;
+    background: white;
+    color: #2d3748;
 }
 
 .journal-text:focus,
 .gratitude-text:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(166, 124, 82, 0.15);
 }
 
 /* Time Block Modal */
