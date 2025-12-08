@@ -1481,7 +1481,7 @@ select:focus-visible,
 }
 
 .calendar-day.today {
-    border: 2px solid var(--primary-color);67eea;
+    border: 2px solid var(--primary-color);
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     font-weight: 600;
     box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
@@ -2108,6 +2108,12 @@ select:focus-visible,
     font-size: 1.3rem;
 }
 
+.progress-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
 .progress-item {
     display: flex;
     justify-content: space-between;
@@ -2191,6 +2197,17 @@ select:focus-visible,
     box-shadow: 0 0 0 3px var(--primary-color);
     border-color: var(--primary-color);
     background: rgba(166, 124, 82, 0.15);
+}
+
+.mood-selected-info {
+    text-align: center;
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+    background: rgba(166, 124, 82, 0.1);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    color: var(--primary-color);
+    font-weight: 600;
 }
 
 .mood-selector {

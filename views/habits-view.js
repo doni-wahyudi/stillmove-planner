@@ -65,6 +65,8 @@ class HabitsView {
         document.getElementById('add-daily-habit-btn')?.addEventListener('click', () => this.addDailyHabit());
         document.getElementById('add-weekly-habit-btn')?.addEventListener('click', () => this.addWeeklyHabit());
         
+
+        
         // Mood selector
         document.querySelectorAll('.mood-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -88,9 +90,13 @@ class HabitsView {
         
         // Set default dates
         const today = formatDate(new Date());
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = formatDate(yesterday);
+        
         const sleepDateInput = document.getElementById('sleep-date');
         const waterDateInput = document.getElementById('water-date');
-        if (sleepDateInput) sleepDateInput.value = today;
+        if (sleepDateInput) sleepDateInput.value = yesterdayStr;
         if (waterDateInput) waterDateInput.value = today;
     }
 
@@ -138,6 +144,9 @@ class HabitsView {
             content.classList.remove('active');
         });
         document.getElementById(`${tabName}-tab`)?.classList.add('active');
+        
+        // Render the content for the new tab
+        this.renderCurrentTab();
     }
 
     /**
@@ -303,22 +312,38 @@ class HabitsView {
     }
 
     /**
-     * Calculate daily progress
+     * Calculate daily progress - show each habit's monthly completion percentage
      */
     calculateDailyProgress() {
-        const periods = [7, 14, 21, 28];
+        const progressList = document.getElementById('daily-progress-list');
+        if (!progressList) return;
+        
+        progressList.innerHTML = '';
+        
         const daysInMonth = getDaysInMonth(this.currentYear, this.currentMonth);
         
-        periods.forEach(days => {
-            const progress = this.calculateHabitProgressForPeriod(this.dailyHabitCompletions, days);
-            const el = document.getElementById(`daily-progress-${days}`);
-            if (el) el.textContent = `${progress.toFixed(1)}%`;
+        this.dailyHabits.forEach((habit, index) => {
+            let completed = 0;
+            
+            // Count completions for this habit in the current month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${this.currentYear}-${String(this.currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const completion = this.dailyHabitCompletions.find(c => c.habit_id === habit.id && c.date === dateStr);
+                if (completion && completion.completed) {
+                    completed++;
+                }
+            }
+            
+            const percentage = ((completed / daysInMonth) * 100).toFixed(1);
+            
+            const progressItem = document.createElement('div');
+            progressItem.className = 'progress-item';
+            progressItem.innerHTML = `
+                <span>${habit.habit_name || `Habit ${index + 1}`}:</span>
+                <span class="progress-value">${percentage}%</span>
+            `;
+            progressList.appendChild(progressItem);
         });
-        
-        // Monthly progress
-        const monthlyProgress = this.calculateHabitProgressForPeriod(this.dailyHabitCompletions, daysInMonth);
-        const monthlyEl = document.getElementById('daily-progress-monthly');
-        if (monthlyEl) monthlyEl.textContent = `${monthlyProgress.toFixed(1)}%`;
     }
 
     /**
@@ -439,9 +464,19 @@ class HabitsView {
      * Render weekly habits
      */
     renderWeeklyHabits() {
+        console.log('renderWeeklyHabits called', { 
+            weeklyHabitsCount: this.weeklyHabits.length,
+            weeklyHabits: this.weeklyHabits 
+        });
+        
         // Render habit list
         const listContainer = document.getElementById('weekly-habits-list');
-        if (!listContainer) return;
+        console.log('weekly-habits-list container:', listContainer);
+        
+        if (!listContainer) {
+            console.error('weekly-habits-list container not found!');
+            return;
+        }
         
         listContainer.innerHTML = '';
         this.weeklyHabits.slice(0, 10).forEach(habit => {
@@ -513,53 +548,38 @@ class HabitsView {
     }
 
     /**
-     * Calculate weekly progress
+     * Calculate weekly progress - show each habit's monthly completion percentage
      */
     calculateWeeklyProgress() {
-        const periods = [7, 14, 21, 28];
+        const progressList = document.getElementById('weekly-progress-list');
+        if (!progressList) return;
+        
+        progressList.innerHTML = '';
+        
         const daysInMonth = getDaysInMonth(this.currentYear, this.currentMonth);
         
-        periods.forEach(days => {
-            const progress = this.calculateWeeklyHabitProgressForPeriod(this.weeklyHabitCompletions, days);
-            const el = document.getElementById(`weekly-progress-${days}`);
-            if (el) el.textContent = `${progress.toFixed(1)}%`;
-        });
-        
-        // Monthly progress
-        const monthlyProgress = this.calculateWeeklyHabitProgressForPeriod(this.weeklyHabitCompletions, daysInMonth);
-        const monthlyEl = document.getElementById('weekly-progress-monthly');
-        if (monthlyEl) monthlyEl.textContent = `${monthlyProgress.toFixed(1)}%`;
-    }
-
-    /**
-     * Calculate weekly habit progress for a period
-     */
-    calculateWeeklyHabitProgressForPeriod(completions, days) {
-        if (this.weeklyHabits.length === 0 || days === 0) return 0;
-        
-        // Get the last N days
-        const today = new Date();
-        const startDate = new Date(today);
-        startDate.setDate(today.getDate() - days + 1);
-        
-        let totalPossible = 0;
-        let totalCompleted = 0;
-        
-        for (let i = 0; i < days; i++) {
-            const date = new Date(startDate);
-            date.setDate(startDate.getDate() + i);
-            const dateStr = formatDate(date);
+        this.weeklyHabits.forEach((habit, index) => {
+            let completed = 0;
             
-            this.weeklyHabits.forEach(habit => {
-                totalPossible++;
-                const completion = completions.find(c => c.habit_id === habit.id && c.date === dateStr);
-                if (completion?.completed) {
-                    totalCompleted++;
+            // Count completions for this habit in the current month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${this.currentYear}-${String(this.currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const completion = this.weeklyHabitCompletions.find(c => c.habit_id === habit.id && c.date === dateStr);
+                if (completion && completion.completed) {
+                    completed++;
                 }
-            });
-        }
-        
-        return totalPossible > 0 ? (totalCompleted / totalPossible) * 100 : 0;
+            }
+            
+            const percentage = ((completed / daysInMonth) * 100).toFixed(1);
+            
+            const progressItem = document.createElement('div');
+            progressItem.className = 'progress-item';
+            progressItem.innerHTML = `
+                <span>${habit.habit_name || `Habit ${index + 1}`}:</span>
+                <span class="progress-value">${percentage}%</span>
+            `;
+            progressList.appendChild(progressItem);
+        });
     }
 
     /**
@@ -674,12 +694,19 @@ class HabitsView {
             const cell = document.createElement('div');
             cell.className = 'mood-cell';
             cell.textContent = moodEntry?.mood_emoji || '😶';
-            cell.title = `Day ${day}`;
+            cell.title = `Day ${day} - ${date}`;
+            cell.dataset.date = date;
             
             cell.addEventListener('click', () => {
                 this.selectedMoodDate = date;
                 document.querySelectorAll('.mood-cell').forEach(c => c.classList.remove('selected'));
                 cell.classList.add('selected');
+                
+                // Show selected date info
+                const infoEl = document.getElementById('mood-selected-date');
+                if (infoEl) {
+                    infoEl.textContent = `Selected: Day ${day}`;
+                }
             });
             
             gridContainer.appendChild(cell);
@@ -687,6 +714,21 @@ class HabitsView {
         
         // Update mood distribution
         this.updateMoodDistribution();
+        
+        // Auto-select today's date if in current month
+        const today = new Date();
+        if (this.currentYear === today.getFullYear() && this.currentMonth === today.getMonth() + 1) {
+            const todayDate = formatDate(today);
+            this.selectedMoodDate = todayDate;
+            const todayCell = gridContainer.querySelector(`[data-date="${todayDate}"]`);
+            if (todayCell) {
+                todayCell.classList.add('selected');
+                const infoEl = document.getElementById('mood-selected-date');
+                if (infoEl) {
+                    infoEl.textContent = `Selected: Day ${today.getDate()} (Today)`;
+                }
+            }
+        }
     }
 
     /**

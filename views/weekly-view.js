@@ -454,6 +454,10 @@ class WeeklyView {
             durationMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
         }
         
+        // Get category colors
+        const color = this.getCategoryColor(block.category);
+        const gradient = this.getCategoryGradient(block.category);
+        
         // Calculate how many 30-minute slots this block spans
         const slotsToFill = Math.ceil(durationMinutes / 30);
         
@@ -468,11 +472,11 @@ class WeeklyView {
             );
             
             if (slot) {
-                // Style the slot
+                // Style the slot with category colors
                 slot.classList.add('has-block');
-                slot.style.background = '#d4a574';
+                slot.style.background = gradient || '#4CAF50';
                 slot.style.cursor = 'pointer';
-                slot.style.borderLeft = '4px solid #a67c52';
+                slot.style.borderLeft = `4px solid ${color || '#2E7D32'}`;
                 
                 // Only show activity text in the first slot
                 if (i === 0) {
@@ -619,16 +623,12 @@ class WeeklyView {
                 return;
             }
             
-            // Validate category against database constraint
-            const validCategories = ['Personal', 'Work', 'Business', 'Family', 'Education', 'Social', 'Project'];
-            const validCategory = validCategories.includes(category) ? category : 'Personal';
-            
             const blockData = {
                 date,
                 start_time: startTime,
                 end_time: endTime || null,
                 activity,
-                category: validCategory
+                category
             };
             
             if (this.editingBlock) {
