@@ -87,20 +87,24 @@ class AnnualView {
             
             // Load reflection, vision board, and bucket list from monthly data (stored in January)
             const januaryData = await dataService.getMonthlyData(this.currentYear, 1);
-            if (januaryData) {
-                const reflectionEl = document.getElementById('last-year-reflection');
-                const visionEl = document.getElementById('vision-text');
-                const bucketEl = document.getElementById('bucket-list-text');
-                
-                if (reflectionEl && januaryData.notes) {
-                    reflectionEl.value = januaryData.notes;
-                }
-                if (visionEl && januaryData.action_plan && januaryData.action_plan[0]) {
-                    visionEl.value = januaryData.action_plan[0].vision || '';
-                }
-                if (bucketEl && januaryData.action_plan && januaryData.action_plan[0]) {
-                    bucketEl.value = januaryData.action_plan[0].bucket_list || '';
-                }
+            
+            const reflectionEl = document.getElementById('last-year-reflection');
+            const visionEl = document.getElementById('vision-text');
+            const bucketEl = document.getElementById('bucket-list-text');
+            
+            // Always set values (clear if no data)
+            if (reflectionEl) {
+                reflectionEl.value = (januaryData && januaryData.notes) ? januaryData.notes : '';
+            }
+            if (visionEl) {
+                visionEl.value = (januaryData && januaryData.action_plan && januaryData.action_plan[0]) 
+                    ? januaryData.action_plan[0].vision || '' 
+                    : '';
+            }
+            if (bucketEl) {
+                bucketEl.value = (januaryData && januaryData.action_plan && januaryData.action_plan[0]) 
+                    ? januaryData.action_plan[0].bucket_list || '' 
+                    : '';
             }
         } catch (error) {
             console.error('Failed to load annual data:', error);
@@ -454,21 +458,38 @@ class AnnualView {
             }
             
             star.addEventListener('click', () => {
-                this.setBookRating(book.id || number, index + 1);
+                this.setBookRating(book.id || number, index + 1, titleInput, book);
             });
         });
         
         // Event listeners
         titleInput.addEventListener('blur', () => {
-            this.updateBook(book.id || number, { book_title: titleInput.value, order_index: number - 1 });
+            const title = titleInput.value.trim();
+            if (title || book.id) {
+                this.updateBook(book.id || number, { book_title: title, order_index: number - 1 });
+            }
         });
         
         authorInput.addEventListener('blur', () => {
-            this.updateBook(book.id || number, { author: authorInput.value, order_index: number - 1 });
+            // Only update if book exists or if title is filled
+            if (book.id || titleInput.value.trim()) {
+                this.updateBook(book.id || number, { 
+                    book_title: titleInput.value.trim() || book.book_title,
+                    author: authorInput.value.trim(), 
+                    order_index: number - 1 
+                });
+            }
         });
         
         completedCheckbox.addEventListener('change', () => {
-            this.updateBook(book.id || number, { completed: completedCheckbox.checked, order_index: number - 1 });
+            // Only update if book exists or if title is filled
+            if (book.id || titleInput.value.trim()) {
+                this.updateBook(book.id || number, { 
+                    book_title: titleInput.value.trim() || book.book_title,
+                    completed: completedCheckbox.checked, 
+                    order_index: number - 1 
+                });
+            }
         });
         
         entry.querySelector('.delete-book-btn').addEventListener('click', () => {
@@ -480,25 +501,13 @@ class AnnualView {
 
     /**
      * Add a new book
+     * Note: This just re-renders the list to show empty slots.
+     * The actual database entry is created when the user fills in the title.
      */
     async addBook() {
-        try {
-            const newBook = {
-                year: this.currentYear,
-                book_title: '',
-                author: '',
-                completed: false,
-                rating: 0,
-                order_index: this.readingList.length
-            };
-            
-            const created = await dataService.createReadingListEntry(newBook);
-            this.readingList.push(created);
-            this.renderReadingList();
-        } catch (error) {
-            console.error('Failed to add book:', error);
-            this.showError('Failed to add book. Please try again.');
-        }
+        // Just re-render to show the next empty slot
+        // The actual book will be created when user fills in the title
+        this.renderReadingList();
     }
 
     /**
@@ -508,21 +517,51 @@ class AnnualView {
         try {
             // If it's a new book (no ID yet), create it
             if (typeof bookIdOrIndex === 'number') {
+                // Don't create a new entry if book_title is empty
+                if (!updates.book_title || updates.book_title.trim() === '') {
+                    return;
+                }
+                
+                // Ensure rating is valid (1-5 or null)
+                const rating = updates.rating;
+                if (rating !== null && rating !== undefined && (rating < 1 || rating > 5)) {
+                    console.warn('Invalid rating value:', rating);
+                    return;
+                }
+                
                 const newBook = {
                     year: this.currentYear,
-                    ...updates
+                    book_title: updates.book_title.trim(),
+                    author: updates.author ? updates.author.trim() : '',
+                    completed: updates.completed || false,
+                    rating: rating || null,
+                    order_index: updates.order_index
                 };
                 const created = await dataService.createReadingListEntry(newBook);
                 this.readingList.push(created);
+                this.renderReadingList();
             } else {
                 // Update existing book
+                // Ensure rating is valid (1-5 or null)
+                if (updates.rating !== undefined) {
+                    const rating = updates.rating;
+                    if (rating !== null && (rating < 1 || rating > 5)) {
+                        console.warn('Invalid rating value:', rating);
+                        return;
+                    }
+                }
+                
                 await dataService.updateReadingListEntry(bookIdOrIndex, updates);
                 const book = this.readingList.find(b => b.id === bookIdOrIndex);
                 if (book) {
                     Object.assign(book, updates);
                 }
+                // Only re-render if we're updating rating or completed status
+                // to avoid infinite loops from input blur events
+                if (updates.rating !== undefined || updates.completed !== undefined) {
+                    this.renderReadingList();
+                }
             }
-            this.renderReadingList();
         } catch (error) {
             console.error('Failed to update book:', error);
             this.showError('Failed to update book. Please try again.');
@@ -532,8 +571,20 @@ class AnnualView {
     /**
      * Set book rating
      */
-    async setBookRating(bookId, rating) {
-        await this.updateBook(bookId, { rating });
+    async setBookRating(bookIdOrIndex, rating, titleInput, book) {
+        // Validate rating (must be 1-5)
+        if (rating < 1 || rating > 5) {
+            console.warn('Invalid rating:', rating);
+            return;
+        }
+        
+        // Only update if book exists or if title is filled
+        if (typeof bookIdOrIndex === 'string' || (titleInput && titleInput.value.trim())) {
+            await this.updateBook(bookIdOrIndex, { 
+                book_title: titleInput ? titleInput.value.trim() : book.book_title,
+                rating 
+            });
+        }
     }
 
     /**

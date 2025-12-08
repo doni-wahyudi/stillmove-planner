@@ -589,9 +589,13 @@ class DataService {
      */
     async toggleDailyHabitCompletion(habitId, date, completed) {
         try {
+            // Get current user ID
+            const { data: { user } } = await this.supabase.auth.getUser();
+            if (!user) throw new Error('User not authenticated');
+            
             const { data, error } = await this.supabase
                 .from('daily_habit_completions')
-                .upsert([{ habit_id: habitId, date, completed }], { onConflict: 'habit_id,date' })
+                .upsert([{ habit_id: habitId, date, completed, user_id: user.id }], { onConflict: 'habit_id,date' })
                 .select();
 
             if (error) throw error;

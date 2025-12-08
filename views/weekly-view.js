@@ -413,8 +413,12 @@ class WeeklyView {
      * Render time blocks on the grid
      */
     renderTimeBlocks() {
-        // Remove existing time blocks
-        document.querySelectorAll('.time-block').forEach(block => block.remove());
+        // Clear any existing time block content from slots
+        document.querySelectorAll('.time-slot').forEach(slot => {
+            slot.innerHTML = '';
+            slot.classList.remove('has-block');
+            slot.style.background = '';
+        });
         
         this.timeBlocks.forEach(block => {
             this.renderTimeBlock(block);
@@ -422,7 +426,7 @@ class WeeklyView {
     }
 
     /**
-     * Render a single time block
+     * Render a single time block by placing content inside the correct time slots
      */
     renderTimeBlock(block) {
         const blockDate = new Date(block.date);
@@ -431,61 +435,86 @@ class WeeklyView {
         // Adjust day of week for Monday start (Monday=0, Sunday=6)
         dayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
         
-        // Parse start time
-        const [startHour, startMinute] = block.start_time.split(':').map(Number);
+        // Parse start time - Supabase returns TIME as "HH:MM:SS" in 24-hour format
+        const startParts = block.start_time.split(':');
+        const startHour = parseInt(startParts[0], 10);
+        const startMinute = parseInt(startParts[1], 10);
         
-        // Calculate position
-        const slotIndex = ((startHour - START_HOUR) * 2) + (startMinute / 30);
-        
-        // Calculate duration (default to 30 minutes if no end time)
-        let duration = 30;
-        if (block.end_time) {
-            const [endHour, endMinute] = block.end_time.split(':').map(Number);
-            const startMinutes = startHour * 60 + startMinute;
-            const endMinutes = endHour * 60 + endMinute;
-            duration = endMinutes - startMinutes;
+        // Check if time is within display range
+        if (startHour < START_HOUR || startHour >= END_HOUR) {
+            return;
         }
         
-        // Create time block element
-        const template = document.getElementById('time-block-template');
-        const blockEl = template.content.cloneNode(true).querySelector('.time-block');
+        // Calculate duration in minutes (default to 30 minutes if no end time)
+        let durationMinutes = 30;
+        if (block.end_time) {
+            const endParts = block.end_time.split(':');
+            const endHour = parseInt(endParts[0], 10);
+            const endMinute = parseInt(endParts[1], 10);
+            durationMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+        }
         
-        blockEl.dataset.blockId = block.id;
-        blockEl.dataset.day = dayOfWeek;
+        // Calculate how many 30-minute slots this block spans
+        const slotsToFill = Math.ceil(durationMinutes / 30);
         
-        // Set content
-        blockEl.querySelector('.time-block-time').textContent = block.start_time;
-        blockEl.querySelector('.time-block-activity').textContent = block.activity;
+        // Fill all slots that this block spans
+        let currentHour = startHour;
+        let currentMinute = startMinute;
         
-        // Set color based on category
-        const color = this.getCategoryColor(block.category);
-        const gradient = this.getCategoryGradient(block.category);
-        blockEl.style.background = gradient;
-        blockEl.style.borderLeftColor = color;
-        blockEl.style.color = 'white';
-        
-        // Set position and size
-        const slotHeight = 40; // pixels per 30-minute slot
-        const top = slotIndex * slotHeight;
-        const height = (duration / 30) * slotHeight;
-        
-        blockEl.style.position = 'absolute';
-        blockEl.style.top = `${top}px`;
-        blockEl.style.height = `${height}px`;
-        blockEl.style.left = `${(dayOfWeek + 1) * 12.5}%`; // +1 to account for time label column
-        blockEl.style.width = '12.5%';
-        
-        // Add click handler to edit
-        blockEl.addEventListener('click', (e) => {
-            if (!e.target.classList.contains('time-block-resize-handle')) {
-                this.editTimeBlock(block);
+        for (let i = 0; i < slotsToFill; i++) {
+            // Find the slot for this time
+            const slot = document.querySelector(
+                `.time-slot[data-day="${dayOfWeek}"][data-hour="${currentHour}"][data-minute="${currentMinute}"]`
+            );
+            
+            if (slot) {
+                // Style the slot
+                slot.classList.add('has-block');
+                slot.style.background = '#d4a574';
+                slot.style.cursor = 'pointer';
+                slot.style.borderLeft = '4px solid #a67c52';
+                
+                // Only show activity text in the first slot
+                if (i === 0) {
+                    slot.style.borderRadius = '8px 8px 0 0';
+                    
+                    const contentDiv = document.createElement('div');
+                    contentDiv.className = 'time-block-content';
+                    contentDiv.style.color = 'white';
+                    contentDiv.style.fontSize = '0.85rem';
+                    contentDiv.style.fontWeight = '600';
+                    contentDiv.style.padding = '0.25rem';
+                    contentDiv.style.whiteSpace = 'normal';
+                    contentDiv.style.wordWrap = 'break-word';
+                    contentDiv.style.lineHeight = '1.3';
+                    contentDiv.textContent = block.activity;
+                    
+                    slot.innerHTML = '';
+                    slot.appendChild(contentDiv);
+                } else if (i === slotsToFill - 1) {
+                    // Last slot - round bottom corners
+                    slot.style.borderRadius = '0 0 8px 8px';
+                    slot.innerHTML = '';
+                } else {
+                    // Middle slots - no rounded corners
+                    slot.style.borderRadius = '0';
+                    slot.innerHTML = '';
+                }
+                
+                // Store block data and click handler on all slots
+                slot.dataset.blockId = block.id;
+                slot.onclick = (e) => {
+                    e.stopPropagation();
+                    this.editTimeBlock(block);
+                };
             }
-        });
-        
-        // Add to grid
-        const grid = document.getElementById('time-slots-grid');
-        if (grid) {
-            grid.appendChild(blockEl);
+            
+            // Move to next 30-minute slot
+            currentMinute += 30;
+            if (currentMinute >= 60) {
+                currentMinute = 0;
+                currentHour++;
+            }
         }
     }
 
@@ -519,12 +548,10 @@ class WeeklyView {
         title.textContent = 'Add Time Block';
         deleteBtn.style.display = 'none';
         
-        // Set date - convert grid day to actual day offset
-        // Grid: Mon=1, Tue=2, Wed=3, Thu=4, Fri=5, Sat=6, Sun=0
-        // Offset: Mon=0, Tue=1, Wed=2, Thu=3, Fri=4, Sat=5, Sun=6
-        const dayOffset = day === 0 ? 6 : day - 1;
+        // Set date - day parameter is 0-6 where 0=Monday, 6=Sunday
+        // This matches our week start (Monday)
         const date = new Date(this.weekStart);
-        date.setDate(date.getDate() + dayOffset);
+        date.setDate(date.getDate() + day);
         document.getElementById('block-date').value = formatDate(date);
         
         // Set start time
@@ -592,12 +619,16 @@ class WeeklyView {
                 return;
             }
             
+            // Validate category against database constraint
+            const validCategories = ['Personal', 'Work', 'Business', 'Family', 'Education', 'Social', 'Project'];
+            const validCategory = validCategories.includes(category) ? category : 'Personal';
+            
             const blockData = {
                 date,
                 start_time: startTime,
                 end_time: endTime || null,
                 activity,
-                category
+                category: validCategory
             };
             
             if (this.editingBlock) {
@@ -607,7 +638,21 @@ class WeeklyView {
             } else {
                 // Create new block
                 const created = await dataService.createTimeBlock(blockData);
-                this.timeBlocks.push(created);
+                
+                // Check if the created block is within the current week
+                const blockDate = new Date(created.date);
+                blockDate.setHours(0, 0, 0, 0);
+                
+                const weekStart = new Date(this.weekStart);
+                weekStart.setHours(0, 0, 0, 0);
+                
+                const weekEnd = new Date(this.weekStart);
+                weekEnd.setDate(weekEnd.getDate() + 6);
+                weekEnd.setHours(23, 59, 59, 999);
+                
+                if (blockDate >= weekStart && blockDate <= weekEnd) {
+                    this.timeBlocks.push(created);
+                }
             }
             
             this.renderTimeBlocks();

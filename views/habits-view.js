@@ -386,6 +386,10 @@ class HabitsView {
             if (habit) {
                 Object.assign(habit, updates);
             }
+            // Re-render the grid to show updated habit name
+            if (updates.habit_name !== undefined) {
+                this.renderDailyHabitsGrid();
+            }
         } catch (error) {
             console.error('Failed to update daily habit:', error);
             this.showError('Failed to update habit. Please try again.');
@@ -592,6 +596,10 @@ class HabitsView {
             const habit = this.weeklyHabits.find(h => h.id === habitId);
             if (habit) {
                 Object.assign(habit, updates);
+            }
+            // Re-render the grid to show updated habit name
+            if (updates.habit_name !== undefined) {
+                this.renderWeeklyHabitsGrid();
             }
         } catch (error) {
             console.error('Failed to update weekly habit:', error);
