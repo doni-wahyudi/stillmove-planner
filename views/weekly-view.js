@@ -472,11 +472,17 @@ class WeeklyView {
             );
             
             if (slot) {
-                // Style the slot with category colors
+                // Style the slot with category colors - subtle approach
                 slot.classList.add('has-block');
-                slot.style.background = gradient || '#4CAF50';
+                
+                // Use subtle background tint (15% opacity) instead of full gradient
+                const categoryColor = color || '#4CAF50';
+                slot.style.background = `linear-gradient(135deg, ${categoryColor}20 0%, ${categoryColor}10 100%)`;
                 slot.style.cursor = 'pointer';
-                slot.style.borderLeft = `4px solid ${color || '#2E7D32'}`;
+                slot.style.borderLeft = `4px solid ${categoryColor}`;
+                
+                // Store category color as CSS variable for potential use
+                slot.style.setProperty('--category-color', categoryColor);
                 
                 // Only show activity text in the first slot
                 if (i === 0) {
@@ -484,7 +490,8 @@ class WeeklyView {
                     
                     const contentDiv = document.createElement('div');
                     contentDiv.className = 'time-block-content';
-                    contentDiv.style.color = 'white';
+                    // Use theme-aware text color instead of hardcoded white
+                    contentDiv.style.color = 'inherit';
                     contentDiv.style.fontSize = '0.85rem';
                     contentDiv.style.fontWeight = '600';
                     contentDiv.style.padding = '0.25rem';

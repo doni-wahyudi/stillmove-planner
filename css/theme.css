@@ -1,0 +1,2261 @@
+/* ============================================================
+   STILLMOVE PLANNER - THEME SYSTEM
+   A clean, modern design with proper light/dark mode support
+   ============================================================ */
+
+/* ===== DESIGN TOKENS ===== */
+:root {
+    /* Light Mode Colors */
+    --bg-base: #f8f5f0;
+    --bg-surface: #ffffff;
+    --bg-elevated: #ffffff;
+    --bg-input: #ffffff;
+    
+    --text-primary: #1a1a1a;
+    --text-secondary: #4a4a4a;
+    --text-muted: #777777;
+    --text-on-accent: #ffffff;
+    
+    --accent-primary: #8b6642;
+    --accent-secondary: #a67c52;
+    --accent-tertiary: #d4a574;
+    --accent-bg: rgba(166, 124, 82, 0.08);
+    --accent-bg-hover: rgba(166, 124, 82, 0.12);
+    
+    --border-default: rgba(0, 0, 0, 0.08);
+    --border-strong: rgba(0, 0, 0, 0.15);
+    --border-accent: rgba(166, 124, 82, 0.3);
+    
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+    
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 20px;
+    --radius-full: 9999px;
+    
+    --transition: 0.2s ease;
+}
+
+/* ===== DARK MODE TOKENS ===== */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-base: #0f0f0f;
+        --bg-surface: #1a1a1a;
+        --bg-elevated: #242424;
+        --bg-input: #2a2a2a;
+        
+        --text-primary: #f0f0f0;
+        --text-secondary: #b8b8b8;
+        --text-muted: #808080;
+        --text-on-accent: #ffffff;
+        
+        --accent-primary: #d4a574;
+        --accent-secondary: #c9956a;
+        --accent-tertiary: #a67c52;
+        --accent-bg: rgba(212, 165, 116, 0.12);
+        --accent-bg-hover: rgba(212, 165, 116, 0.18);
+        
+        --border-default: rgba(255, 255, 255, 0.08);
+        --border-strong: rgba(255, 255, 255, 0.15);
+        --border-accent: rgba(212, 165, 116, 0.4);
+        
+        --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+        --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+}
+
+/* ===== BASE STYLES ===== */
+body {
+    background: var(--bg-base);
+    color: var(--text-primary);
+}
+
+/* Remove paper texture in dark mode */
+@media (prefers-color-scheme: dark) {
+    body::before {
+        display: none;
+    }
+}
+
+/* ===== NAVIGATION ===== */
+.main-nav {
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-default);
+    box-shadow: var(--shadow-sm);
+    padding: 0.875rem 2rem;
+}
+
+.nav-brand h1 {
+    color: var(--accent-primary);
+    background: none;
+    -webkit-background-clip: unset;
+    -webkit-text-fill-color: var(--accent-primary);
+    background-clip: unset;
+    font-size: 1.4rem;
+}
+
+.nav-menu a {
+    color: var(--text-secondary);
+    font-weight: 600;
+    padding: 0.6rem 1.1rem;
+    border-radius: var(--radius-full);
+    font-size: 0.9rem;
+}
+
+.nav-menu a:hover {
+    color: var(--accent-primary);
+    background: var(--accent-bg);
+    transform: none;
+}
+
+.nav-menu a.active {
+    color: var(--text-on-accent);
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    box-shadow: 0 2px 8px rgba(166, 124, 82, 0.3);
+}
+
+.user-menu-btn {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    color: var(--text-on-accent);
+    border-radius: var(--radius-full);
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    box-shadow: 0 2px 8px rgba(166, 124, 82, 0.25);
+}
+
+#user-email {
+    color: var(--text-on-accent);
+}
+
+.user-dropdown {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    box-shadow: var(--shadow-lg);
+    border-radius: var(--radius-md);
+}
+
+.user-dropdown a,
+.user-dropdown button {
+    color: var(--text-primary);
+}
+
+.user-dropdown a:hover,
+.user-dropdown button:hover {
+    background: var(--accent-bg);
+}
+
+/* ===== MAIN CONTENT ===== */
+.main-content {
+    padding: 1.5rem 2rem;
+}
+
+#view-container {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    border-left: none;
+}
+
+/* ===== VIEW HEADERS ===== */
+.view-header {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-tertiary) 100%);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-md);
+    border: none;
+}
+
+.weekly-view .view-header,
+.monthly-view .view-header,
+.annual-view .view-header,
+.habits-view .view-header,
+.action-plan-view .view-header,
+.pomodoro-view .view-header {
+    border-radius: var(--radius-lg);
+    margin: 0 0 1.5rem 0;
+}
+
+.week-selector h2,
+.month-selector h2,
+.year-selector h2,
+.month-year-selector h2 {
+    color: var(--text-on-accent);
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+.week-selector .nav-btn,
+.month-selector .nav-btn,
+.year-selector .nav-btn,
+.month-year-selector .nav-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--text-on-accent);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 1.1rem;
+}
+
+.week-selector .nav-btn:hover,
+.month-selector .nav-btn:hover,
+.year-selector .nav-btn:hover,
+.month-year-selector .nav-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+}
+
+/* ===== CARD CONTAINERS ===== */
+.weekly-goals,
+.category-legend,
+.schedule-section,
+.calendar-section,
+.categories-sidebar,
+.monthly-checklist,
+.monthly-notes,
+.habits-sidebar,
+.habits-grid-container,
+.habits-progress,
+.wellness-section,
+.reflection-section,
+.goals-section,
+.vision-section section,
+.reading-section,
+.action-plan-content,
+.session-history,
+.daily-sections,
+.settings-section {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-left: 3px solid var(--accent-tertiary);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+}
+
+/* ===== SECTION HEADERS ===== */
+.weekly-goals h3,
+.category-legend h3,
+.habits-sidebar h3,
+.habits-progress h3,
+.wellness-section h3,
+.monthly-checklist h3,
+.monthly-notes h3,
+.reflection-section h3,
+.goals-section h3,
+.reading-section h3,
+.session-history h3,
+.daily-sections h3,
+.category-legend-header h3 {
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-default);
+}
+
+/* ===== FORM INPUTS ===== */
+input[type="text"],
+input[type="date"],
+input[type="time"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+textarea,
+select {
+    background: var(--bg-input);
+    color: var(--text-primary);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 0.6rem 0.875rem;
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: var(--text-muted);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+/* Specific input overrides */
+.goal-text,
+.habit-name,
+.checklist-text,
+.journal-text,
+.gratitude-text,
+.goal-title,
+.goal-category,
+.goal-priority,
+.sub-goal-text,
+.book-title,
+.book-author,
+.action-goal,
+.action-evaluation,
+.category-manager-name {
+    background: var(--bg-input);
+    color: var(--text-primary);
+    border: 1px solid var(--border-strong);
+}
+
+/* ===== BUTTONS ===== */
+.btn-primary,
+#add-weekly-goal-btn {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    color: var(--text-on-accent);
+    border: none;
+    border-radius: var(--radius-full);
+    padding: 0.7rem 1.4rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 8px rgba(166, 124, 82, 0.25);
+    transition: var(--transition);
+}
+
+.btn-primary:hover,
+#add-weekly-goal-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(166, 124, 82, 0.35);
+}
+
+.btn-secondary {
+    background: var(--bg-surface);
+    color: var(--accent-primary);
+    border: 1px solid var(--border-accent);
+    border-radius: var(--radius-full);
+    padding: 0.7rem 1.4rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.btn-secondary:hover {
+    background: var(--accent-bg);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: #ffffff;
+}
+
+/* Delete buttons */
+.delete-goal-btn,
+.delete-habit-btn,
+.delete-checklist-btn,
+.delete-book-btn,
+.delete-sub-goal-btn,
+.delete-category-btn,
+.delete-action-plan-btn {
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    font-size: 1.25rem;
+    opacity: 0.6;
+    transition: var(--transition);
+}
+
+.delete-goal-btn:hover,
+.delete-habit-btn:hover,
+.delete-checklist-btn:hover,
+.delete-book-btn:hover,
+.delete-sub-goal-btn:hover,
+.delete-category-btn:hover,
+.delete-action-plan-btn:hover {
+    color: #dc2626;
+    opacity: 1;
+}
+
+/* Icon buttons */
+.btn-icon,
+#manage-categories-btn {
+    color: var(--accent-primary);
+    opacity: 0.7;
+}
+
+.btn-icon:hover,
+#manage-categories-btn:hover {
+    opacity: 1;
+}
+
+/* ===== WEEKLY VIEW ===== */
+.weekly-view {
+    padding: 0;
+    background: transparent;
+}
+
+.weekly-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 0;
+}
+
+.weekly-view .sidebar-section {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 1.25rem;
+}
+
+/* Goal items */
+.weekly-goal-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    margin-bottom: 0.5rem;
+    transition: var(--transition);
+}
+
+.weekly-goal-item:hover {
+    border-color: var(--border-accent);
+    box-shadow: var(--shadow-sm);
+}
+
+.goal-priority-indicator {
+    width: 4px;
+    height: 28px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+/* Category items */
+.category-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-elevated);
+    border: 1px solid transparent;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.category-item:hover {
+    background: var(--accent-bg);
+}
+
+.category-item.selected {
+    background: var(--accent-bg-hover);
+    border-color: var(--border-accent);
+}
+
+.category-color {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    flex-shrink: 0;
+}
+
+.category-name {
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* Schedule grid */
+.schedule-section {
+    overflow-x: auto;
+}
+
+.schedule-header {
+    border-bottom: 1px solid var(--border-default);
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.day-header {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+    transition: var(--transition);
+}
+
+.day-header:hover {
+    border-color: var(--border-accent);
+}
+
+.day-header.today {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    border-color: transparent;
+}
+
+.day-name {
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.day-date {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.day-header.today .day-name,
+.day-header.today .day-date {
+    color: var(--text-on-accent);
+}
+
+.time-slot {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+}
+
+.time-slot:hover {
+    background: var(--accent-bg);
+    border-color: var(--border-accent);
+}
+
+.time-label {
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+/* Time blocks */
+.time-block {
+    background: var(--bg-surface);
+    border-radius: var(--radius-md);
+    border-left: 4px solid;
+    box-shadow: var(--shadow-sm);
+}
+
+.time-block-time {
+    color: var(--text-secondary);
+    font-weight: 700;
+}
+
+.time-block-activity {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* ===== DAILY SECTIONS ===== */
+.daily-sections {
+    margin: 0;
+}
+
+.daily-sections-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.daily-section {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-left: 3px solid var(--accent-tertiary);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.daily-section-header {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    padding: 0.75rem 1rem;
+}
+
+.daily-section-date {
+    color: var(--text-on-accent);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.toggle-daily-section {
+    color: var(--text-on-accent);
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: var(--radius-sm);
+}
+
+.daily-section-content {
+    padding: 1rem;
+    background: var(--bg-surface);
+}
+
+.daily-checklist h5,
+.daily-journal h5,
+.daily-gratitude h5 {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+.checklist-item {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+}
+
+.add-checklist-item-btn {
+    color: var(--accent-primary);
+    border: 1px dashed var(--border-accent);
+    background: transparent;
+    border-radius: var(--radius-sm);
+}
+
+.add-checklist-item-btn:hover {
+    background: var(--accent-bg);
+}
+
+/* ===== MONTHLY VIEW ===== */
+.monthly-view {
+    padding: 0;
+    background: transparent;
+}
+
+.calendar-day {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    transition: var(--transition);
+}
+
+.calendar-day:hover {
+    border-color: var(--border-accent);
+    box-shadow: var(--shadow-sm);
+}
+
+.calendar-day.today {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    border-color: transparent;
+}
+
+.calendar-day.empty {
+    background: var(--bg-base);
+    border-color: transparent;
+}
+
+.day-number {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.calendar-day.today .day-number {
+    color: var(--text-on-accent);
+}
+
+.day-events {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+/* ===== HABITS VIEW ===== */
+.habits-view {
+    padding: 0;
+    background: transparent;
+}
+
+.tabs {
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-default);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: 0.75rem 1rem 0;
+}
+
+.tab-btn {
+    color: var(--text-secondary);
+    font-weight: 600;
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-btn:hover {
+    color: var(--accent-primary);
+    background: var(--accent-bg);
+}
+
+.tab-btn.active {
+    color: var(--accent-primary);
+    background: var(--accent-bg);
+    border-bottom-color: var(--accent-primary);
+}
+
+.tab-content,
+.tab-content.active {
+    background: transparent;
+}
+
+/* Habit items */
+.habit-item {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 0.75rem;
+    transition: var(--transition);
+}
+
+.habit-item:hover {
+    border-color: var(--border-accent);
+}
+
+/* Habits grid */
+.grid-cell {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    color: var(--text-primary);
+    border-radius: var(--radius-sm);
+}
+
+.habits-grid-row.header .grid-cell {
+    background: var(--accent-bg);
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.habit-name-cell {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* ===== WELLNESS SECTION ===== */
+.mood-cell {
+    background: var(--bg-elevated);
+    border: 2px solid var(--border-default);
+    border-radius: var(--radius-md);
+    transition: var(--transition);
+}
+
+.mood-cell:hover {
+    border-color: var(--border-accent);
+    transform: scale(1.05);
+}
+
+.mood-cell.selected {
+    background: var(--accent-bg);
+    border-color: var(--accent-primary);
+}
+
+.mood-selected-info {
+    background: var(--accent-bg);
+    color: var(--accent-primary);
+    border-radius: var(--radius-sm);
+}
+
+.mood-count {
+    color: var(--text-secondary);
+}
+
+.sleep-item,
+.water-item {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+}
+
+.sleep-duration,
+.water-percentage {
+    background: var(--accent-bg);
+    color: var(--text-primary);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+}
+
+.water-btn {
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
+}
+
+.water-btn:hover {
+    background: var(--accent-primary);
+    color: var(--text-on-accent);
+}
+
+.water-display {
+    color: var(--text-primary);
+}
+
+/* Progress bars */
+.progress-bar {
+    background: var(--accent-bg);
+    border-radius: var(--radius-full);
+    height: 10px;
+}
+
+.progress-fill {
+    background: linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-tertiary) 100%);
+    border-radius: var(--radius-full);
+}
+
+.progress-text,
+.progress-value {
+    color: var(--accent-primary);
+    font-weight: 700;
+}
+
+.progress-item {
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-default);
+}
+
+/* ===== ANNUAL VIEW ===== */
+.annual-view {
+    padding: 0;
+    background: transparent;
+}
+
+.goal-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-left: 4px solid var(--accent-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+}
+
+.goal-card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.goal-header {
+    color: var(--text-primary);
+}
+
+.sub-goals-container h4 {
+    color: var(--text-secondary);
+}
+
+.sub-goal-item {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+}
+
+.drag-handle {
+    color: var(--text-muted);
+}
+
+.add-sub-goal-btn {
+    color: var(--accent-primary);
+    border: 2px dashed var(--border-accent);
+    background: transparent;
+}
+
+.add-sub-goal-btn:hover {
+    background: var(--accent-primary);
+    color: var(--text-on-accent);
+    border-style: solid;
+}
+
+/* Book entries */
+.book-entry {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    transition: var(--transition);
+}
+
+.book-entry:hover {
+    border-color: var(--border-accent);
+}
+
+.book-number {
+    color: var(--accent-primary);
+    font-weight: 700;
+}
+
+.star {
+    color: var(--border-strong);
+}
+
+.star.filled {
+    color: #f59e0b;
+}
+
+.star:hover {
+    color: #f59e0b;
+}
+
+.reading-stats {
+    color: var(--text-secondary);
+}
+
+.reading-stats span {
+    color: var(--accent-primary);
+}
+
+/* ===== ACTION PLAN VIEW ===== */
+.action-plan-view {
+    padding: 0;
+    background: transparent;
+}
+
+.action-plan-content {
+    margin: 0;
+}
+
+.action-plan-table {
+    border-collapse: separate;
+    border-spacing: 0 0.5rem;
+}
+
+.action-plan-table thead {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+}
+
+.action-plan-table th {
+    color: var(--text-on-accent);
+    font-weight: 700;
+    padding: 1rem;
+}
+
+.action-plan-table th:first-child {
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.action-plan-table th:last-child {
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.action-plan-table tbody tr {
+    background: var(--bg-elevated);
+}
+
+.action-plan-table tbody tr:hover {
+    background: var(--accent-bg);
+}
+
+.action-plan-table td {
+    color: var(--text-primary);
+    padding: 0.875rem 1rem;
+    border-bottom: none;
+}
+
+.action-plan-table td:first-child {
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.action-plan-table td:last-child {
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.action-plan-table .empty-row td {
+    color: var(--text-muted);
+}
+
+.actions-cell button {
+    background: var(--accent-bg);
+    border-radius: var(--radius-sm);
+}
+
+.btn-edit {
+    color: var(--accent-primary);
+}
+
+.btn-edit:hover {
+    background: var(--accent-primary);
+    color: var(--text-on-accent);
+}
+
+/* ===== POMODORO VIEW ===== */
+.pomodoro-view {
+    padding: 0;
+    background: transparent;
+}
+
+.timer-circle {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    box-shadow: var(--shadow-md);
+}
+
+.timer-time {
+    color: var(--text-primary);
+}
+
+.timer-mode,
+.timer-session {
+    color: var(--accent-primary);
+}
+
+.session-item {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+}
+
+.session-number {
+    color: var(--accent-primary);
+}
+
+.session-time {
+    color: var(--text-muted);
+}
+
+.session-duration {
+    color: var(--text-primary);
+}
+
+/* ===== SETTINGS VIEW ===== */
+.settings-section h3 {
+    color: var(--accent-primary);
+}
+
+.settings-section p {
+    color: var(--text-secondary);
+}
+
+.import-mode {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    border-radius: var(--radius-sm);
+}
+
+.import-mode label {
+    color: var(--text-primary);
+}
+
+.radio-group label {
+    color: var(--text-primary);
+}
+
+.file-name {
+    color: var(--text-muted);
+}
+
+.profile-info label {
+    color: var(--text-primary);
+}
+
+/* ===== MODALS ===== */
+.modal {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    padding: 1.25rem 1.5rem;
+}
+
+.modal-header h3 {
+    color: var(--text-on-accent);
+    font-weight: 600;
+}
+
+.modal-close {
+    color: var(--text-on-accent);
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: var(--radius-sm);
+}
+
+.modal-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.modal-body {
+    padding: 1.5rem;
+    color: var(--text-primary);
+}
+
+.form-group label {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.modal-footer {
+    background: var(--bg-elevated);
+    border-top: 1px solid var(--border-default);
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    padding: 1rem 1.5rem;
+}
+
+/* Category manager */
+.category-manager-item {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+}
+
+.category-manager-item:hover {
+    border-color: var(--border-accent);
+}
+
+.category-manager-color-preview {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* ===== TOAST NOTIFICATIONS ===== */
+.toast {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+}
+
+.toast-message {
+    color: var(--text-primary);
+}
+
+/* ===== LOADING & ERROR STATES ===== */
+.loading-view {
+    color: var(--text-muted);
+}
+
+.error-view {
+    color: #dc2626;
+}
+
+.empty-state {
+    color: var(--text-muted);
+}
+
+/* ===== SCROLLBARS ===== */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-base);
+    border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--accent-bg-hover);
+    border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--border-accent);
+}
+
+/* ===== MOBILE MENU ===== */
+.mobile-menu-toggle span {
+    background-color: var(--text-primary);
+}
+
+/* ===== SKIP LINK ===== */
+.skip-to-main {
+    background: var(--text-primary);
+    color: var(--bg-surface);
+}
+
+/* ===== SPINNER ===== */
+.spinner {
+    border-color: var(--border-default);
+    border-top-color: var(--accent-primary);
+}
+
+.loading-spinner {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+}
+
+/* ===== RESPONSIVE ADJUSTMENTS ===== */
+@media (max-width: 1200px) {
+    .weekly-view .sidebar-section {
+        grid-template-columns: 1fr;
+    }
+    
+    .annual-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 992px) {
+    .monthly-content-top {
+        grid-template-columns: 1fr;
+    }
+    
+    .monthly-content-bottom {
+        grid-template-columns: 1fr;
+    }
+    
+    .habits-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .main-nav {
+        padding: 0.75rem 1rem;
+    }
+    
+    .nav-brand h1 {
+        font-size: 1.2rem;
+    }
+    
+    .main-content {
+        padding: 1rem;
+    }
+    
+    .view-header,
+    .weekly-view .view-header,
+    .monthly-view .view-header,
+    .annual-view .view-header,
+    .habits-view .view-header,
+    .action-plan-view .view-header,
+    .pomodoro-view .view-header {
+        padding: 1.25rem;
+        border-radius: var(--radius-md);
+    }
+    
+    .week-selector h2,
+    .month-selector h2,
+    .year-selector h2 {
+        font-size: 1.1rem;
+    }
+    
+    .weekly-goals,
+    .category-legend,
+    .schedule-section,
+    .calendar-section,
+    .habits-sidebar,
+    .habits-grid-container,
+    .habits-progress,
+    .wellness-section,
+    .action-plan-content,
+    .daily-sections {
+        padding: 1rem;
+        border-radius: var(--radius-md);
+    }
+    
+    .daily-sections-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#view-container > * {
+    animation: fadeIn 0.25s ease-out;
+}
+
+/* ===== REDUCED MOTION ===== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ===== HIGH CONTRAST MODE ===== */
+@media (prefers-contrast: high) {
+    :root {
+        --border-default: rgba(0, 0, 0, 0.5);
+        --border-strong: rgba(0, 0, 0, 0.8);
+    }
+    
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --border-default: rgba(255, 255, 255, 0.5);
+            --border-strong: rgba(255, 255, 255, 0.8);
+        }
+    }
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+    body {
+        background: white !important;
+        color: black !important;
+    }
+    
+    .main-nav,
+    .user-menu,
+    .mobile-menu-toggle,
+    .toast-container,
+    .modal,
+    .loading-spinner,
+    button {
+        display: none !important;
+    }
+    
+    .weekly-goals,
+    .category-legend,
+    .schedule-section,
+    .calendar-section,
+    .habits-sidebar,
+    .habits-grid-container,
+    .habits-progress,
+    .wellness-section,
+    .action-plan-content,
+    .daily-sections {
+        background: white !important;
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+    }
+}
+
+/* ============================================================
+   DARK MODE SPECIFIC FIXES
+   Targeting elements that still show light backgrounds
+   ============================================================ */
+
+@media (prefers-color-scheme: dark) {
+    /* === ACTION PLAN TABLE INPUTS === */
+    .action-plan-table input[type="text"],
+    .action-plan-table textarea,
+    .action-plan-table select {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-strong) !important;
+    }
+    
+    .action-plan-table td {
+        background: transparent !important;
+    }
+    
+    .action-plan-table tbody tr {
+        background: var(--bg-elevated) !important;
+    }
+    
+    .action-plan-table tbody tr:hover {
+        background: var(--accent-bg) !important;
+    }
+    
+    /* === HABITS GRID === */
+    .habits-grid-row.header {
+        background: var(--bg-elevated) !important;
+    }
+    
+    .habits-grid-row.header .grid-cell {
+        background: var(--accent-bg) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    .grid-cell {
+        background: var(--bg-elevated) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-default) !important;
+    }
+    
+    .habit-name-cell {
+        background: var(--bg-surface) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    .checkbox-cell {
+        background: var(--bg-elevated) !important;
+    }
+    
+    /* === ANNUAL VIEW TEXTAREAS === */
+    .reflection-section textarea,
+    .vision-board textarea,
+    .bucket-list textarea {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-strong) !important;
+    }
+    
+    /* === GOAL CARD INPUTS === */
+    .goal-card input[type="text"],
+    .goal-card select,
+    .goal-card textarea {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-strong) !important;
+    }
+    
+    .goal-title {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    .goal-category {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    /* Sub-goals */
+    .sub-goal-item {
+        background: var(--bg-elevated) !important;
+    }
+    
+    .sub-goal-text {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    .sub-goal-checkbox {
+        accent-color: var(--accent-primary);
+    }
+    
+    /* === ACTION PLAN SECTION (Monthly view) === */
+    .action-plan-section {
+        background: var(--bg-surface) !important;
+        border-color: var(--border-default) !important;
+    }
+    
+    .action-plan-section h3 {
+        color: var(--text-primary) !important;
+    }
+    
+    /* === SCHEDULE GRID TIME SLOTS === */
+    .time-slot {
+        background: var(--bg-elevated) !important;
+        border-color: var(--border-default) !important;
+    }
+    
+    .time-slot:hover {
+        background: var(--accent-bg) !important;
+    }
+    
+    .time-slots-grid {
+        background: transparent !important;
+    }
+    
+    /* === DAY HEADERS === */
+    .day-header {
+        background: var(--bg-elevated) !important;
+        border-color: var(--border-default) !important;
+    }
+    
+    .day-header:hover {
+        background: var(--accent-bg) !important;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    /* === HABIT ITEMS IN SIDEBAR === */
+    .habit-item {
+        background: var(--bg-elevated) !important;
+        border-color: var(--border-default) !important;
+    }
+    
+    .habit-item:hover {
+        background: var(--accent-bg) !important;
+    }
+    
+    .habit-name {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-strong) !important;
+    }
+    
+    .habit-target {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-strong) !important;
+    }
+    
+    /* === WEEKLY GOAL ITEMS === */
+    .weekly-goal-item {
+        background: var(--bg-elevated) !important;
+        border-color: var(--border-default) !important;
+    }
+    
+    .weekly-goal-item:hover {
+        background: var(--accent-bg) !important;
+    }
+    
+    .goal-text {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-strong) !important;
+    }
+    
+    .goal-priority {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-strong) !important;
+    }
+    
+    /* === CATEGORY ITEMS === */
+    .category-item {
+        background: var(--bg-elevated) !important;
+    }
+    
+    .category-item:hover {
+        background: var(--accent-bg) !important;
+    }
+    
+    .category-name {
+        color: var(--text-primary) !important;
+    }
+    
+    /* === CHECKLIST ITEMS === */
+    .checklist-item {
+        background: var(--bg-elevated) !important;
+        border-color: var(--border-default) !important;
+    }
+    
+    .checklist-text {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    /* === JOURNAL & GRATITUDE === */
+    .journal-text,
+    .gratitude-text {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-strong) !important;
+    }
+    
+    /* === BOOK ENTRIES === */
+    .book-entry {
+        background: var(--bg-elevated) !important;
+        border-color: var(--border-default) !important;
+    }
+    
+    .book-title,
+    .book-author {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-strong) !important;
+    }
+    
+    /* === SLEEP & WATER ITEMS === */
+    .sleep-item,
+    .water-item {
+        background: var(--bg-elevated) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    .sleep-duration,
+    .water-percentage {
+        background: var(--accent-bg) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    /* === MOOD CELLS === */
+    .mood-cell {
+        background: var(--bg-elevated) !important;
+        border-color: var(--border-default) !important;
+    }
+    
+    .mood-cell:hover {
+        background: var(--accent-bg) !important;
+    }
+    
+    .mood-cell.selected {
+        background: var(--accent-bg-hover) !important;
+        border-color: var(--accent-primary) !important;
+    }
+    
+    /* === CALENDAR DAYS === */
+    .calendar-day {
+        background: var(--bg-elevated) !important;
+        border-color: var(--border-default) !important;
+    }
+    
+    .calendar-day:hover {
+        background: var(--accent-bg) !important;
+    }
+    
+    .calendar-day.empty {
+        background: var(--bg-base) !important;
+    }
+    
+    .day-number {
+        color: var(--text-primary) !important;
+    }
+    
+    /* === DAILY SECTIONS === */
+    .daily-section {
+        background: var(--bg-surface) !important;
+        border-color: var(--border-default) !important;
+    }
+    
+    .daily-section-content {
+        background: var(--bg-surface) !important;
+    }
+    
+    /* === SESSION ITEMS === */
+    .session-item {
+        background: var(--bg-elevated) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    /* === PROGRESS ITEMS === */
+    .progress-item {
+        color: var(--text-primary) !important;
+        border-bottom-color: var(--border-default) !important;
+    }
+    
+    /* === CATEGORY MANAGER === */
+    .category-manager-item {
+        background: var(--bg-elevated) !important;
+        border-color: var(--border-default) !important;
+    }
+    
+    .category-manager-name {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-strong) !important;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    /* === MODAL INPUTS === */
+    .modal-content input[type="text"],
+    .modal-content input[type="date"],
+    .modal-content input[type="time"],
+    .modal-content input[type="number"],
+    .modal-content textarea,
+    .modal-content select {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-strong) !important;
+    }
+    
+    .form-input {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-strong) !important;
+    }
+    
+    /* === SETTINGS INPUTS === */
+    .settings-section input[type="text"],
+    .settings-section input[type="email"],
+    .settings-section select,
+    .settings-section textarea {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-strong) !important;
+    }
+    
+    .import-mode {
+        background: var(--bg-elevated) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    /* === VISION BOARD & BUCKET LIST === */
+    .vision-board,
+    .bucket-list {
+        background: var(--bg-surface) !important;
+        border-color: var(--border-default) !important;
+    }
+    
+    .vision-board textarea,
+    .bucket-list textarea {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-strong) !important;
+    }
+    
+    /* === READING SECTION === */
+    .reading-list {
+        background: transparent !important;
+    }
+    
+    /* === TABS CONTENT AREA === */
+    .tab-content {
+        background: transparent !important;
+    }
+    
+    /* === WELLNESS CONTAINER === */
+    .wellness-container {
+        background: transparent !important;
+    }
+    
+    /* === HABITS CONTAINER === */
+    .habits-container {
+        background: transparent !important;
+    }
+    
+    /* === ANNUAL CONTENT === */
+    .annual-content {
+        background: transparent !important;
+    }
+    
+    /* === MONTHLY CONTENT === */
+    .monthly-content-top,
+    .monthly-content-bottom {
+        background: transparent !important;
+    }
+    
+    /* === WEEKLY CONTENT === */
+    .weekly-content {
+        background: transparent !important;
+    }
+    
+    .sidebar-section {
+        background: transparent !important;
+    }
+    
+    /* === POMODORO === */
+    .pomodoro-container {
+        background: transparent !important;
+    }
+    
+    .timer-circle {
+        background: var(--bg-surface) !important;
+        border-color: var(--border-default) !important;
+    }
+    
+    /* === ENSURE ALL CARD SECTIONS HAVE DARK BG === */
+    .reflection-section,
+    .goals-section,
+    .vision-section,
+    .reading-section {
+        background: var(--bg-surface) !important;
+        border-color: var(--border-default) !important;
+    }
+    
+    /* === FIX ANY REMAINING WHITE BACKGROUNDS === */
+    .goals-container {
+        background: transparent !important;
+    }
+    
+    .sub-goals-container {
+        background: transparent !important;
+    }
+    
+    .sub-goals-list {
+        background: transparent !important;
+    }
+    
+    .reading-controls {
+        background: transparent !important;
+    }
+    
+    .checklist-container {
+        background: transparent !important;
+    }
+    
+    .checklist-items {
+        background: transparent !important;
+    }
+    
+    .habits-list {
+        background: transparent !important;
+    }
+    
+    .progress-list {
+        background: transparent !important;
+    }
+    
+    .sleep-list,
+    .water-list {
+        background: transparent !important;
+    }
+    
+    .mood-grid {
+        background: transparent !important;
+    }
+    
+    .mood-distribution {
+        background: transparent !important;
+    }
+    
+    .mood-selector {
+        background: transparent !important;
+    }
+    
+    .water-counter {
+        background: transparent !important;
+    }
+    
+    .sleep-input-container,
+    .water-input-container {
+        background: transparent !important;
+    }
+    
+    .daily-checklist,
+    .daily-journal,
+    .daily-gratitude {
+        background: transparent !important;
+    }
+    
+    .weekly-goals-container {
+        background: transparent !important;
+    }
+    
+    .category-list {
+        background: transparent !important;
+    }
+    
+    .action-plan-container {
+        background: transparent !important;
+    }
+    
+    .session-list {
+        background: transparent !important;
+    }
+    
+    .category-manager-list {
+        background: transparent !important;
+    }
+}
+
+/* ============================================================
+   FORCE DARK MODE OVERRIDES
+   Using higher specificity to override main.css hardcoded colors
+   ============================================================ */
+
+@media (prefers-color-scheme: dark) {
+    /* === FORCE ALL CARD BACKGROUNDS === */
+    .reflection-section,
+    .goals-section,
+    .vision-section section,
+    .reading-section,
+    .goal-card,
+    .vision-board,
+    .bucket-list,
+    .habits-sidebar,
+    .habits-grid-container,
+    .habits-progress,
+    .wellness-section,
+    .weekly-goals,
+    .category-legend,
+    .schedule-section,
+    .daily-sections,
+    .daily-section,
+    .settings-section,
+    .calendar-section,
+    .monthly-checklist,
+    .monthly-notes,
+    .categories-sidebar,
+    .action-plan-content,
+    .action-plan-section,
+    .session-history {
+        background: var(--bg-surface) !important;
+    }
+    
+    /* === FORCE ALL INPUT BACKGROUNDS === */
+    .reflection-section textarea,
+    .vision-board textarea,
+    .bucket-list textarea,
+    .goal-title,
+    .goal-category,
+    .sub-goal-text,
+    .book-title,
+    .book-author,
+    .habit-name,
+    .goal-text,
+    .goal-priority,
+    .checklist-text,
+    .journal-text,
+    .gratitude-text,
+    .form-input,
+    .time-block input,
+    .time-block select {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-strong) !important;
+    }
+    
+    /* === FORCE TABS === */
+    .tabs {
+        background: var(--bg-surface) !important;
+    }
+    
+    .tab-content,
+    .tab-content.active {
+        background: transparent !important;
+    }
+    
+    /* === FORCE GRID CELLS === */
+    .grid-cell {
+        background: var(--bg-elevated) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    /* === FORCE SCHEDULE HEADER === */
+    .schedule-header {
+        background: transparent !important;
+    }
+    
+    /* === FORCE TIME BLOCKS === */
+    .time-block {
+        background: var(--bg-elevated) !important;
+    }
+    
+    /* === FORCE BOOK ENTRY HOVER === */
+    .book-entry:hover {
+        background: var(--accent-bg) !important;
+    }
+    
+    /* === FORCE BTN SECONDARY === */
+    .btn-secondary {
+        background: var(--bg-surface) !important;
+        color: var(--accent-primary) !important;
+    }
+    
+    /* === FORCE STATUS MESSAGE === */
+    .status-message.warning {
+        background: rgba(251, 191, 36, 0.15) !important;
+        color: #fbbf24 !important;
+        border-color: rgba(251, 191, 36, 0.3) !important;
+    }
+    
+    .status-message.success {
+        background: rgba(34, 197, 94, 0.15) !important;
+        color: #22c55e !important;
+        border-color: rgba(34, 197, 94, 0.3) !important;
+    }
+    
+    .status-message.error {
+        background: rgba(239, 68, 68, 0.15) !important;
+        color: #ef4444 !important;
+        border-color: rgba(239, 68, 68, 0.3) !important;
+    }
+    
+    .status-message.info {
+        background: rgba(59, 130, 246, 0.15) !important;
+        color: #3b82f6 !important;
+        border-color: rgba(59, 130, 246, 0.3) !important;
+    }
+}
+
+/* === ADDITIONAL SPECIFICITY OVERRIDES === */
+@media (prefers-color-scheme: dark) {
+    /* Target specific nested elements */
+    body .reflection-section,
+    body .goals-section,
+    body .vision-section section,
+    body .reading-section,
+    body .goal-card,
+    body .vision-board,
+    body .bucket-list,
+    body .habits-sidebar,
+    body .habits-grid-container,
+    body .habits-progress,
+    body .wellness-section,
+    body .weekly-goals,
+    body .category-legend,
+    body .schedule-section,
+    body .daily-sections,
+    body .daily-section,
+    body .settings-section {
+        background: var(--bg-surface) !important;
+        border-color: var(--border-default) !important;
+    }
+    
+    /* Force all text inputs */
+    body input[type="text"],
+    body input[type="date"],
+    body input[type="time"],
+    body input[type="number"],
+    body input[type="email"],
+    body textarea,
+    body select {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-strong) !important;
+    }
+    
+    /* Force placeholder color */
+    body input::placeholder,
+    body textarea::placeholder {
+        color: var(--text-muted) !important;
+        opacity: 1 !important;
+    }
+    
+    /* Force all table cells */
+    body .action-plan-table td {
+        background: transparent !important;
+        color: var(--text-primary) !important;
+    }
+    
+    body .action-plan-table tbody tr {
+        background: var(--bg-elevated) !important;
+    }
+    
+    /* Force habits grid */
+    body .habits-grid .grid-cell {
+        background: var(--bg-elevated) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-default) !important;
+    }
+    
+    body .habits-grid-row.header .grid-cell {
+        background: var(--accent-bg) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    body .habit-name-cell {
+        background: var(--bg-surface) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    /* Force time slots */
+    body .time-slot {
+        background: var(--bg-elevated) !important;
+        border-color: var(--border-default) !important;
+    }
+    
+    /* Force day headers */
+    body .day-header {
+        background: var(--bg-elevated) !important;
+        border-color: var(--border-default) !important;
+    }
+    
+    body .day-header.today {
+        background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%) !important;
+    }
+    
+    /* Force calendar days */
+    body .calendar-day {
+        background: var(--bg-elevated) !important;
+        border-color: var(--border-default) !important;
+    }
+    
+    body .calendar-day.today {
+        background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%) !important;
+    }
+    
+    body .calendar-day.empty {
+        background: var(--bg-base) !important;
+    }
+    
+    /* Force all item containers */
+    body .weekly-goal-item,
+    body .habit-item,
+    body .sub-goal-item,
+    body .checklist-item,
+    body .book-entry,
+    body .sleep-item,
+    body .water-item,
+    body .session-item,
+    body .category-item,
+    body .mood-cell,
+    body .category-manager-item {
+        background: var(--bg-elevated) !important;
+        border-color: var(--border-default) !important;
+    }
+    
+    /* Force hover states */
+    body .weekly-goal-item:hover,
+    body .habit-item:hover,
+    body .sub-goal-item:hover,
+    body .book-entry:hover,
+    body .category-item:hover,
+    body .mood-cell:hover,
+    body .time-slot:hover,
+    body .day-header:hover,
+    body .calendar-day:hover {
+        background: var(--accent-bg) !important;
+    }
+    
+    /* Force daily section content */
+    body .daily-section-content {
+        background: var(--bg-surface) !important;
+    }
+    
+    /* Force modal content */
+    body .modal-content {
+        background: var(--bg-surface) !important;
+    }
+    
+    body .modal-footer {
+        background: var(--bg-elevated) !important;
+    }
+    
+    /* Force toast */
+    body .toast {
+        background: var(--bg-surface) !important;
+    }
+}
+
+/* ============================================================
+   POMODORO VIEW FIXES
+   ============================================================ */
+
+@media (prefers-color-scheme: dark) {
+    /* Session history card */
+    body .session-history {
+        background: var(--bg-surface) !important;
+        border-color: var(--border-default) !important;
+    }
+    
+    body .session-history h3 {
+        color: var(--text-primary) !important;
+    }
+    
+    /* Empty state text */
+    body .session-history .empty-state,
+    body .empty-state {
+        color: var(--text-muted) !important;
+    }
+    
+    /* Timer circle */
+    body .timer-circle {
+        background: var(--bg-surface) !important;
+        border: 2px solid var(--border-default) !important;
+    }
+    
+    /* Timer display */
+    body .timer-display {
+        background: transparent !important;
+    }
+    
+    /* Pomodoro container */
+    body .pomodoro-container {
+        background: transparent !important;
+    }
+}
+
+/* ============================================================
+   TIME BLOCKS - SUBTLE CATEGORY COLORS
+   Using left border + subtle tint instead of full gradient
+   ============================================================ */
+
+/* Base time block styling for dark mode */
+@media (prefers-color-scheme: dark) {
+    /* Time slots with blocks - override inline styles */
+    body .time-slot.has-block {
+        background: var(--bg-elevated) !important;
+        border-left-width: 4px !important;
+        border-left-style: solid !important;
+        /* The border-left-color will be set by JS based on category */
+    }
+    
+    /* Time block content text */
+    body .time-slot.has-block .time-block-content {
+        color: var(--text-primary) !important;
+    }
+    
+    /* Add subtle category tint via pseudo-element */
+    body .time-slot.has-block::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        opacity: 0.15;
+        border-radius: inherit;
+        pointer-events: none;
+        /* Background color will be inherited from border color */
+        background: currentColor;
+    }
+}
+
+/* Light mode time blocks */
+body .time-slot.has-block {
+    position: relative;
+}
+
+/* Ensure time block content is readable */
+.time-slot.has-block .time-block-content {
+    position: relative;
+    z-index: 1;
+}
+
+/* ============================================================
+   TIME BLOCKS - REFINED STYLING
+   Subtle category indication that works in both modes
+   ============================================================ */
+
+/* Time slot with block - base styling */
+.time-slot.has-block {
+    position: relative;
+    color: var(--text-primary);
+}
+
+.time-slot.has-block .time-block-content {
+    color: var(--text-primary);
+    position: relative;
+    z-index: 1;
+}
+
+/* Dark mode specific adjustments */
+@media (prefers-color-scheme: dark) {
+    /* Ensure time block text is visible */
+    body .time-slot.has-block {
+        color: var(--text-primary) !important;
+    }
+    
+    body .time-slot.has-block .time-block-content {
+        color: var(--text-primary) !important;
+    }
+    
+    /* Slightly stronger tint in dark mode for visibility */
+    body .time-slot.has-block {
+        border-color: var(--border-default) !important;
+    }
+}
+
+/* Light mode - ensure good contrast */
+@media (prefers-color-scheme: light) {
+    .time-slot.has-block {
+        color: var(--text-primary);
+    }
+    
+    .time-slot.has-block .time-block-content {
+        color: var(--text-primary);
+    }
+}
+
+/* Hover state for time blocks */
+.time-slot.has-block:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* ============================================================
+   ADDITIONAL POMODORO FIXES
+   ============================================================ */
+
+/* Timer controls */
+.timer-controls {
+    background: transparent !important;
+}
+
+.timer-controls .btn-primary,
+.timer-controls .btn-secondary {
+    min-width: 120px;
+}
+
+/* Session history empty state */
+.session-history .empty-state {
+    padding: 2rem;
+    text-align: center;
+}
+
+@media (prefers-color-scheme: dark) {
+    body .timer-controls {
+        background: transparent !important;
+    }
+    
+    /* Ensure buttons in timer controls are styled correctly */
+    body .timer-controls .btn-primary {
+        background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%) !important;
+        color: var(--text-on-accent) !important;
+    }
+    
+    body .timer-controls .btn-secondary {
+        background: var(--bg-surface) !important;
+        color: var(--accent-primary) !important;
+        border-color: var(--border-accent) !important;
+    }
+}
