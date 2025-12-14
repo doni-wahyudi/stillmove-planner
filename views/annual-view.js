@@ -40,6 +40,7 @@ class AnnualView {
         // Year navigation
         document.getElementById('prev-year-btn')?.addEventListener('click', () => this.changeYear(-1));
         document.getElementById('next-year-btn')?.addEventListener('click', () => this.changeYear(1));
+        document.getElementById('today-year-btn')?.addEventListener('click', () => this.goToCurrentYear());
         
         // Add goal button
         document.getElementById('add-goal-btn')?.addEventListener('click', () => this.addGoal());
@@ -68,6 +69,15 @@ class AnnualView {
      */
     async changeYear(delta) {
         this.currentYear += delta;
+        document.getElementById('current-year').textContent = this.currentYear;
+        await this.loadData();
+    }
+
+    /**
+     * Go to current year (This Year button)
+     */
+    async goToCurrentYear() {
+        this.currentYear = new Date().getFullYear();
         document.getElementById('current-year').textContent = this.currentYear;
         await this.loadData();
     }
@@ -143,6 +153,21 @@ class AnnualView {
         titleInput.value = goal.title || '';
         categorySelect.value = goal.category || 'Personal';
         
+        // Set deadline
+        const deadlineInput = card.querySelector('.goal-deadline');
+        const deadlineCountdown = card.querySelector('.deadline-countdown');
+        
+        if (deadlineInput) {
+            deadlineInput.value = goal.deadline || '';
+            deadlineInput.addEventListener('change', () => {
+                this.updateGoal(goal.id, { deadline: deadlineInput.value });
+                this.updateDeadlineCountdown(deadlineInput.value, deadlineCountdown);
+            });
+            
+            // Update countdown display
+            this.updateDeadlineCountdown(goal.deadline, deadlineCountdown);
+        }
+        
         // Calculate and display progress
         const subGoals = goal.sub_goals || [];
         const progress = calculateGoalProgress(subGoals);
@@ -171,6 +196,45 @@ class AnnualView {
         this.setupDragAndDrop(subGoalsList, goal.id);
         
         return card;
+    }
+    
+    /**
+     * Update deadline countdown display
+     */
+    updateDeadlineCountdown(deadline, countdownEl) {
+        if (!countdownEl) return;
+        
+        if (!deadline) {
+            countdownEl.textContent = '';
+            countdownEl.className = 'deadline-countdown';
+            return;
+        }
+        
+        const deadlineDate = new Date(deadline);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        deadlineDate.setHours(0, 0, 0, 0);
+        
+        const diffTime = deadlineDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays < 0) {
+            countdownEl.textContent = `${Math.abs(diffDays)} days overdue`;
+            countdownEl.className = 'deadline-countdown overdue';
+        } else if (diffDays === 0) {
+            countdownEl.textContent = 'Due today!';
+            countdownEl.className = 'deadline-countdown urgent';
+        } else if (diffDays <= 7) {
+            countdownEl.textContent = `${diffDays} day${diffDays === 1 ? '' : 's'} left`;
+            countdownEl.className = 'deadline-countdown urgent';
+        } else if (diffDays <= 30) {
+            countdownEl.textContent = `${diffDays} days left`;
+            countdownEl.className = 'deadline-countdown upcoming';
+        } else {
+            const weeks = Math.floor(diffDays / 7);
+            countdownEl.textContent = `${weeks} week${weeks === 1 ? '' : 's'} left`;
+            countdownEl.className = 'deadline-countdown far';
+        }
     }
 
     /**

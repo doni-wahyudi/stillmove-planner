@@ -1130,6 +1130,95 @@ class DataService {
             throw new Error(`Failed to download export file: ${error.message}`);
         }
     }
+    
+    /**
+     * Export time blocks as iCal file
+     * @param {Array} timeBlocks - Array of time blocks to export
+     * @param {string} filename - Optional filename
+     */
+    exportToICal(timeBlocks, filename = null) {
+        try {
+            if (!filename) {
+                const date = new Date().toISOString().split('T')[0];
+                filename = `planner-schedule-${date}.ics`;
+            }
+            
+            // Generate iCal content
+            let icalContent = [
+                'BEGIN:VCALENDAR',
+                'VERSION:2.0',
+                'PRODID:-//Stillmove Planner//EN',
+                'CALSCALE:GREGORIAN',
+                'METHOD:PUBLISH',
+                'X-WR-CALNAME:Stillmove Planner Schedule'
+            ];
+            
+            timeBlocks.forEach(block => {
+                if (!block.date || !block.start_time) return;
+                
+                // Parse date and time
+                const dateStr = block.date.replace(/-/g, '');
+                const startTime = block.start_time.replace(/:/g, '').substring(0, 4) + '00';
+                const endTime = block.end_time 
+                    ? block.end_time.replace(/:/g, '').substring(0, 4) + '00'
+                    : this.addMinutesToTime(block.start_time, 30).replace(/:/g, '') + '00';
+                
+                const uid = `${block.id}@stillmove-planner`;
+                const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+                
+                icalContent.push(
+                    'BEGIN:VEVENT',
+                    `UID:${uid}`,
+                    `DTSTAMP:${now}`,
+                    `DTSTART:${dateStr}T${startTime}`,
+                    `DTEND:${dateStr}T${endTime}`,
+                    `SUMMARY:${this.escapeICalText(block.activity || 'Time Block')}`,
+                    `CATEGORIES:${block.category || 'Personal'}`,
+                    'END:VEVENT'
+                );
+            });
+            
+            icalContent.push('END:VCALENDAR');
+            
+            // Create and download file
+            const blob = new Blob([icalContent.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            return true;
+        } catch (error) {
+            throw new Error(`Failed to export iCal: ${error.message}`);
+        }
+    }
+    
+    /**
+     * Helper to add minutes to a time string
+     */
+    addMinutesToTime(timeStr, minutes) {
+        const [hours, mins] = timeStr.split(':').map(Number);
+        const totalMins = hours * 60 + mins + minutes;
+        const newHours = Math.floor(totalMins / 60) % 24;
+        const newMins = totalMins % 60;
+        return `${String(newHours).padStart(2, '0')}:${String(newMins).padStart(2, '0')}`;
+    }
+    
+    /**
+     * Escape special characters for iCal format
+     */
+    escapeICalText(text) {
+        return text
+            .replace(/\\/g, '\\\\')
+            .replace(/;/g, '\\;')
+            .replace(/,/g, '\\,')
+            .replace(/\n/g, '\\n');
+    }
 
     /**
      * Validate imported data structure

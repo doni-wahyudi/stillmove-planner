@@ -52,6 +52,7 @@ class HabitsView {
         // Month navigation
         document.getElementById('habits-prev-month-btn')?.addEventListener('click', () => this.changeMonth(-1));
         document.getElementById('habits-next-month-btn')?.addEventListener('click', () => this.changeMonth(1));
+        document.getElementById('habits-today-btn')?.addEventListener('click', () => this.goToToday());
         
         // Tab switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -64,6 +65,9 @@ class HabitsView {
         // Add habit buttons
         document.getElementById('add-daily-habit-btn')?.addEventListener('click', () => this.addDailyHabit());
         document.getElementById('add-weekly-habit-btn')?.addEventListener('click', () => this.addWeeklyHabit());
+        
+        // Habit filter
+        document.getElementById('daily-habits-filter')?.addEventListener('change', (e) => this.filterHabits(e.target.value));
         
 
         
@@ -113,6 +117,17 @@ class HabitsView {
             this.currentYear--;
         }
         
+        this.updateMonthYearDisplay();
+        await this.loadData();
+    }
+
+    /**
+     * Go to current month (Today button)
+     */
+    async goToToday() {
+        const today = new Date();
+        this.currentYear = today.getFullYear();
+        this.currentMonth = today.getMonth() + 1;
         this.updateMonthYearDisplay();
         await this.loadData();
     }
@@ -202,10 +217,24 @@ class HabitsView {
         if (!listContainer) return;
         
         listContainer.innerHTML = '';
-        this.dailyHabits.slice(0, 30).forEach(habit => {
-            const habitItem = this.createHabitItem(habit, 'daily');
-            listContainer.appendChild(habitItem);
-        });
+        
+        if (this.dailyHabits.length === 0) {
+            // Show empty state
+            const emptyState = document.createElement('div');
+            emptyState.className = 'empty-state';
+            emptyState.style.padding = '1.5rem';
+            emptyState.innerHTML = `
+                <div class="empty-state-icon">✨</div>
+                <div class="empty-state-title">Start building habits</div>
+                <div class="empty-state-description">Add your first daily habit to begin tracking your progress.</div>
+            `;
+            listContainer.appendChild(emptyState);
+        } else {
+            this.dailyHabits.slice(0, 30).forEach(habit => {
+                const habitItem = this.createHabitItem(habit, 'daily');
+                listContainer.appendChild(habitItem);
+            });
+        }
         
         // Render grid
         this.renderDailyHabitsGrid();
@@ -300,7 +329,7 @@ class HabitsView {
                 checkbox.type = 'checkbox';
                 checkbox.checked = completion?.completed || false;
                 checkbox.addEventListener('change', () => {
-                    this.toggleDailyHabitCompletion(habit.id, date, checkbox.checked);
+                    this.toggleDailyHabitCompletion(habit.id, date, checkbox.checked, cell);
                 });
                 
                 cell.appendChild(checkbox);
@@ -312,7 +341,7 @@ class HabitsView {
     }
 
     /**
-     * Calculate daily progress - show each habit's monthly completion percentage
+     * Calculate daily progress - show each habit's monthly completion percentage and streak
      */
     calculateDailyProgress() {
         const progressList = document.getElementById('daily-progress-list');
@@ -336,14 +365,291 @@ class HabitsView {
             
             const percentage = ((completed / daysInMonth) * 100).toFixed(1);
             
+            // Calculate current streak
+            const streak = this.calculateStreak(habit.id);
+            const streakBadge = this.getStreakBadge(streak);
+            
+            // Generate chain visualization (last 7 days)
+            const chainHtml = this.generateChainVisualization(habit.id);
+            
             const progressItem = document.createElement('div');
             progressItem.className = 'progress-item';
             progressItem.innerHTML = `
-                <span>${habit.habit_name || `Habit ${index + 1}`}:</span>
-                <span class="progress-value">${percentage}%</span>
+                <div class="progress-item-header">
+                    <span class="progress-item-name">${habit.habit_name || `Habit ${index + 1}`}</span>
+                    <div class="progress-item-stats">
+                        ${streakBadge}
+                        <span class="progress-value">${percentage}%</span>
+                    </div>
+                </div>
+                <div class="chain-visualization" title="Last 7 days - Don't break the chain!">
+                    ${chainHtml}
+                </div>
             `;
             progressList.appendChild(progressItem);
         });
+        
+        // Render heatmap
+        this.renderHeatmap();
+        
+        // Check for milestone celebrations
+        const overallProgress = this.calculateOverallProgress();
+        this.showMilestoneCelebration(overallProgress);
+    }
+    
+    /**
+     * Calculate current streak for a habit
+     */
+    calculateStreak(habitId) {
+        const today = new Date();
+        let streak = 0;
+        let currentDate = new Date(today);
+        
+        // Check backwards from today
+        while (true) {
+            const dateStr = formatDate(currentDate);
+            const completion = this.dailyHabitCompletions.find(
+                c => c.habit_id === habitId && c.date === dateStr && c.completed
+            );
+            
+            if (completion) {
+                streak++;
+                currentDate.setDate(currentDate.getDate() - 1);
+            } else {
+                // If today is not completed, check if yesterday was (allow for not yet completing today)
+                if (streak === 0) {
+                    currentDate.setDate(currentDate.getDate() - 1);
+                    const yesterdayStr = formatDate(currentDate);
+                    const yesterdayCompletion = this.dailyHabitCompletions.find(
+                        c => c.habit_id === habitId && c.date === yesterdayStr && c.completed
+                    );
+                    if (yesterdayCompletion) {
+                        streak++;
+                        currentDate.setDate(currentDate.getDate() - 1);
+                        continue;
+                    }
+                }
+                break;
+            }
+        }
+        
+        return streak;
+    }
+    
+    /**
+     * Generate chain visualization for last 7 days
+     */
+    generateChainVisualization(habitId) {
+        const today = new Date();
+        const days = [];
+        
+        // Get last 7 days (including today)
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            const dateStr = formatDate(date);
+            
+            const completion = this.dailyHabitCompletions.find(
+                c => c.habit_id === habitId && c.date === dateStr && c.completed
+            );
+            
+            const isToday = i === 0;
+            const dayName = date.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0);
+            
+            days.push({
+                completed: !!completion,
+                isToday,
+                dayName
+            });
+        }
+        
+        // Generate HTML
+        return days.map((day, index) => {
+            const linkClass = index > 0 ? (days[index - 1].completed && day.completed ? 'chain-link connected' : 'chain-link broken') : '';
+            const circleClass = `chain-circle ${day.completed ? 'completed' : ''} ${day.isToday ? 'today' : ''}`;
+            
+            return `
+                ${index > 0 ? `<span class="${linkClass}"></span>` : ''}
+                <span class="${circleClass}" title="${day.dayName}">
+                    ${day.completed ? '✓' : ''}
+                </span>
+            `;
+        }).join('');
+    }
+
+    /**
+     * Get streak badge HTML based on streak count
+     */
+    getStreakBadge(streak) {
+        if (streak === 0) {
+            return '<span class="streak-badge inactive"><span class="streak-icon">🔥</span><span class="streak-count">0</span></span>';
+        }
+        
+        let milestoneClass = '';
+        if (streak >= 100) {
+            milestoneClass = 'milestone-100';
+        } else if (streak >= 30) {
+            milestoneClass = 'milestone-30';
+        } else if (streak >= 7) {
+            milestoneClass = 'milestone-7';
+        }
+        
+        return `<span class="streak-badge ${milestoneClass}"><span class="streak-icon">🔥</span><span class="streak-count">${streak}</span></span>`;
+    }
+    
+    /**
+     * Render habit heatmap showing completion intensity over the month
+     */
+    renderHeatmap() {
+        const progressContainer = document.getElementById('daily-progress-list');
+        if (!progressContainer || this.dailyHabits.length === 0) return;
+        
+        // Check if heatmap already exists
+        let heatmapContainer = progressContainer.parentElement.querySelector('.habit-heatmap');
+        if (!heatmapContainer) {
+            heatmapContainer = document.createElement('div');
+            heatmapContainer.className = 'habit-heatmap';
+            progressContainer.parentElement.appendChild(heatmapContainer);
+        }
+        
+        const daysInMonth = getDaysInMonth(this.currentYear, this.currentMonth);
+        const totalHabits = this.dailyHabits.length;
+        const today = new Date();
+        const todayStr = formatDate(today);
+        
+        // Calculate completion percentage for each day
+        const dayCompletions = [];
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${this.currentYear}-${String(this.currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            let completed = 0;
+            
+            this.dailyHabits.forEach(habit => {
+                const completion = this.dailyHabitCompletions.find(
+                    c => c.habit_id === habit.id && c.date === dateStr && c.completed
+                );
+                if (completion) completed++;
+            });
+            
+            const percentage = totalHabits > 0 ? (completed / totalHabits) * 100 : 0;
+            dayCompletions.push({ day, dateStr, percentage, isToday: dateStr === todayStr });
+        }
+        
+        // Build heatmap HTML
+        let heatmapHTML = `
+            <h4>Monthly Activity</h4>
+            <div class="heatmap-grid">
+        `;
+        
+        dayCompletions.forEach(({ day, percentage, isToday }) => {
+            let level = 0;
+            if (percentage > 0 && percentage <= 25) level = 1;
+            else if (percentage > 25 && percentage <= 50) level = 2;
+            else if (percentage > 50 && percentage <= 75) level = 3;
+            else if (percentage > 75) level = 4;
+            
+            const todayClass = isToday ? ' today' : '';
+            heatmapHTML += `<div class="heatmap-cell level-${level}${todayClass}" title="Day ${day}: ${percentage.toFixed(0)}% complete"></div>`;
+        });
+        
+        heatmapHTML += `
+            </div>
+            <div class="heatmap-legend">
+                <span class="heatmap-legend-label">Less</span>
+                <div class="heatmap-legend-cells">
+                    <div class="heatmap-legend-cell level-0"></div>
+                    <div class="heatmap-legend-cell level-1"></div>
+                    <div class="heatmap-legend-cell level-2"></div>
+                    <div class="heatmap-legend-cell level-3"></div>
+                    <div class="heatmap-legend-cell level-4"></div>
+                </div>
+                <span class="heatmap-legend-label">More</span>
+            </div>
+        `;
+        
+        heatmapContainer.innerHTML = heatmapHTML;
+    }
+    
+    /**
+     * Calculate and show overall monthly progress with milestone celebration
+     */
+    calculateOverallProgress() {
+        if (this.dailyHabits.length === 0) return 0;
+        
+        const daysInMonth = getDaysInMonth(this.currentYear, this.currentMonth);
+        const totalPossible = this.dailyHabits.length * daysInMonth;
+        let totalCompleted = 0;
+        
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${this.currentYear}-${String(this.currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            this.dailyHabits.forEach(habit => {
+                const completion = this.dailyHabitCompletions.find(
+                    c => c.habit_id === habit.id && c.date === dateStr && c.completed
+                );
+                if (completion) totalCompleted++;
+            });
+        }
+        
+        return totalPossible > 0 ? (totalCompleted / totalPossible) * 100 : 0;
+    }
+    
+    /**
+     * Show milestone celebration banner
+     */
+    showMilestoneCelebration(percentage) {
+        // Only show for significant milestones
+        const milestones = [25, 50, 75, 100];
+        const milestone = milestones.find(m => percentage >= m && percentage < m + 5);
+        
+        if (!milestone) return;
+        
+        // Check if we've already shown this milestone this month
+        const storageKey = `milestone_${this.currentYear}_${this.currentMonth}_${milestone}`;
+        if (localStorage.getItem(storageKey)) return;
+        
+        const messages = {
+            25: { icon: '🌱', title: 'Great Start!', desc: "You've completed 25% of your habits this month!" },
+            50: { icon: '🔥', title: 'Halfway There!', desc: "50% complete! You're building momentum!" },
+            75: { icon: '⭐', title: 'Almost There!', desc: "75% done! Keep pushing to the finish!" },
+            100: { icon: '🏆', title: 'Perfect Month!', desc: "100% completion! You're unstoppable!" }
+        };
+        
+        const msg = messages[milestone];
+        if (!msg) return;
+        
+        // Create banner
+        const banner = document.createElement('div');
+        banner.className = 'milestone-banner';
+        banner.innerHTML = `
+            <div class="milestone-icon">${msg.icon}</div>
+            <div class="milestone-content">
+                <div class="milestone-title">${msg.title}</div>
+                <div class="milestone-description">${msg.desc}</div>
+            </div>
+            <button class="milestone-dismiss" aria-label="Dismiss">×</button>
+        `;
+        
+        // Insert at top of habits container
+        const container = document.querySelector('.habits-container');
+        if (container) {
+            container.insertBefore(banner, container.firstChild);
+            
+            // Mark as shown
+            localStorage.setItem(storageKey, 'true');
+            
+            // Dismiss handler
+            banner.querySelector('.milestone-dismiss').addEventListener('click', () => {
+                banner.remove();
+            });
+            
+            // Auto-dismiss after 10 seconds
+            setTimeout(() => {
+                if (banner.parentElement) {
+                    banner.style.opacity = '0';
+                    banner.style.transform = 'translateY(-10px)';
+                    setTimeout(() => banner.remove(), 300);
+                }
+            }, 10000);
+        }
     }
 
     /**
@@ -440,7 +746,7 @@ class HabitsView {
     /**
      * Toggle daily habit completion
      */
-    async toggleDailyHabitCompletion(habitId, date, completed) {
+    async toggleDailyHabitCompletion(habitId, date, completed, checkboxCell = null) {
         try {
             await dataService.toggleDailyHabitCompletion(habitId, date, completed);
             
@@ -452,11 +758,118 @@ class HabitsView {
                 this.dailyHabitCompletions.push({ habit_id: habitId, date, completed });
             }
             
+            // Add celebration animation if completing
+            if (completed && checkboxCell) {
+                this.celebrateCompletion(checkboxCell);
+            }
+            
             // Recalculate progress
             this.calculateDailyProgress();
         } catch (error) {
             console.error('Failed to toggle habit completion:', error);
             this.showError('Failed to update completion. Please try again.');
+        }
+    }
+    
+    /**
+     * Show celebration animation when completing a habit
+     */
+    celebrateCompletion(cell) {
+        cell.classList.add('just-completed');
+        
+        // Get user preferences
+        const prefs = this.getPreferences();
+        
+        // Play completion sound (if enabled)
+        if (prefs.soundEnabled !== false) {
+            this.playCompletionSound();
+        }
+        
+        // Haptic feedback on mobile (if enabled)
+        if (prefs.hapticEnabled !== false && navigator.vibrate) {
+            navigator.vibrate(50);
+        }
+        
+        // Remove the class after animation completes
+        setTimeout(() => {
+            cell.classList.remove('just-completed');
+        }, 500);
+    }
+    
+    /**
+     * Get user preferences from localStorage
+     */
+    getPreferences() {
+        try {
+            const stored = localStorage.getItem('stillmove_preferences');
+            return stored ? JSON.parse(stored) : {};
+        } catch {
+            return {};
+        }
+    }
+    
+    /**
+     * Filter habits by completion status
+     */
+    filterHabits(filterValue) {
+        const today = formatDate(new Date());
+        const habitItems = document.querySelectorAll('#daily-habits-list .habit-item');
+        
+        habitItems.forEach(item => {
+            const habitId = item.dataset.habitId;
+            const habit = this.dailyHabits.find(h => h.id == habitId);
+            if (!habit) return;
+            
+            // Check if completed today
+            const completedToday = this.dailyHabitCompletions.some(
+                c => c.habit_id == habitId && c.date === today && c.completed
+            );
+            
+            // Calculate streak
+            const streak = this.calculateStreak(habitId);
+            
+            let show = true;
+            switch (filterValue) {
+                case 'completed':
+                    show = completedToday;
+                    break;
+                case 'incomplete':
+                    show = !completedToday;
+                    break;
+                case 'streak':
+                    show = streak > 0;
+                    break;
+                default:
+                    show = true;
+            }
+            
+            item.classList.toggle('filtered-out', !show);
+        });
+    }
+    
+    /**
+     * Play a subtle completion sound
+     */
+    playCompletionSound() {
+        try {
+            // Create a simple audio context for a subtle "pop" sound
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        } catch (e) {
+            // Audio not supported or blocked, silently fail
         }
     }
 

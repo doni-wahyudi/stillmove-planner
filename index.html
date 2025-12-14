@@ -28,13 +28,22 @@
                 <span></span>
             </button>
             <ul class="nav-menu" id="nav-menu" role="menubar" aria-label="Main menu">
-                <li role="none"><a href="#weekly" data-view="weekly" role="menuitem" aria-label="Navigate to Weekly view">Weekly</a></li>
-                <li role="none"><a href="#monthly" data-view="monthly" role="menuitem" aria-label="Navigate to Monthly view">Monthly</a></li>
-                <li role="none"><a href="#annual" data-view="annual" role="menuitem" aria-label="Navigate to Annual view">Annual</a></li>
-                <li role="none"><a href="#habits" data-view="habits" role="menuitem" aria-label="Navigate to Habits view">Habits</a></li>
+                <li role="none"><a href="#weekly" data-view="weekly" role="menuitem" aria-label="Navigate to Weekly view" data-tooltip="Press W">Weekly</a></li>
+                <li role="none"><a href="#monthly" data-view="monthly" role="menuitem" aria-label="Navigate to Monthly view" data-tooltip="Press M">Monthly</a></li>
+                <li role="none"><a href="#annual" data-view="annual" role="menuitem" aria-label="Navigate to Annual view" data-tooltip="Press A">Annual</a></li>
+                <li role="none"><a href="#habits" data-view="habits" role="menuitem" aria-label="Navigate to Habits view" data-tooltip="Press H">Habits</a></li>
                 <li role="none"><a href="#action-plan" data-view="action-plan" role="menuitem" aria-label="Navigate to Action Plan view">Action Plan</a></li>
-                <li role="none"><a href="#pomodoro" data-view="pomodoro" role="menuitem" aria-label="Navigate to Pomodoro Timer view">Pomodoro</a></li>
+                <li role="none"><a href="#pomodoro" data-view="pomodoro" role="menuitem" aria-label="Navigate to Pomodoro Timer view" data-tooltip="Press P">Pomodoro</a></li>
             </ul>
+            <div class="nav-search">
+                <button id="search-toggle-btn" class="search-toggle-btn" aria-label="Search" data-tooltip="Press /">
+                    <span aria-hidden="true">🔍</span>
+                </button>
+                <div id="search-container" class="search-container hidden">
+                    <input type="text" id="global-search" class="global-search-input" placeholder="Search goals, habits, notes..." aria-label="Search">
+                    <div id="search-results" class="search-results"></div>
+                </div>
+            </div>
             <div class="user-menu">
                 <button id="user-menu-btn" class="user-menu-btn" aria-haspopup="true" aria-expanded="false" aria-label="User menu">
                     <span id="user-email" aria-live="polite"></span>
@@ -61,6 +70,27 @@
 
         <!-- Toast Notifications -->
         <div id="toast-container" class="toast-container" role="region" aria-live="polite" aria-label="Notifications"></div>
+        
+        <!-- Quick Add Floating Action Button -->
+        <div id="fab-container" class="fab-container">
+            <div id="fab-menu" class="fab-menu">
+                <button class="fab-menu-item" data-action="add-habit" aria-label="Add new habit">
+                    <span class="fab-menu-icon">✨</span>
+                    <span class="fab-menu-label">New Habit</span>
+                </button>
+                <button class="fab-menu-item" data-action="add-goal" aria-label="Add new goal">
+                    <span class="fab-menu-icon">🎯</span>
+                    <span class="fab-menu-label">New Goal</span>
+                </button>
+                <button class="fab-menu-item" data-action="add-timeblock" aria-label="Add time block">
+                    <span class="fab-menu-icon">📅</span>
+                    <span class="fab-menu-label">Time Block</span>
+                </button>
+            </div>
+            <button id="fab-button" class="fab-button" aria-label="Quick add menu" aria-expanded="false" data-tooltip="Press N">
+                <span aria-hidden="true">+</span>
+            </button>
+        </div>
     </div>
 
     <!-- Scripts -->

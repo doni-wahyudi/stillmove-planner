@@ -41,6 +41,25 @@ class SettingsView {
      * Attach event listeners to UI elements
      */
     attachEventListeners() {
+        // Load and setup preferences
+        this.loadPreferences();
+        
+        // Sound toggle
+        const soundToggle = document.getElementById('sound-enabled');
+        if (soundToggle) {
+            soundToggle.addEventListener('change', (e) => {
+                this.savePreference('soundEnabled', e.target.checked);
+            });
+        }
+        
+        // Haptic toggle
+        const hapticToggle = document.getElementById('haptic-enabled');
+        if (hapticToggle) {
+            hapticToggle.addEventListener('change', (e) => {
+                this.savePreference('hapticEnabled', e.target.checked);
+            });
+        }
+        
         // Export button
         const exportBtn = document.getElementById('export-data-btn');
         if (exportBtn) {
@@ -71,6 +90,49 @@ class SettingsView {
         const saveProfileBtn = document.getElementById('save-profile-btn');
         if (saveProfileBtn) {
             saveProfileBtn.addEventListener('click', () => this.handleSaveProfile());
+        }
+    }
+
+    /**
+     * Load preferences from localStorage
+     */
+    loadPreferences() {
+        const prefs = this.getPreferences();
+        
+        const soundToggle = document.getElementById('sound-enabled');
+        const hapticToggle = document.getElementById('haptic-enabled');
+        
+        if (soundToggle) {
+            soundToggle.checked = prefs.soundEnabled !== false; // Default true
+        }
+        if (hapticToggle) {
+            hapticToggle.checked = prefs.hapticEnabled !== false; // Default true
+        }
+    }
+    
+    /**
+     * Get all preferences from localStorage
+     */
+    getPreferences() {
+        try {
+            const stored = localStorage.getItem('stillmove_preferences');
+            return stored ? JSON.parse(stored) : {};
+        } catch {
+            return {};
+        }
+    }
+    
+    /**
+     * Save a preference to localStorage
+     */
+    savePreference(key, value) {
+        try {
+            const prefs = this.getPreferences();
+            prefs[key] = value;
+            localStorage.setItem('stillmove_preferences', JSON.stringify(prefs));
+            showToast('Preference saved', 'success');
+        } catch (error) {
+            console.error('Failed to save preference:', error);
         }
     }
 

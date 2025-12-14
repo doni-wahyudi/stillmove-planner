@@ -76,12 +76,24 @@ class WeeklyView {
         // Week navigation
         document.getElementById('prev-week-btn')?.addEventListener('click', () => this.changeWeek(-1));
         document.getElementById('next-week-btn')?.addEventListener('click', () => this.changeWeek(1));
+        document.getElementById('today-week-btn')?.addEventListener('click', () => this.goToToday());
+        document.getElementById('export-ical-btn')?.addEventListener('click', () => this.exportToICal());
         
         // Add weekly goal button
         document.getElementById('add-weekly-goal-btn')?.addEventListener('click', () => this.addWeeklyGoal());
         
         // Manage categories button
         document.getElementById('manage-categories-btn')?.addEventListener('click', () => this.openCategoryManager());
+        
+        // Clear filter button
+        document.getElementById('clear-filter-btn')?.addEventListener('click', () => {
+            this.selectedCategory = null;
+            document.querySelectorAll('.category-item').forEach(item => {
+                item.classList.remove('selected', 'filter-active');
+            });
+            document.getElementById('clear-filter-btn').style.display = 'none';
+            this.clearTimeBlockFilter();
+        });
         
         // Time block modal
         this.setupModalListeners();
@@ -95,6 +107,7 @@ class WeeklyView {
         const closeButtons = modal.querySelectorAll('.modal-close');
         const saveButton = document.getElementById('save-time-block-btn');
         const deleteButton = document.getElementById('delete-time-block-btn');
+        const duplicateButton = document.getElementById('duplicate-time-block-btn');
         
         closeButtons.forEach(btn => {
             btn.addEventListener('click', () => this.closeModal());
@@ -102,6 +115,7 @@ class WeeklyView {
         
         saveButton?.addEventListener('click', () => this.saveTimeBlock());
         deleteButton?.addEventListener('click', () => this.deleteTimeBlock());
+        duplicateButton?.addEventListener('click', () => this.duplicateTimeBlock());
         
         // Close modal on outside click
         modal.addEventListener('click', (e) => {
@@ -109,6 +123,36 @@ class WeeklyView {
                 this.closeModal();
             }
         });
+    }
+    
+    /**
+     * Duplicate the current time block
+     */
+    async duplicateTimeBlock() {
+        if (!this.editingBlock) return;
+        
+        try {
+            // Create a copy with the next day's date
+            const originalDate = new Date(this.editingBlock.date);
+            originalDate.setDate(originalDate.getDate() + 1);
+            
+            const newBlock = {
+                date: formatDate(originalDate),
+                start_time: this.editingBlock.start_time,
+                end_time: this.editingBlock.end_time,
+                activity: this.editingBlock.activity,
+                category: this.editingBlock.category
+            };
+            
+            const created = await dataService.createTimeBlock(newBlock);
+            this.timeBlocks.push(created);
+            this.renderTimeBlocks();
+            this.closeModal();
+            this.showSuccess('Time block duplicated to next day');
+        } catch (error) {
+            console.error('Failed to duplicate time block:', error);
+            this.showError('Failed to duplicate time block');
+        }
     }
 
     /**
@@ -118,6 +162,52 @@ class WeeklyView {
         this.weekStart.setDate(this.weekStart.getDate() + (delta * 7));
         this.updateWeekDisplay();
         await this.loadData();
+    }
+
+    /**
+     * Go to current week (Today button)
+     */
+    async goToToday() {
+        this.currentDate = new Date();
+        this.weekStart = this.getWeekStart(this.currentDate);
+        this.updateWeekDisplay();
+        await this.loadData();
+    }
+    
+    /**
+     * Export current week's time blocks to iCal
+     */
+    exportToICal() {
+        if (this.timeBlocks.length === 0) {
+            this.showError('No time blocks to export');
+            return;
+        }
+        
+        try {
+            dataService.exportToICal(this.timeBlocks);
+            this.showSuccess('Schedule exported to iCal');
+        } catch (error) {
+            console.error('Failed to export iCal:', error);
+            this.showError('Failed to export schedule');
+        }
+    }
+    
+    /**
+     * Show success message
+     */
+    showSuccess(message) {
+        // Use toast if available, otherwise alert
+        const toastContainer = document.getElementById('toast-container');
+        if (toastContainer) {
+            const toast = document.createElement('div');
+            toast.className = 'toast toast-success';
+            toast.innerHTML = `<span class="toast-message">${message}</span>`;
+            toastContainer.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
     }
 
     /**
@@ -206,10 +296,154 @@ class WeeklyView {
             this.renderTimeSlots();
             this.renderTimeBlocks();
             this.renderDailySections();
+            this.updateWeeklySummary();
             
         } catch (error) {
             console.error('Failed to load weekly data:', error);
             this.showError('Failed to load data. Please try again.');
+        }
+    }
+    
+    /**
+     * Update weekly summary stats
+     */
+    updateWeeklySummary() {
+        // Goals completed
+        const completedGoals = this.weeklyGoals.filter(g => g.completed).length;
+        const totalGoals = this.weeklyGoals.length;
+        const goalsEl = document.getElementById('goals-completed');
+        if (goalsEl) {
+            goalsEl.textContent = `${completedGoals}/${totalGoals}`;
+        }
+        
+        // Time blocks count
+        const blocksEl = document.getElementById('time-blocks-count');
+        if (blocksEl) {
+            blocksEl.textContent = this.timeBlocks.length;
+        }
+        
+        // Calculate total scheduled hours
+        let totalMinutes = 0;
+        this.timeBlocks.forEach(block => {
+            if (block.start_time && block.end_time) {
+                const startParts = block.start_time.split(':');
+                const endParts = block.end_time.split(':');
+                const startMins = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
+                const endMins = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
+                totalMinutes += (endMins - startMins);
+            } else if (block.start_time) {
+                // Default 30 min if no end time
+                totalMinutes += 30;
+            }
+        });
+        
+        const hours = Math.floor(totalMinutes / 60);
+        const mins = totalMinutes % 60;
+        const hoursEl = document.getElementById('scheduled-hours');
+        if (hoursEl) {
+            hoursEl.textContent = mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+        }
+        
+        // Load and compare with last week
+        this.loadWeekComparison();
+    }
+    
+    /**
+     * Load last week's data for comparison
+     */
+    async loadWeekComparison() {
+        try {
+            const lastWeekStart = new Date(this.weekStart);
+            lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+            const lastWeekEnd = new Date(lastWeekStart);
+            lastWeekEnd.setDate(lastWeekEnd.getDate() + 6);
+            
+            const startDate = formatDate(lastWeekStart);
+            const endDate = formatDate(lastWeekEnd);
+            
+            // Get last week's time blocks
+            const lastWeekBlocks = await dataService.getTimeBlocksRange(startDate, endDate);
+            
+            // Compare
+            const currentBlocks = this.timeBlocks.length;
+            const lastBlocks = lastWeekBlocks.length;
+            const diff = currentBlocks - lastBlocks;
+            
+            const comparisonEl = document.getElementById('week-comparison');
+            if (comparisonEl) {
+                if (diff > 0) {
+                    comparisonEl.innerHTML = `<span class="comparison-text"><span class="trend-up">↑ ${diff}</span> more blocks than last week</span>`;
+                    comparisonEl.style.display = 'block';
+                } else if (diff < 0) {
+                    comparisonEl.innerHTML = `<span class="comparison-text"><span class="trend-down">↓ ${Math.abs(diff)}</span> fewer blocks than last week</span>`;
+                    comparisonEl.style.display = 'block';
+                } else if (lastBlocks > 0) {
+                    comparisonEl.innerHTML = `<span class="comparison-text"><span class="trend-same">→</span> Same as last week</span>`;
+                    comparisonEl.style.display = 'block';
+                } else {
+                    comparisonEl.style.display = 'none';
+                }
+            }
+            
+            // Calculate and show productivity score
+            this.updateProductivityScore();
+        } catch (error) {
+            console.log('Could not load week comparison:', error);
+        }
+    }
+    
+    /**
+     * Calculate and display productivity score
+     * Based on: goals completed, time blocks scheduled, daily entries filled
+     */
+    updateProductivityScore() {
+        // Calculate score components (each worth up to 33.3%)
+        let score = 0;
+        
+        // 1. Goals completion (33.3%)
+        const totalGoals = this.weeklyGoals.length;
+        const completedGoals = this.weeklyGoals.filter(g => g.completed).length;
+        if (totalGoals > 0) {
+            score += (completedGoals / totalGoals) * 33.3;
+        } else {
+            score += 16.65; // Neutral if no goals set
+        }
+        
+        // 2. Time blocks scheduled (33.3%) - based on having at least 20 blocks
+        const blockScore = Math.min(this.timeBlocks.length / 20, 1) * 33.3;
+        score += blockScore;
+        
+        // 3. Daily entries filled (33.3%)
+        const filledDays = Object.values(this.dailyEntries).filter(entry => 
+            entry.journal_text || entry.gratitude_text || (entry.checklist && entry.checklist.length > 0)
+        ).length;
+        score += (filledDays / 7) * 33.3;
+        
+        // Round to nearest integer
+        score = Math.round(score);
+        
+        // Update UI
+        const scoreEl = document.getElementById('productivity-score');
+        if (scoreEl) {
+            const circle = scoreEl.querySelector('.circle');
+            const text = scoreEl.querySelector('.score-text');
+            
+            if (circle && text) {
+                circle.setAttribute('stroke-dasharray', `${score}, 100`);
+                text.textContent = `${score}%`;
+                
+                // Set color class based on score
+                scoreEl.classList.remove('score-low', 'score-medium', 'score-high');
+                if (score < 40) {
+                    scoreEl.classList.add('score-low');
+                } else if (score < 70) {
+                    scoreEl.classList.add('score-medium');
+                } else {
+                    scoreEl.classList.add('score-high');
+                }
+                
+                scoreEl.style.display = 'flex';
+            }
         }
     }
 
@@ -221,6 +455,19 @@ class WeeklyView {
         if (!container) return;
         
         container.innerHTML = '';
+        
+        if (this.weeklyGoals.length === 0) {
+            // Show empty state
+            const emptyState = document.createElement('div');
+            emptyState.className = 'empty-state';
+            emptyState.innerHTML = `
+                <div class="empty-state-icon">🎯</div>
+                <div class="empty-state-title">No goals yet</div>
+                <div class="empty-state-description">Set your weekly goals to stay focused and productive.</div>
+            `;
+            container.appendChild(emptyState);
+            return;
+        }
         
         this.weeklyGoals.forEach(goal => {
             const goalItem = this.createWeeklyGoalItem(goal);
@@ -347,15 +594,31 @@ class WeeklyView {
     }
 
     /**
-     * Delete a weekly goal
+     * Delete a weekly goal with undo capability
      */
     async deleteWeeklyGoal(goalId) {
-        if (!confirm('Are you sure you want to delete this goal?')) return;
+        // Find and store the goal for potential undo
+        const deletedGoal = this.weeklyGoals.find(g => g.id === goalId);
+        if (!deletedGoal) return;
         
         try {
             await dataService.deleteWeeklyGoal(goalId);
             this.weeklyGoals = this.weeklyGoals.filter(g => g.id !== goalId);
             this.renderWeeklyGoals();
+            
+            // Show toast with undo option
+            this.showUndoToast('Goal deleted', async () => {
+                try {
+                    const { id, user_id, created_at, updated_at, ...goalData } = deletedGoal;
+                    const restored = await dataService.createWeeklyGoal(goalData);
+                    this.weeklyGoals.push(restored);
+                    this.renderWeeklyGoals();
+                    this.showSuccess('Goal restored');
+                } catch (error) {
+                    console.error('Failed to restore goal:', error);
+                    this.showError('Failed to restore goal');
+                }
+            });
         } catch (error) {
             console.error('Failed to delete goal:', error);
             this.showError('Failed to delete goal. Please try again.');
@@ -530,20 +793,56 @@ class WeeklyView {
     }
 
     /**
-     * Select a category
+     * Select a category (for filtering and default selection)
      */
     selectCategory(category) {
+        const clearBtn = document.getElementById('clear-filter-btn');
+        
         if (this.selectedCategory === category) {
+            // Deselect - clear filter
             this.selectedCategory = null;
             document.querySelectorAll('.category-item').forEach(item => {
-                item.classList.remove('selected');
+                item.classList.remove('selected', 'filter-active');
             });
+            if (clearBtn) clearBtn.style.display = 'none';
+            this.clearTimeBlockFilter();
         } else {
+            // Select - apply filter
             this.selectedCategory = category;
             document.querySelectorAll('.category-item').forEach(item => {
-                item.classList.toggle('selected', item.dataset.category === category);
+                const isSelected = item.dataset.category === category;
+                item.classList.toggle('selected', isSelected);
+                item.classList.toggle('filter-active', isSelected);
             });
+            if (clearBtn) clearBtn.style.display = 'block';
+            this.filterTimeBlocksByCategory(category);
         }
+    }
+    
+    /**
+     * Filter time blocks by category
+     */
+    filterTimeBlocksByCategory(category) {
+        document.querySelectorAll('.time-slot').forEach(slot => {
+            const blockId = slot.dataset.blockId;
+            if (blockId) {
+                const block = this.timeBlocks.find(b => b.id == blockId);
+                if (block && block.category !== category) {
+                    slot.classList.add('filtered-out');
+                } else {
+                    slot.classList.remove('filtered-out');
+                }
+            }
+        });
+    }
+    
+    /**
+     * Clear time block filter
+     */
+    clearTimeBlockFilter() {
+        document.querySelectorAll('.time-slot').forEach(slot => {
+            slot.classList.remove('filtered-out');
+        });
     }
 
     /**
@@ -555,9 +854,11 @@ class WeeklyView {
         const modal = document.getElementById('time-block-modal');
         const title = document.getElementById('modal-title');
         const deleteBtn = document.getElementById('delete-time-block-btn');
+        const duplicateBtn = document.getElementById('duplicate-time-block-btn');
         
         title.textContent = 'Add Time Block';
         deleteBtn.style.display = 'none';
+        if (duplicateBtn) duplicateBtn.style.display = 'none';
         
         // Set date - day parameter is 0-6 where 0=Monday, 6=Sunday
         // This matches our week start (Monday)
@@ -591,9 +892,11 @@ class WeeklyView {
         const modal = document.getElementById('time-block-modal');
         const title = document.getElementById('modal-title');
         const deleteBtn = document.getElementById('delete-time-block-btn');
+        const duplicateBtn = document.getElementById('duplicate-time-block-btn');
         
         title.textContent = 'Edit Time Block';
         deleteBtn.style.display = 'block';
+        if (duplicateBtn) duplicateBtn.style.display = 'block';
         
         // Populate form
         document.getElementById('block-date').value = block.date;
@@ -671,21 +974,65 @@ class WeeklyView {
     }
 
     /**
-     * Delete time block
+     * Delete time block with undo capability
      */
     async deleteTimeBlock() {
         if (!this.editingBlock) return;
-        if (!confirm('Are you sure you want to delete this time block?')) return;
+        
+        // Store the block for potential undo
+        const deletedBlock = { ...this.editingBlock };
         
         try {
             await dataService.deleteTimeBlock(this.editingBlock.id);
             this.timeBlocks = this.timeBlocks.filter(b => b.id !== this.editingBlock.id);
             this.renderTimeBlocks();
             this.closeModal();
+            
+            // Show toast with undo option
+            this.showUndoToast('Time block deleted', async () => {
+                try {
+                    // Recreate the block
+                    const { id, user_id, created_at, updated_at, ...blockData } = deletedBlock;
+                    const restored = await dataService.createTimeBlock(blockData);
+                    this.timeBlocks.push(restored);
+                    this.renderTimeBlocks();
+                    this.showSuccess('Time block restored');
+                } catch (error) {
+                    console.error('Failed to restore time block:', error);
+                    this.showError('Failed to restore time block');
+                }
+            });
         } catch (error) {
             console.error('Failed to delete time block:', error);
             this.showError('Failed to delete time block. Please try again.');
         }
+    }
+    
+    /**
+     * Show toast with undo action
+     */
+    showUndoToast(message, undoCallback) {
+        const toastContainer = document.getElementById('toast-container');
+        if (!toastContainer) return;
+        
+        const toast = document.createElement('div');
+        toast.className = 'toast toast-info';
+        toast.innerHTML = `
+            <span class="toast-message">${message}</span>
+            <button class="toast-action">Undo</button>
+        `;
+        toastContainer.appendChild(toast);
+        
+        const undoBtn = toast.querySelector('.toast-action');
+        undoBtn?.addEventListener('click', () => {
+            undoCallback();
+            toast.remove();
+        });
+        
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, 5000);
     }
 
     /**

@@ -59,6 +59,7 @@ class MonthlyView {
         // Month navigation
         document.getElementById('prev-month-btn')?.addEventListener('click', () => this.changeMonth(-1));
         document.getElementById('next-month-btn')?.addEventListener('click', () => this.changeMonth(1));
+        document.getElementById('today-month-btn')?.addEventListener('click', () => this.goToToday());
         
         // Add checklist item button
         document.getElementById('add-checklist-item-btn')?.addEventListener('click', () => this.addChecklistItem());
@@ -90,6 +91,17 @@ class MonthlyView {
             this.currentYear--;
         }
         
+        this.updateMonthYearDisplay();
+        await this.loadData();
+    }
+
+    /**
+     * Go to current month (Today button)
+     */
+    async goToToday() {
+        const today = new Date();
+        this.currentYear = today.getFullYear();
+        this.currentMonth = today.getMonth() + 1;
         this.updateMonthYearDisplay();
         await this.loadData();
     }

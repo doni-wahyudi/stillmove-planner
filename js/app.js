@@ -406,6 +406,15 @@ class App {
     }
     
     setupEventListeners() {
+        // Keyboard shortcuts
+        this.setupKeyboardShortcuts();
+        
+        // Quick Add FAB
+        this.setupQuickAddFAB();
+        
+        // Global Search
+        this.setupSearch();
+        
         // Mobile menu toggle
         const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
         const navMenu = document.getElementById('nav-menu');
@@ -473,6 +482,590 @@ class App {
             // Auth state listener will handle redirect
         } catch (error) {
             ErrorHandler.handleAuthError(error, 'Sign Out');
+        }
+    }
+    
+    /**
+     * Setup keyboard shortcuts for navigation and actions
+     */
+    setupKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            // Don't trigger shortcuts when typing in inputs
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+                return;
+            }
+            
+            // Navigation shortcuts (no modifier keys)
+            if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+                switch(e.key.toLowerCase()) {
+                    case 't':
+                        // Go to Today - trigger the Today button if it exists
+                        e.preventDefault();
+                        this.triggerTodayButton();
+                        break;
+                    case 'w':
+                        // Go to Weekly view
+                        e.preventDefault();
+                        this.router.navigate('weekly');
+                        break;
+                    case 'm':
+                        // Go to Monthly view
+                        e.preventDefault();
+                        this.router.navigate('monthly');
+                        break;
+                    case 'h':
+                        // Go to Habits view
+                        e.preventDefault();
+                        this.router.navigate('habits');
+                        break;
+                    case 'a':
+                        // Go to Annual view
+                        e.preventDefault();
+                        this.router.navigate('annual');
+                        break;
+                    case 'p':
+                        // Go to Pomodoro view
+                        e.preventDefault();
+                        this.router.navigate('pomodoro');
+                        break;
+                    case '?':
+                        // Show keyboard shortcuts help
+                        e.preventDefault();
+                        this.showKeyboardShortcutsHelp();
+                        break;
+                    case '/':
+                        // Open global search
+                        e.preventDefault();
+                        this.toggleSearch(true);
+                        break;
+                    case 'n':
+                        // Toggle Quick Add menu
+                        e.preventDefault();
+                        this.toggleQuickAddMenu();
+                        break;
+                    case 'escape':
+                        // Close Quick Add menu if open
+                        this.closeQuickAddMenu();
+                        // Close search if open
+                        this.toggleSearch(false);
+                        break;
+                }
+            }
+            
+            // Arrow key navigation for date navigation
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                const prevBtn = document.querySelector('#prev-week-btn, #prev-month-btn, #habits-prev-month-btn, #prev-year-btn');
+                const nextBtn = document.querySelector('#next-week-btn, #next-month-btn, #habits-next-month-btn, #next-year-btn');
+                
+                if (e.key === 'ArrowLeft' && prevBtn) {
+                    e.preventDefault();
+                    prevBtn.click();
+                } else if (e.key === 'ArrowRight' && nextBtn) {
+                    e.preventDefault();
+                    nextBtn.click();
+                }
+            }
+        });
+    }
+    
+    /**
+     * Trigger the Today button in the current view
+     */
+    triggerTodayButton() {
+        const todayBtn = document.querySelector('#today-week-btn, #today-month-btn, #habits-today-btn');
+        if (todayBtn) {
+            todayBtn.click();
+        }
+    }
+    
+    /**
+     * Show keyboard shortcuts help modal
+     */
+    showKeyboardShortcutsHelp() {
+        // Check if modal already exists
+        let modal = document.getElementById('keyboard-shortcuts-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+            return;
+        }
+        
+        // Create modal
+        modal = document.createElement('div');
+        modal.id = 'keyboard-shortcuts-modal';
+        modal.className = 'modal';
+        modal.style.display = 'flex';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 400px;">
+                <div class="modal-header">
+                    <h3>Keyboard Shortcuts</h3>
+                    <button class="modal-close" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="shortcuts-list">
+                        <div class="shortcut-group">
+                            <h4 style="color: var(--text-secondary); margin-bottom: 0.75rem; font-size: 0.85rem; text-transform: uppercase;">Navigation</h4>
+                            <div class="shortcut-item"><span class="kbd">W</span> Weekly View</div>
+                            <div class="shortcut-item"><span class="kbd">M</span> Monthly View</div>
+                            <div class="shortcut-item"><span class="kbd">H</span> Habits View</div>
+                            <div class="shortcut-item"><span class="kbd">A</span> Annual View</div>
+                            <div class="shortcut-item"><span class="kbd">P</span> Pomodoro Timer</div>
+                        </div>
+                        <div class="shortcut-group" style="margin-top: 1rem;">
+                            <h4 style="color: var(--text-secondary); margin-bottom: 0.75rem; font-size: 0.85rem; text-transform: uppercase;">Actions</h4>
+                            <div class="shortcut-item"><span class="kbd">T</span> Go to Today</div>
+                            <div class="shortcut-item"><span class="kbd">N</span> Quick Add Menu</div>
+                            <div class="shortcut-item"><span class="kbd">/</span> Search</div>
+                            <div class="shortcut-item"><span class="kbd">←</span> Previous Period</div>
+                            <div class="shortcut-item"><span class="kbd">→</span> Next Period</div>
+                            <div class="shortcut-item"><span class="kbd">?</span> Show Shortcuts</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-primary modal-close">Got it!</button>
+                </div>
+            </div>
+        `;
+        
+        // Add styles for shortcut items
+        const style = document.createElement('style');
+        style.textContent = `
+            .shortcut-item {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.5rem 0;
+                color: var(--text-primary);
+                font-size: 0.9rem;
+            }
+            .shortcut-item .kbd {
+                min-width: 28px;
+                text-align: center;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        document.body.appendChild(modal);
+        
+        // Close handlers
+        modal.querySelectorAll('.modal-close').forEach(btn => {
+            btn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+        });
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+        
+        // Close on Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.style.display === 'flex') {
+                modal.style.display = 'none';
+            }
+        });
+    }
+    
+    /**
+     * Setup Quick Add Floating Action Button
+     */
+    setupQuickAddFAB() {
+        const fabButton = document.getElementById('fab-button');
+        const fabMenu = document.getElementById('fab-menu');
+        
+        if (!fabButton || !fabMenu) return;
+        
+        // Toggle menu on FAB click
+        fabButton.addEventListener('click', () => {
+            this.toggleQuickAddMenu();
+        });
+        
+        // Handle menu item clicks
+        fabMenu.querySelectorAll('.fab-menu-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const action = item.dataset.action;
+                this.handleQuickAddAction(action);
+                this.closeQuickAddMenu();
+            });
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const fabContainer = document.getElementById('fab-container');
+            if (fabContainer && !fabContainer.contains(e.target)) {
+                this.closeQuickAddMenu();
+            }
+        });
+    }
+    
+    /**
+     * Toggle Quick Add menu
+     */
+    toggleQuickAddMenu() {
+        const fabButton = document.getElementById('fab-button');
+        const fabMenu = document.getElementById('fab-menu');
+        
+        if (!fabButton || !fabMenu) return;
+        
+        const isOpen = fabMenu.classList.contains('open');
+        
+        if (isOpen) {
+            this.closeQuickAddMenu();
+        } else {
+            fabButton.classList.add('open');
+            fabButton.setAttribute('aria-expanded', 'true');
+            fabMenu.classList.add('open');
+        }
+    }
+    
+    /**
+     * Close Quick Add menu
+     */
+    closeQuickAddMenu() {
+        const fabButton = document.getElementById('fab-button');
+        const fabMenu = document.getElementById('fab-menu');
+        
+        if (fabButton) {
+            fabButton.classList.remove('open');
+            fabButton.setAttribute('aria-expanded', 'false');
+        }
+        if (fabMenu) {
+            fabMenu.classList.remove('open');
+        }
+    }
+    
+    /**
+     * Handle Quick Add action
+     */
+    handleQuickAddAction(action) {
+        const currentView = this.stateManager.getState('navigation').currentView;
+        
+        switch(action) {
+            case 'add-habit':
+                // Navigate to habits view and trigger add
+                if (currentView !== 'habits') {
+                    this.router.navigate('habits');
+                }
+                // Wait for view to load then click add button
+                setTimeout(() => {
+                    const addBtn = document.getElementById('add-daily-habit-btn');
+                    if (addBtn) addBtn.click();
+                }, 100);
+                break;
+                
+            case 'add-goal':
+                // Navigate to weekly view and trigger add goal
+                if (currentView !== 'weekly') {
+                    this.router.navigate('weekly');
+                }
+                setTimeout(() => {
+                    const addBtn = document.getElementById('add-weekly-goal-btn');
+                    if (addBtn) addBtn.click();
+                }, 100);
+                break;
+                
+            case 'add-timeblock':
+                // Navigate to weekly view - user can click on time slot
+                if (currentView !== 'weekly') {
+                    this.router.navigate('weekly');
+                }
+                // Show a toast hint
+                this.showToast('Click on a time slot to add a time block');
+                break;
+        }
+    }
+    
+    /**
+     * Show a toast notification
+     * @param {string} message - Toast message
+     * @param {Object} options - Optional settings
+     * @param {string} options.type - 'info', 'success', 'error', 'warning'
+     * @param {number} options.duration - Duration in ms (default 3000)
+     * @param {Function} options.action - Action callback for undo button
+     * @param {string} options.actionLabel - Label for action button (default 'Undo')
+     */
+    showToast(message, options = {}) {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        
+        const { type = 'info', duration = 3000, action, actionLabel = 'Undo' } = options;
+        
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        
+        let html = `<span class="toast-message">${message}</span>`;
+        if (action) {
+            html += `<button class="toast-action">${actionLabel}</button>`;
+        }
+        toast.innerHTML = html;
+        container.appendChild(toast);
+        
+        // Handle action button click
+        if (action) {
+            const actionBtn = toast.querySelector('.toast-action');
+            actionBtn?.addEventListener('click', () => {
+                action();
+                toast.remove();
+            });
+        }
+        
+        // Auto-remove after duration
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+        
+        return toast;
+    }
+    
+    /**
+     * Setup Global Search functionality
+     */
+    setupSearch() {
+        const searchToggle = document.getElementById('search-toggle-btn');
+        const searchContainer = document.getElementById('search-container');
+        const searchInput = document.getElementById('global-search');
+        
+        if (!searchToggle || !searchContainer || !searchInput) return;
+        
+        // Toggle search on button click
+        searchToggle.addEventListener('click', () => {
+            this.toggleSearch();
+        });
+        
+        // Search on input with debounce
+        let searchTimeout;
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                this.performSearch(e.target.value);
+            }, 300);
+        });
+        
+        // Close search when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!searchContainer.contains(e.target) && !searchToggle.contains(e.target)) {
+                this.toggleSearch(false);
+            }
+        });
+        
+        // Handle Escape in search input
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.toggleSearch(false);
+            }
+        });
+    }
+    
+    /**
+     * Toggle search visibility
+     */
+    toggleSearch(forceOpen = null) {
+        const searchContainer = document.getElementById('search-container');
+        const searchInput = document.getElementById('global-search');
+        const searchToggle = document.getElementById('search-toggle-btn');
+        
+        if (!searchContainer || !searchInput) return;
+        
+        const isHidden = searchContainer.classList.contains('hidden');
+        const shouldOpen = forceOpen !== null ? forceOpen : isHidden;
+        
+        if (shouldOpen) {
+            searchContainer.classList.remove('hidden');
+            searchToggle?.classList.add('active');
+            searchInput.focus();
+        } else {
+            searchContainer.classList.add('hidden');
+            searchToggle?.classList.remove('active');
+            searchInput.value = '';
+            this.clearSearchResults();
+        }
+    }
+    
+    /**
+     * Perform search across all data
+     */
+    async performSearch(query) {
+        const resultsContainer = document.getElementById('search-results');
+        if (!resultsContainer) return;
+        
+        if (!query || query.trim().length < 2) {
+            this.clearSearchResults();
+            return;
+        }
+        
+        const searchTerm = query.toLowerCase().trim();
+        const results = [];
+        const data = this.stateManager.getState('data');
+        
+        // Search weekly goals
+        if (data.weeklyGoals && data.weeklyGoals.length > 0) {
+            data.weeklyGoals.forEach(goal => {
+                if (goal.text && goal.text.toLowerCase().includes(searchTerm)) {
+                    results.push({
+                        type: 'goal',
+                        icon: '🎯',
+                        title: goal.text,
+                        subtitle: 'Weekly Goal',
+                        view: 'weekly'
+                    });
+                }
+            });
+        }
+        
+        // Search annual goals
+        if (data.annualGoals && data.annualGoals.length > 0) {
+            data.annualGoals.forEach(goal => {
+                if (goal.title && goal.title.toLowerCase().includes(searchTerm)) {
+                    results.push({
+                        type: 'annual-goal',
+                        icon: '🏆',
+                        title: goal.title,
+                        subtitle: `Annual Goal - ${goal.category || 'Uncategorized'}`,
+                        view: 'annual'
+                    });
+                }
+            });
+        }
+        
+        // Search daily habits
+        if (data.dailyHabits && data.dailyHabits.length > 0) {
+            data.dailyHabits.forEach(habit => {
+                if (habit.name && habit.name.toLowerCase().includes(searchTerm)) {
+                    results.push({
+                        type: 'habit',
+                        icon: '✨',
+                        title: habit.name,
+                        subtitle: 'Daily Habit',
+                        view: 'habits'
+                    });
+                }
+            });
+        }
+        
+        // Search weekly habits
+        if (data.weeklyHabits && data.weeklyHabits.length > 0) {
+            data.weeklyHabits.forEach(habit => {
+                if (habit.name && habit.name.toLowerCase().includes(searchTerm)) {
+                    results.push({
+                        type: 'habit',
+                        icon: '📅',
+                        title: habit.name,
+                        subtitle: 'Weekly Habit',
+                        view: 'habits'
+                    });
+                }
+            });
+        }
+        
+        // Search time blocks
+        if (data.timeBlocks && data.timeBlocks.length > 0) {
+            data.timeBlocks.forEach(block => {
+                if (block.activity && block.activity.toLowerCase().includes(searchTerm)) {
+                    results.push({
+                        type: 'timeblock',
+                        icon: '📅',
+                        title: block.activity,
+                        subtitle: `Time Block - ${block.day_of_week || ''}`,
+                        view: 'weekly'
+                    });
+                }
+            });
+        }
+        
+        // Search action plans
+        if (data.actionPlans && data.actionPlans.length > 0) {
+            data.actionPlans.forEach(plan => {
+                if ((plan.goal && plan.goal.toLowerCase().includes(searchTerm)) ||
+                    (plan.evaluation && plan.evaluation.toLowerCase().includes(searchTerm))) {
+                    results.push({
+                        type: 'action-plan',
+                        icon: '📋',
+                        title: plan.goal || 'Action Plan',
+                        subtitle: plan.evaluation ? `Evaluation: ${plan.evaluation.substring(0, 50)}...` : 'Action Plan',
+                        view: 'action-plan'
+                    });
+                }
+            });
+        }
+        
+        // Search reading list
+        if (data.readingList && data.readingList.length > 0) {
+            data.readingList.forEach(book => {
+                if ((book.title && book.title.toLowerCase().includes(searchTerm)) ||
+                    (book.author && book.author.toLowerCase().includes(searchTerm))) {
+                    results.push({
+                        type: 'book',
+                        icon: '📚',
+                        title: book.title || 'Untitled Book',
+                        subtitle: book.author ? `by ${book.author}` : 'Reading List',
+                        view: 'annual'
+                    });
+                }
+            });
+        }
+        
+        this.displaySearchResults(results, searchTerm);
+    }
+    
+    /**
+     * Display search results
+     */
+    displaySearchResults(results, searchTerm) {
+        const resultsContainer = document.getElementById('search-results');
+        if (!resultsContainer) return;
+        
+        if (results.length === 0) {
+            resultsContainer.innerHTML = `
+                <div class="search-no-results">
+                    <span class="search-no-results-icon">🔍</span>
+                    <p>No results found for "${searchTerm}"</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const html = results.slice(0, 10).map(result => `
+            <div class="search-result-item" data-view="${result.view}">
+                <span class="search-result-icon">${result.icon}</span>
+                <div class="search-result-content">
+                    <div class="search-result-title">${this.highlightMatch(result.title, searchTerm)}</div>
+                    <div class="search-result-subtitle">${result.subtitle}</div>
+                </div>
+                <span class="search-result-arrow">→</span>
+            </div>
+        `).join('');
+        
+        resultsContainer.innerHTML = html;
+        
+        // Add click handlers to results
+        resultsContainer.querySelectorAll('.search-result-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const view = item.dataset.view;
+                this.router.navigate(view);
+                this.toggleSearch(false);
+            });
+        });
+    }
+    
+    /**
+     * Highlight matching text in search results
+     */
+    highlightMatch(text, searchTerm) {
+        if (!text) return '';
+        const regex = new RegExp(`(${searchTerm})`, 'gi');
+        return text.replace(regex, '<mark>$1</mark>');
+    }
+    
+    /**
+     * Clear search results
+     */
+    clearSearchResults() {
+        const resultsContainer = document.getElementById('search-results');
+        if (resultsContainer) {
+            resultsContainer.innerHTML = '';
         }
     }
     

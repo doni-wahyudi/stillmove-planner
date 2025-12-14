@@ -9,6 +9,7 @@
             <button id="habits-next-month-btn" class="nav-btn" aria-label="Go to next month">
                 <span aria-hidden="true">→</span>
             </button>
+            <button id="habits-today-btn" class="btn-today" aria-label="Go to current month" data-tooltip="Press T">Today</button>
         </div>
     </div>
 
@@ -24,6 +25,14 @@
         <div class="habits-container">
             <section class="habits-sidebar" aria-labelledby="daily-habits-heading">
                 <h3 id="daily-habits-heading">Daily Habits (30 max)</h3>
+                <div class="habits-filter">
+                    <select id="daily-habits-filter" class="habits-filter-select" aria-label="Filter habits">
+                        <option value="all">All Habits</option>
+                        <option value="completed">Completed Today</option>
+                        <option value="incomplete">Incomplete Today</option>
+                        <option value="streak">Has Streak</option>
+                    </select>
+                </div>
                 <div id="daily-habits-list" class="habits-list" role="list" aria-label="Daily habits list">
                     <!-- Habit names will be added here -->
                 </div>

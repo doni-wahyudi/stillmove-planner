@@ -9,12 +9,46 @@
             <button id="next-week-btn" class="nav-btn" aria-label="Go to next week">
                 <span aria-hidden="true">→</span>
             </button>
+            <button id="today-week-btn" class="btn-today" aria-label="Go to current week" data-tooltip="Press T">Today</button>
+            <button id="export-ical-btn" class="btn-icon btn-export" aria-label="Export to calendar" title="Export to iCal">📤</button>
         </div>
     </div>
 
     <div class="weekly-content">
         <!-- Left Sidebar -->
         <div class="sidebar-section">
+            <!-- Weekly Summary -->
+            <div class="weekly-summary" id="weekly-summary">
+                <h3>Week at a Glance</h3>
+                <div class="summary-stats">
+                    <div class="summary-stat">
+                        <span class="summary-stat-value" id="goals-completed">0/0</span>
+                        <span class="summary-stat-label">Goals Done</span>
+                    </div>
+                    <div class="summary-stat">
+                        <span class="summary-stat-value" id="time-blocks-count">0</span>
+                        <span class="summary-stat-label">Time Blocks</span>
+                    </div>
+                    <div class="summary-stat">
+                        <span class="summary-stat-value" id="scheduled-hours">0h</span>
+                        <span class="summary-stat-label">Scheduled</span>
+                    </div>
+                </div>
+                <div id="week-comparison" class="week-comparison" style="display: none;">
+                    <span class="comparison-text"></span>
+                </div>
+                <div id="productivity-score" class="productivity-score" style="display: none;">
+                    <div class="score-ring">
+                        <svg viewBox="0 0 36 36" class="circular-chart">
+                            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            <path class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            <text x="18" y="20.35" class="score-text">0%</text>
+                        </svg>
+                    </div>
+                    <span class="score-label">Productivity</span>
+                </div>
+            </div>
+            
             <!-- Weekly Goals -->
             <div class="weekly-goals">
                 <h3>Weekly Goals</h3>
@@ -28,8 +62,12 @@
             <div class="category-legend">
                 <div class="category-legend-header">
                     <h3>Categories</h3>
-                    <button id="manage-categories-btn" class="btn-icon" aria-label="Manage categories" title="Manage categories">⚙️</button>
+                    <div class="category-legend-actions">
+                        <button id="clear-filter-btn" class="btn-icon btn-clear-filter" aria-label="Clear filter" title="Clear filter" style="display: none;">✕</button>
+                        <button id="manage-categories-btn" class="btn-icon" aria-label="Manage categories" title="Manage categories">⚙️</button>
+                    </div>
                 </div>
+                <p class="category-hint">Click a category to filter</p>
                 <div class="category-list" id="category-list">
                     <!-- Categories will be dynamically loaded here -->
                 </div>
@@ -187,6 +225,7 @@
         </div>
         <div class="modal-footer">
             <button id="save-time-block-btn" class="btn-primary">Save</button>
+            <button id="duplicate-time-block-btn" class="btn-secondary" style="display: none;">Duplicate</button>
             <button id="delete-time-block-btn" class="btn-danger" style="display: none;">Delete</button>
             <button class="btn-secondary modal-close">Cancel</button>
         </div>

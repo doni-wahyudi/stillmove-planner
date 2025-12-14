@@ -1719,14 +1719,20 @@ select:focus-visible,
     position: relative;
 }
 
-.action-plan-row {
+/* Monthly view action plan rows (not table rows) */
+.action-plan-item .action-plan-row {
     display: flex;
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-md);
 }
 
-.action-plan-row:last-child {
+.action-plan-item .action-plan-row:last-child {
     margin-bottom: 0;
+}
+
+/* Action Plan table rows - ensure they display as table rows */
+.action-plan-table tr.action-plan-row {
+    display: table-row;
 }
 
 .action-plan-field {
@@ -1816,7 +1822,7 @@ select:focus-visible,
         font-size: 0.75rem;
     }
     
-    .action-plan-row {
+    .action-plan-item .action-plan-row {
         flex-direction: column;
     }
 }
@@ -2499,10 +2505,10 @@ select:focus-visible,
 .action-plan-table {
     width: 100%;
     border-collapse: separate;
-    border-spacing: 0;
+    border-spacing: 0 0.5rem;
     font-size: 0.9rem;
     table-layout: fixed;
-    min-width: 1150px;
+    min-width: 940px;
 }
 
 .action-plan-table thead {
@@ -2510,27 +2516,32 @@ select:focus-visible,
 }
 
 .action-plan-table th {
-    padding: 1rem 1.25rem;
+    padding: 1rem;
     text-align: left;
     font-weight: 600;
     color: white;
     background: transparent;
     border-bottom: none;
-    white-space: nowrap;
+    white-space: normal;
     font-size: 0.8rem;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.05em;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    word-wrap: break-word;
 }
 
 .action-plan-table td {
-    padding: 1rem;
-    border-bottom: 1px solid #e2e8f0;
-    vertical-align: middle;
+    padding: 0.875rem 1rem;
+    border-bottom: none;
+    vertical-align: top;
     color: #2d3748;
     font-size: 0.9rem;
     background-color: #ffffff;
     position: relative;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .action-plan-table td:empty::before {
@@ -2563,49 +2574,7 @@ select:focus-visible,
     margin-bottom: 0.5rem;
 }
 
-/* Table Cell Styles */
-.action-plan-table th:nth-child(1),
-.action-plan-table td:nth-child(1) {
-    width: 120px;
-    min-width: 120px;
-}
-
-.action-plan-table th:nth-child(2),
-.action-plan-table td:nth-child(2) {
-    width: 180px;
-    min-width: 180px;
-}
-
-.action-plan-table th:nth-child(3),
-.action-plan-table td:nth-child(3) {
-    width: 100px;
-    min-width: 100px;
-}
-
-.action-plan-table th:nth-child(4),
-.action-plan-table td:nth-child(4) {
-    width: 200px;
-    min-width: 200px;
-}
-
-.action-plan-table th:nth-child(5),
-.action-plan-table td:nth-child(5) {
-    width: 150px;
-    min-width: 150px;
-}
-
-.action-plan-table th:nth-child(6),
-.action-plan-table td:nth-child(6) {
-    width: 200px;
-    min-width: 200px;
-}
-
-.action-plan-table th:nth-child(7),
-.action-plan-table td:nth-child(7) {
-    width: 100px;
-    min-width: 100px;
-    text-align: center;
-}
+/* Table Cell Styles - widths controlled in theme.css */
 
 .life-area-cell,
 .specific-action-cell {
@@ -2616,6 +2585,28 @@ select:focus-visible,
 
 .frequency-cell {
     white-space: nowrap;
+}
+
+/* Ensure inputs fill their cells properly */
+.action-plan-table input[type="text"],
+.action-plan-table textarea,
+.action-plan-table select {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.action-plan-table input[type="range"] {
+    width: 100%;
+}
+
+.progress-cell .progress-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.actions-cell {
+    text-align: center;
 }
 
 .success-criteria-cell,

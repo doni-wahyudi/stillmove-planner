@@ -9,6 +9,7 @@
             <button id="next-year-btn" class="nav-btn" aria-label="Go to next year">
                 <span aria-hidden="true">→</span>
             </button>
+            <button id="today-year-btn" class="btn-today" aria-label="Go to current year" data-tooltip="Press T">This Year</button>
         </div>
     </div>
 
@@ -91,6 +92,13 @@
                 <option value="Other">Other</option>
             </select>
             <button class="delete-goal-btn" aria-label="Delete this goal">×</button>
+        </div>
+        <div class="goal-deadline-row">
+            <label class="deadline-label">
+                <span class="deadline-icon">📅</span>
+                <input type="date" class="goal-deadline" aria-label="Goal deadline" />
+            </label>
+            <span class="deadline-countdown"></span>
         </div>
         <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Goal progress">
             <div class="progress-fill" style="width: 0%" aria-hidden="true"></div>
