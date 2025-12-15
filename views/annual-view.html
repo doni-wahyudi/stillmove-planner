@@ -31,7 +31,10 @@
             <div id="goals-container" class="goals-container" role="list" aria-label="Annual goals list">
                 <!-- Goal cards will be dynamically added here -->
             </div>
-            <button id="add-goal-btn" class="btn-primary" aria-label="Add new annual goal">+ Add Goal</button>
+            <div class="goals-actions">
+                <button id="add-goal-btn" class="btn-primary" aria-label="Add new annual goal">+ Add Goal</button>
+                <button id="goal-templates-btn" class="btn-secondary" aria-label="Browse goal templates" title="Goal Templates">📋 Templates</button>
+            </div>
         </section>
 
         <!-- Right Column: Vision Board & Bucket List -->
@@ -66,9 +69,27 @@
     <section class="reading-section" aria-labelledby="reading-heading">
         <h3 id="reading-heading">Reading Journey (50 Books)</h3>
         <div class="reading-controls">
-            <button id="add-book-btn" class="btn-secondary" aria-label="Add new book to reading list">+ Add Book</button>
+            <div class="reading-controls-left">
+                <button id="add-book-btn" class="btn-secondary" aria-label="Add new book to reading list">+ Add Book</button>
+                <select id="reading-filter" class="reading-filter" aria-label="Filter books">
+                    <option value="all">All Books</option>
+                    <option value="reading">Currently Reading</option>
+                    <option value="completed">Completed</option>
+                    <option value="unread">Not Started</option>
+                    <option value="rating-5">⭐⭐⭐⭐⭐ (5 stars)</option>
+                    <option value="rating-4">⭐⭐⭐⭐ (4+ stars)</option>
+                    <option value="rating-3">⭐⭐⭐ (3+ stars)</option>
+                </select>
+                <select id="reading-sort" class="reading-sort" aria-label="Sort books">
+                    <option value="order">By Order</option>
+                    <option value="title">By Title</option>
+                    <option value="rating-desc">Rating (High to Low)</option>
+                    <option value="rating-asc">Rating (Low to High)</option>
+                    <option value="progress">By Progress</option>
+                </select>
+            </div>
             <div class="reading-stats" role="status" aria-live="polite" aria-label="Reading progress">
-                <span id="books-completed">0</span> / 50 books completed
+                <span id="books-completed">0</span> / 50 completed · <span id="pages-read">0</span> pages read
             </div>
         </div>
         <div id="reading-list" class="reading-list" role="list" aria-label="Reading list">
@@ -104,6 +125,7 @@
             <div class="progress-fill" style="width: 0%" aria-hidden="true"></div>
             <span class="progress-text" aria-live="polite">0%</span>
         </div>
+        <div class="goal-milestone" style="display: none;"></div>
         <div class="sub-goals-container">
             <h4>Sub-Goals</h4>
             <ul class="sub-goals-list" data-sortable="true" role="list" aria-label="Sub-goals list">
@@ -130,6 +152,16 @@
         <div class="book-number" aria-label="Book number"></div>
         <input type="text" class="book-title" placeholder="Book Title" aria-label="Book title" />
         <input type="text" class="book-author" placeholder="Author" aria-label="Book author" />
+        <div class="book-progress" aria-label="Reading progress">
+            <div class="book-progress-inputs">
+                <input type="number" class="book-current-page" placeholder="0" min="0" aria-label="Current page" />
+                <span class="progress-separator">/</span>
+                <input type="number" class="book-total-pages" placeholder="total" min="0" aria-label="Total pages" />
+            </div>
+            <div class="book-progress-bar">
+                <div class="book-progress-fill"></div>
+            </div>
+        </div>
         <input type="checkbox" class="book-completed" aria-label="Mark book as completed" />
         <div class="book-rating" role="group" aria-label="Book rating">
             <span class="star" data-rating="1" role="button" tabindex="0" aria-label="Rate 1 star">☆</span>
@@ -141,3 +173,19 @@
         <button class="delete-book-btn" aria-label="Delete this book">×</button>
     </div>
 </template>
+
+<!-- Goal Templates Modal -->
+<div id="goal-templates-modal" class="modal" role="dialog" aria-labelledby="goal-templates-title" aria-hidden="true">
+    <div class="modal-content modal-medium">
+        <div class="modal-header">
+            <h3 id="goal-templates-title">📋 Goal Templates</h3>
+            <button class="modal-close" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-description">Choose a template to quickly create a goal with suggested sub-goals.</p>
+            <div class="goal-templates-grid" id="goal-templates-grid">
+                <!-- Templates will be rendered here -->
+            </div>
+        </div>
+    </div>
+</div>

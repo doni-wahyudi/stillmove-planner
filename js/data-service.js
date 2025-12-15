@@ -604,6 +604,30 @@ class DataService {
             this.handleError(error, 'toggleDailyHabitCompletion');
         }
     }
+    
+    /**
+     * Update habit note for a specific date
+     * @param {string} habitId - Habit ID
+     * @param {string} date - Date in YYYY-MM-DD format
+     * @param {string} notes - Note text
+     * @returns {Promise<Object>} Updated completion
+     */
+    async updateHabitNote(habitId, date, notes) {
+        try {
+            const { data: { user } } = await this.supabase.auth.getUser();
+            if (!user) throw new Error('User not authenticated');
+            
+            const { data, error } = await this.supabase
+                .from('daily_habit_completions')
+                .upsert([{ habit_id: habitId, date, notes, user_id: user.id }], { onConflict: 'habit_id,date' })
+                .select();
+
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'updateHabitNote');
+        }
+    }
 
     // ==================== WEEKLY HABITS ====================
 
@@ -1227,11 +1251,12 @@ class DataService {
      */
     validateImportData(importData) {
         const errors = [];
+        const warnings = [];
 
         // Check basic structure
         if (!importData || typeof importData !== 'object') {
             errors.push('Invalid data format: must be a JSON object');
-            return { valid: false, errors };
+            return { valid: false, errors, warnings };
         }
 
         // Check version
@@ -1242,7 +1267,7 @@ class DataService {
         // Check data field exists
         if (!importData.data || typeof importData.data !== 'object') {
             errors.push('Missing or invalid data field');
-            return { valid: false, errors };
+            return { valid: false, errors, warnings };
         }
 
         // Check required data fields
@@ -1281,10 +1306,69 @@ class DataService {
                 errors.push(`Invalid field type: data.${field} must be an array`);
             }
         }
+        
+        // Enhanced validation: Check data integrity
+        if (errors.length === 0) {
+            // Validate annual goals structure
+            if (importData.data.annualGoals) {
+                importData.data.annualGoals.forEach((goal, i) => {
+                    if (goal && typeof goal !== 'object') {
+                        errors.push(`annualGoals[${i}] must be an object`);
+                    }
+                    if (goal && goal.year && (typeof goal.year !== 'number' || goal.year < 2000 || goal.year > 2100)) {
+                        warnings.push(`annualGoals[${i}] has invalid year: ${goal.year}`);
+                    }
+                });
+            }
+            
+            // Validate daily habits structure
+            if (importData.data.dailyHabits) {
+                importData.data.dailyHabits.forEach((habit, i) => {
+                    if (habit && typeof habit !== 'object') {
+                        errors.push(`dailyHabits[${i}] must be an object`);
+                    }
+                    if (habit && habit.habit_name && typeof habit.habit_name !== 'string') {
+                        warnings.push(`dailyHabits[${i}] has invalid habit_name`);
+                    }
+                });
+            }
+            
+            // Validate time blocks structure
+            if (importData.data.timeBlocks) {
+                importData.data.timeBlocks.forEach((block, i) => {
+                    if (block && typeof block !== 'object') {
+                        errors.push(`timeBlocks[${i}] must be an object`);
+                    }
+                    if (block && block.date && !/^\d{4}-\d{2}-\d{2}$/.test(block.date)) {
+                        warnings.push(`timeBlocks[${i}] has invalid date format: ${block.date}`);
+                    }
+                });
+            }
+            
+            // Validate reading list structure
+            if (importData.data.readingList) {
+                importData.data.readingList.forEach((book, i) => {
+                    if (book && typeof book !== 'object') {
+                        errors.push(`readingList[${i}] must be an object`);
+                    }
+                    if (book && book.rating !== undefined && (typeof book.rating !== 'number' || book.rating < 0 || book.rating > 5)) {
+                        warnings.push(`readingList[${i}] has invalid rating: ${book.rating}`);
+                    }
+                });
+            }
+            
+            // Check for suspiciously large data
+            const totalItems = Object.values(importData.data).reduce((sum, arr) => 
+                sum + (Array.isArray(arr) ? arr.length : 0), 0);
+            if (totalItems > 10000) {
+                warnings.push(`Large import detected: ${totalItems} total items`);
+            }
+        }
 
         return {
             valid: errors.length === 0,
-            errors
+            errors,
+            warnings
         };
     }
 

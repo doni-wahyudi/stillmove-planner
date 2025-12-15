@@ -141,8 +141,95 @@ class Router {
             link.classList.toggle('active', link.getAttribute('data-view') === view);
         });
         
+        // Update breadcrumb
+        this.updateBreadcrumb(view);
+        
         // Load view content
         this.renderView(view);
+    }
+    
+    /**
+     * Update breadcrumb navigation
+     */
+    updateBreadcrumb(view) {
+        const viewEl = document.getElementById('breadcrumb-view');
+        const contextEl = document.getElementById('breadcrumb-context');
+        
+        if (!viewEl || !contextEl) return;
+        
+        // View name mapping
+        const viewNames = {
+            'weekly': 'Weekly',
+            'monthly': 'Monthly',
+            'annual': 'Annual',
+            'habits': 'Habits',
+            'action-plan': 'Action Plan',
+            'pomodoro': 'Pomodoro',
+            'settings': 'Settings'
+        };
+        
+        viewEl.textContent = viewNames[view] || view;
+        
+        // Set context based on current date/state
+        const nav = this.stateManager.getState('navigation');
+        const now = new Date();
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+        
+        let context = '';
+        switch(view) {
+            case 'weekly':
+                // Will be updated by weekly view
+                context = this.getWeekContext(now);
+                break;
+            case 'monthly':
+            case 'habits':
+                context = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+                break;
+            case 'annual':
+                context = `${now.getFullYear()}`;
+                break;
+            case 'pomodoro':
+                context = 'Focus Timer';
+                break;
+            case 'action-plan':
+                context = 'Goals & Tasks';
+                break;
+            case 'settings':
+                context = 'Preferences';
+                break;
+            default:
+                context = '';
+        }
+        
+        contextEl.textContent = context;
+    }
+    
+    /**
+     * Get week context string
+     */
+    getWeekContext(date) {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        d.setDate(d.getDate() + diff);
+        
+        const weekEnd = new Date(d);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+        
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        
+        const startMonth = monthNames[d.getMonth()];
+        const endMonth = monthNames[weekEnd.getMonth()];
+        const startDay = d.getDate();
+        const endDay = weekEnd.getDate();
+        const year = d.getFullYear();
+        
+        if (startMonth === endMonth) {
+            return `${startMonth} ${startDay}-${endDay}, ${year}`;
+        }
+        return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`;
     }
     
     renderView(view) {
@@ -415,6 +502,15 @@ class App {
         // Global Search
         this.setupSearch();
         
+        // Keyboard help button
+        const keyboardHelpBtn = document.getElementById('keyboard-help-btn');
+        if (keyboardHelpBtn) {
+            keyboardHelpBtn.addEventListener('click', () => this.showKeyboardShortcutsHelp());
+        }
+        
+        // Swipe gestures for mobile navigation
+        this.setupSwipeGestures();
+        
         // Mobile menu toggle
         const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
         const navMenu = document.getElementById('nav-menu');
@@ -486,6 +582,78 @@ class App {
     }
     
     /**
+     * Setup swipe gestures for mobile navigation
+     */
+    setupSwipeGestures() {
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+        
+        const minSwipeDistance = 80;
+        const maxVerticalDistance = 100;
+        
+        const viewContainer = document.getElementById('view-container');
+        if (!viewContainer) return;
+        
+        viewContainer.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, { passive: true });
+        
+        viewContainer.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndY = e.changedTouches[0].screenY;
+            this.handleSwipe(touchStartX, touchStartY, touchEndX, touchEndY, minSwipeDistance, maxVerticalDistance);
+        }, { passive: true });
+    }
+    
+    /**
+     * Handle swipe gesture
+     */
+    handleSwipe(startX, startY, endX, endY, minDistance, maxVertical) {
+        const deltaX = endX - startX;
+        const deltaY = Math.abs(endY - startY);
+        
+        // Only handle horizontal swipes (not too much vertical movement)
+        if (deltaY > maxVertical) return;
+        
+        // Check if swipe distance is sufficient
+        if (Math.abs(deltaX) < minDistance) return;
+        
+        // Find navigation buttons in current view
+        const prevBtn = document.querySelector('#prev-week-btn, #prev-month-btn, #habits-prev-month-btn, #prev-year-btn');
+        const nextBtn = document.querySelector('#next-week-btn, #next-month-btn, #habits-next-month-btn, #next-year-btn');
+        
+        if (deltaX > 0 && prevBtn) {
+            // Swipe right = go to previous
+            prevBtn.click();
+            this.showSwipeIndicator('←');
+        } else if (deltaX < 0 && nextBtn) {
+            // Swipe left = go to next
+            nextBtn.click();
+            this.showSwipeIndicator('→');
+        }
+    }
+    
+    /**
+     * Show visual indicator for swipe
+     */
+    showSwipeIndicator(direction) {
+        // Create indicator element
+        const indicator = document.createElement('div');
+        indicator.className = 'swipe-indicator';
+        indicator.textContent = direction;
+        document.body.appendChild(indicator);
+        
+        // Remove after animation
+        setTimeout(() => {
+            indicator.classList.add('fade-out');
+            setTimeout(() => indicator.remove(), 300);
+        }, 200);
+    }
+    
+    /**
      * Setup keyboard shortcuts for navigation and actions
      */
     setupKeyboardShortcuts() {
@@ -543,11 +711,25 @@ class App {
                         e.preventDefault();
                         this.toggleQuickAddMenu();
                         break;
+                    case 'f':
+                        // Toggle Focus Mode
+                        e.preventDefault();
+                        this.toggleFocusMode();
+                        break;
+                    case 'g':
+                        // Go to specific date
+                        e.preventDefault();
+                        this.showDateJumpPicker();
+                        break;
                     case 'escape':
                         // Close Quick Add menu if open
                         this.closeQuickAddMenu();
                         // Close search if open
                         this.toggleSearch(false);
+                        // Exit focus mode if active
+                        if (document.body.classList.contains('focus-mode')) {
+                            this.toggleFocusMode(false);
+                        }
                         break;
                 }
             }
@@ -617,6 +799,8 @@ class App {
                             <div class="shortcut-item"><span class="kbd">/</span> Search</div>
                             <div class="shortcut-item"><span class="kbd">←</span> Previous Period</div>
                             <div class="shortcut-item"><span class="kbd">→</span> Next Period</div>
+                            <div class="shortcut-item"><span class="kbd">F</span> Focus Mode</div>
+                            <div class="shortcut-item"><span class="kbd">G</span> Go to Date</div>
                             <div class="shortcut-item"><span class="kbd">?</span> Show Shortcuts</div>
                         </div>
                     </div>
@@ -666,6 +850,182 @@ class App {
                 modal.style.display = 'none';
             }
         });
+    }
+    
+    /**
+     * Toggle Focus Mode - hides navigation for distraction-free work
+     */
+    toggleFocusMode(forceState = null) {
+        const body = document.body;
+        const isActive = body.classList.contains('focus-mode');
+        const shouldActivate = forceState !== null ? forceState : !isActive;
+        
+        if (shouldActivate) {
+            body.classList.add('focus-mode');
+            this.showFocusModeIndicator();
+            if (window.showToast) {
+                window.showToast('Focus Mode enabled. Press Esc or F to exit.', 'info');
+            }
+        } else {
+            body.classList.remove('focus-mode');
+            this.hideFocusModeIndicator();
+        }
+        
+        // Save preference
+        localStorage.setItem('stillmove_focus_mode', shouldActivate ? 'true' : 'false');
+    }
+    
+    /**
+     * Show focus mode indicator
+     */
+    showFocusModeIndicator() {
+        let indicator = document.getElementById('focus-mode-indicator');
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'focus-mode-indicator';
+            indicator.className = 'focus-mode-indicator';
+            indicator.innerHTML = `
+                <span class="focus-icon">🎯</span>
+                <span class="focus-text">Focus Mode</span>
+                <button class="focus-exit-btn" title="Exit Focus Mode (Esc)">×</button>
+            `;
+            document.body.appendChild(indicator);
+            
+            // Exit button handler
+            indicator.querySelector('.focus-exit-btn').addEventListener('click', () => {
+                this.toggleFocusMode(false);
+            });
+        }
+        indicator.classList.add('visible');
+    }
+    
+    /**
+     * Hide focus mode indicator
+     */
+    hideFocusModeIndicator() {
+        const indicator = document.getElementById('focus-mode-indicator');
+        if (indicator) {
+            indicator.classList.remove('visible');
+        }
+    }
+    
+    /**
+     * Show date jump picker modal
+     */
+    showDateJumpPicker() {
+        // Check if modal already exists
+        let modal = document.getElementById('date-jump-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.querySelector('input[type="date"]').focus();
+            return;
+        }
+        
+        // Create modal
+        modal = document.createElement('div');
+        modal.id = 'date-jump-modal';
+        modal.className = 'modal';
+        modal.style.display = 'flex';
+        
+        const today = new Date().toISOString().split('T')[0];
+        
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 320px;">
+                <div class="modal-header">
+                    <h3>📅 Go to Date</h3>
+                    <button class="modal-close" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                        Jump to a specific date in the current view.
+                    </p>
+                    <input type="date" id="date-jump-input" value="${today}" 
+                           style="width: 100%; padding: 0.75rem; font-size: 1rem; border-radius: var(--radius-md);">
+                    <div class="date-quick-jumps" style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap;">
+                        <button class="btn-small date-quick-btn" data-offset="-7">Last Week</button>
+                        <button class="btn-small date-quick-btn" data-offset="0">Today</button>
+                        <button class="btn-small date-quick-btn" data-offset="7">Next Week</button>
+                        <button class="btn-small date-quick-btn" data-offset="30">Next Month</button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary modal-close">Cancel</button>
+                    <button class="btn-primary" id="date-jump-go-btn">Go</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Focus the date input
+        modal.querySelector('input[type="date"]').focus();
+        
+        // Close handlers
+        modal.querySelectorAll('.modal-close').forEach(btn => {
+            btn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+        });
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+        
+        // Quick jump buttons
+        modal.querySelectorAll('.date-quick-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const offset = parseInt(btn.dataset.offset);
+                const date = new Date();
+                date.setDate(date.getDate() + offset);
+                modal.querySelector('#date-jump-input').value = date.toISOString().split('T')[0];
+            });
+        });
+        
+        // Go button
+        modal.querySelector('#date-jump-go-btn').addEventListener('click', () => {
+            const dateInput = modal.querySelector('#date-jump-input');
+            const selectedDate = new Date(dateInput.value);
+            this.jumpToDate(selectedDate);
+            modal.style.display = 'none';
+        });
+        
+        // Enter key to submit
+        modal.querySelector('#date-jump-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const selectedDate = new Date(e.target.value);
+                this.jumpToDate(selectedDate);
+                modal.style.display = 'none';
+            }
+        });
+    }
+    
+    /**
+     * Jump to a specific date in the current view
+     */
+    jumpToDate(date) {
+        const currentView = this.stateManager.state.navigation.currentView;
+        
+        // Dispatch custom event that views can listen to
+        const event = new CustomEvent('dateJump', { detail: { date, view: currentView } });
+        document.dispatchEvent(event);
+        
+        // Also try to directly update the view if possible
+        if (currentView === 'weekly' && window.weeklyView) {
+            window.weeklyView.goToDate(date);
+        } else if (currentView === 'monthly' && window.monthlyView) {
+            window.monthlyView.goToDate(date);
+        } else if (currentView === 'habits' && window.habitsView) {
+            window.habitsView.goToDate(date);
+        } else if (currentView === 'annual' && window.annualView) {
+            window.annualView.goToYear(date.getFullYear());
+        }
+        
+        if (window.showToast) {
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            window.showToast(`Jumped to ${date.toLocaleDateString(undefined, options)}`, 'info');
+        }
     }
     
     /**
@@ -915,7 +1275,7 @@ class App {
             });
         }
         
-        // Search annual goals
+        // Search annual goals and sub-goals
         if (data.annualGoals && data.annualGoals.length > 0) {
             data.annualGoals.forEach(goal => {
                 if (goal.title && goal.title.toLowerCase().includes(searchTerm)) {
@@ -925,6 +1285,21 @@ class App {
                         title: goal.title,
                         subtitle: `Annual Goal - ${goal.category || 'Uncategorized'}`,
                         view: 'annual'
+                    });
+                }
+                // Search sub-goals
+                if (goal.sub_goals && goal.sub_goals.length > 0) {
+                    goal.sub_goals.forEach(subGoal => {
+                        const subGoalText = typeof subGoal === 'string' ? subGoal : subGoal.text;
+                        if (subGoalText && subGoalText.toLowerCase().includes(searchTerm)) {
+                            results.push({
+                                type: 'sub-goal',
+                                icon: '📌',
+                                title: subGoalText,
+                                subtitle: `Sub-goal of: ${goal.title || 'Unnamed Goal'}`,
+                                view: 'annual'
+                            });
+                        }
                     });
                 }
             });
@@ -1002,6 +1377,35 @@ class App {
                         title: book.title || 'Untitled Book',
                         subtitle: book.author ? `by ${book.author}` : 'Reading List',
                         view: 'annual'
+                    });
+                }
+            });
+        }
+        
+        // Search monthly notes
+        if (data.monthlyData && data.monthlyData.notes) {
+            if (data.monthlyData.notes.toLowerCase().includes(searchTerm)) {
+                const preview = data.monthlyData.notes.substring(0, 60);
+                results.push({
+                    type: 'note',
+                    icon: '📝',
+                    title: 'Monthly Notes',
+                    subtitle: preview + (data.monthlyData.notes.length > 60 ? '...' : ''),
+                    view: 'monthly'
+                });
+            }
+        }
+        
+        // Search monthly checklist
+        if (data.monthlyData && data.monthlyData.checklist && data.monthlyData.checklist.length > 0) {
+            data.monthlyData.checklist.forEach(item => {
+                if (item.text && item.text.toLowerCase().includes(searchTerm)) {
+                    results.push({
+                        type: 'checklist',
+                        icon: item.completed ? '✅' : '☐',
+                        title: item.text,
+                        subtitle: `Monthly Checklist - ${item.completed ? 'Completed' : 'Pending'}`,
+                        view: 'monthly'
                     });
                 }
             });

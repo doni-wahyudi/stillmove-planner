@@ -29,6 +29,9 @@ class AnnualView {
         // Setup event listeners
         this.setupEventListeners();
         
+        // Update breadcrumb
+        this.updateBreadcrumb();
+        
         // Load data
         await this.loadData();
     }
@@ -62,6 +65,224 @@ class AnnualView {
         document.getElementById('bucket-list-text')?.addEventListener('blur', (e) => {
             this.saveBucketList(e.target.value);
         });
+        
+        // Reading list filter and sort
+        document.getElementById('reading-filter')?.addEventListener('change', () => this.renderReadingList());
+        document.getElementById('reading-sort')?.addEventListener('change', () => this.renderReadingList());
+        
+        // Goal templates button
+        document.getElementById('goal-templates-btn')?.addEventListener('click', () => this.showGoalTemplates());
+        
+        // Goal templates modal close
+        const templatesModal = document.getElementById('goal-templates-modal');
+        templatesModal?.querySelector('.modal-close')?.addEventListener('click', () => this.hideGoalTemplates());
+        templatesModal?.addEventListener('click', (e) => {
+            if (e.target === templatesModal) this.hideGoalTemplates();
+        });
+    }
+    
+    /**
+     * Goal templates data
+     */
+    getGoalTemplates() {
+        return [
+            {
+                icon: '💪',
+                title: 'Fitness Journey',
+                category: 'Health',
+                description: 'Get in shape and build healthy habits',
+                subGoals: [
+                    'Exercise 3x per week consistently',
+                    'Reach target weight/body composition',
+                    'Complete a fitness challenge (5K, marathon, etc.)',
+                    'Build a sustainable workout routine',
+                    'Improve flexibility and mobility'
+                ]
+            },
+            {
+                icon: '📚',
+                title: 'Learn a New Skill',
+                category: 'Learning',
+                description: 'Master something new this year',
+                subGoals: [
+                    'Choose skill and find learning resources',
+                    'Complete beginner course/tutorial',
+                    'Practice for 30 minutes daily',
+                    'Build a portfolio project',
+                    'Get feedback from experts'
+                ]
+            },
+            {
+                icon: '💰',
+                title: 'Financial Freedom',
+                category: 'Finance',
+                description: 'Take control of your finances',
+                subGoals: [
+                    'Create and stick to a monthly budget',
+                    'Build 3-6 month emergency fund',
+                    'Pay off high-interest debt',
+                    'Start investing regularly',
+                    'Increase income by 10%'
+                ]
+            },
+            {
+                icon: '🚀',
+                title: 'Career Growth',
+                category: 'Career',
+                description: 'Advance your professional life',
+                subGoals: [
+                    'Update resume and LinkedIn profile',
+                    'Learn industry-relevant skills',
+                    'Network with 5 new professionals monthly',
+                    'Seek promotion or new opportunity',
+                    'Get a mentor in your field'
+                ]
+            },
+            {
+                icon: '🧘',
+                title: 'Mental Wellness',
+                category: 'Health',
+                description: 'Prioritize your mental health',
+                subGoals: [
+                    'Establish daily meditation practice',
+                    'Reduce screen time before bed',
+                    'Journal thoughts and feelings weekly',
+                    'Practice gratitude daily',
+                    'Set healthy boundaries'
+                ]
+            },
+            {
+                icon: '❤️',
+                title: 'Strengthen Relationships',
+                category: 'Relationships',
+                description: 'Deepen connections with loved ones',
+                subGoals: [
+                    'Schedule regular quality time with family',
+                    'Reconnect with old friends',
+                    'Be more present in conversations',
+                    'Express appreciation more often',
+                    'Plan meaningful experiences together'
+                ]
+            },
+            {
+                icon: '✍️',
+                title: 'Creative Project',
+                category: 'Personal',
+                description: 'Bring your creative vision to life',
+                subGoals: [
+                    'Define the project scope and vision',
+                    'Create a timeline with milestones',
+                    'Dedicate weekly time for creation',
+                    'Share work and get feedback',
+                    'Complete and publish/launch'
+                ]
+            },
+            {
+                icon: '🌍',
+                title: 'Travel Adventure',
+                category: 'Personal',
+                description: 'Explore new places and cultures',
+                subGoals: [
+                    'Research and choose destinations',
+                    'Set travel budget and save',
+                    'Plan itinerary and book accommodations',
+                    'Learn about local culture/language',
+                    'Document and share experiences'
+                ]
+            }
+        ];
+    }
+    
+    /**
+     * Show goal templates modal
+     */
+    showGoalTemplates() {
+        const modal = document.getElementById('goal-templates-modal');
+        const grid = document.getElementById('goal-templates-grid');
+        if (!modal || !grid) return;
+        
+        // Render templates
+        const templates = this.getGoalTemplates();
+        grid.innerHTML = templates.map((template, index) => `
+            <div class="goal-template-card" data-template-index="${index}">
+                <div class="template-icon">${template.icon}</div>
+                <div class="template-info">
+                    <h4>${template.title}</h4>
+                    <span class="template-category">${template.category}</span>
+                    <p>${template.description}</p>
+                    <div class="template-subgoals-preview">
+                        ${template.subGoals.slice(0, 3).map(sg => `<span>• ${sg}</span>`).join('')}
+                        ${template.subGoals.length > 3 ? `<span class="more">+${template.subGoals.length - 3} more</span>` : ''}
+                    </div>
+                </div>
+                <button class="btn-small btn-primary use-template-btn">Use Template</button>
+            </div>
+        `).join('');
+        
+        // Add click handlers
+        grid.querySelectorAll('.use-template-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const card = e.target.closest('.goal-template-card');
+                const index = parseInt(card.dataset.templateIndex);
+                this.applyGoalTemplate(templates[index]);
+            });
+        });
+        
+        modal.classList.add('active');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+    
+    /**
+     * Hide goal templates modal
+     */
+    hideGoalTemplates() {
+        const modal = document.getElementById('goal-templates-modal');
+        if (modal) {
+            modal.classList.remove('active');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+    }
+    
+    /**
+     * Apply a goal template
+     */
+    async applyGoalTemplate(template) {
+        try {
+            const newGoal = {
+                year: this.currentYear,
+                category: template.category,
+                title: template.title,
+                sub_goals: template.subGoals.map(text => ({ text, completed: false })),
+                progress: 0
+            };
+            
+            const created = await dataService.createAnnualGoal(newGoal);
+            this.goals.push(created);
+            this.renderGoals();
+            this.hideGoalTemplates();
+            
+            // Show success feedback
+            if (window.showToast) {
+                window.showToast(`Goal "${template.title}" created with ${template.subGoals.length} sub-goals!`, 'success');
+            }
+        } catch (error) {
+            console.error('Failed to apply goal template:', error);
+            this.showError('Failed to create goal. Please try again.');
+        }
+    }
+    
+    /**
+     * Get current reading filter value
+     */
+    getReadingFilter() {
+        return document.getElementById('reading-filter')?.value || 'all';
+    }
+    
+    /**
+     * Get current reading sort value
+     */
+    getReadingSort() {
+        return document.getElementById('reading-sort')?.value || 'order';
     }
 
     /**
@@ -70,6 +291,7 @@ class AnnualView {
     async changeYear(delta) {
         this.currentYear += delta;
         document.getElementById('current-year').textContent = this.currentYear;
+        this.updateBreadcrumb();
         await this.loadData();
     }
 
@@ -79,7 +301,34 @@ class AnnualView {
     async goToCurrentYear() {
         this.currentYear = new Date().getFullYear();
         document.getElementById('current-year').textContent = this.currentYear;
+        this.updateBreadcrumb();
         await this.loadData();
+    }
+    
+    /**
+     * Update breadcrumb context
+     */
+    updateBreadcrumb() {
+        const breadcrumbContext = document.getElementById('breadcrumb-context');
+        if (breadcrumbContext) {
+            breadcrumbContext.textContent = `${this.currentYear}`;
+        }
+    }
+    
+    /**
+     * Get milestone info based on progress percentage
+     */
+    getMilestone(progress) {
+        if (progress >= 100) {
+            return { icon: '🏆', label: 'Complete!', class: 'milestone-complete' };
+        } else if (progress >= 75) {
+            return { icon: '🔥', label: 'Almost there!', class: 'milestone-75' };
+        } else if (progress >= 50) {
+            return { icon: '⭐', label: 'Halfway!', class: 'milestone-50' };
+        } else if (progress >= 25) {
+            return { icon: '🚀', label: 'Good start!', class: 'milestone-25' };
+        }
+        return null;
     }
 
     /**
@@ -177,6 +426,18 @@ class AnnualView {
         
         progressFill.style.width = `${progress}%`;
         progressText.textContent = `${progress}%`;
+        
+        // Add milestone badge if applicable
+        const milestoneEl = card.querySelector('.goal-milestone');
+        if (milestoneEl) {
+            const milestone = this.getMilestone(progress);
+            if (milestone) {
+                milestoneEl.innerHTML = `<span class="milestone-badge ${milestone.class}">${milestone.icon} ${milestone.label}</span>`;
+                milestoneEl.style.display = 'block';
+            } else {
+                milestoneEl.style.display = 'none';
+            }
+        }
         
         // Render sub-goals
         const subGoalsList = card.querySelector('.sub-goals-list');
@@ -476,20 +737,78 @@ class AnnualView {
         
         container.innerHTML = '';
         
-        // Ensure we have 50 slots
-        const books = [...this.readingList];
-        while (books.length < 50) {
-            books.push({ book_title: '', author: '', completed: false, rating: 0, order_index: books.length });
+        const filter = this.getReadingFilter();
+        const sort = this.getReadingSort();
+        
+        // Start with actual books
+        let books = [...this.readingList];
+        
+        // Apply filter
+        if (filter !== 'all') {
+            books = books.filter(book => {
+                if (!book.book_title) return false;
+                switch (filter) {
+                    case 'completed':
+                        return book.completed;
+                    case 'reading':
+                        return !book.completed && book.current_page > 0;
+                    case 'unread':
+                        return !book.completed && (!book.current_page || book.current_page === 0);
+                    case 'rating-5':
+                        return book.rating === 5;
+                    case 'rating-4':
+                        return book.rating >= 4;
+                    case 'rating-3':
+                        return book.rating >= 3;
+                    default:
+                        return true;
+                }
+            });
+        }
+        
+        // Apply sort
+        if (sort !== 'order') {
+            books.sort((a, b) => {
+                switch (sort) {
+                    case 'title':
+                        return (a.book_title || '').localeCompare(b.book_title || '');
+                    case 'rating-desc':
+                        return (b.rating || 0) - (a.rating || 0);
+                    case 'rating-asc':
+                        return (a.rating || 0) - (b.rating || 0);
+                    case 'progress':
+                        const progressA = a.total_pages ? (a.current_page || 0) / a.total_pages : 0;
+                        const progressB = b.total_pages ? (b.current_page || 0) / b.total_pages : 0;
+                        return progressB - progressA;
+                    default:
+                        return (a.order_index || 0) - (b.order_index || 0);
+                }
+            });
+        }
+        
+        // If showing all and not sorted, add empty slots
+        if (filter === 'all' && sort === 'order') {
+            while (books.length < 50) {
+                books.push({ book_title: '', author: '', completed: false, rating: 0, order_index: books.length });
+            }
         }
         
         books.forEach((book, index) => {
-            const bookEntry = this.createBookEntry(book, index + 1);
+            const displayNumber = filter === 'all' && sort === 'order' ? index + 1 : (book.order_index || 0) + 1;
+            const bookEntry = this.createBookEntry(book, displayNumber);
             container.appendChild(bookEntry);
         });
         
-        // Update completed count
+        // Update stats
         const completedCount = this.readingList.filter(b => b.completed).length;
         document.getElementById('books-completed').textContent = completedCount;
+        
+        // Calculate total pages read
+        const totalPagesRead = this.readingList.reduce((sum, book) => sum + (book.current_page || 0), 0);
+        const pagesReadEl = document.getElementById('pages-read');
+        if (pagesReadEl) {
+            pagesReadEl.textContent = totalPagesRead.toLocaleString();
+        }
     }
 
     /**
@@ -508,10 +827,18 @@ class AnnualView {
         const titleInput = entry.querySelector('.book-title');
         const authorInput = entry.querySelector('.book-author');
         const completedCheckbox = entry.querySelector('.book-completed');
+        const currentPageInput = entry.querySelector('.book-current-page');
+        const totalPagesInput = entry.querySelector('.book-total-pages');
+        const progressFill = entry.querySelector('.book-progress-fill');
         
         titleInput.value = book.book_title || '';
         authorInput.value = book.author || '';
         completedCheckbox.checked = book.completed || false;
+        currentPageInput.value = book.current_page || '';
+        totalPagesInput.value = book.total_pages || '';
+        
+        // Update progress bar
+        this.updateBookProgressBar(progressFill, book.current_page, book.total_pages);
         
         // Set rating stars
         const stars = entry.querySelectorAll('.star');
@@ -535,7 +862,6 @@ class AnnualView {
         });
         
         authorInput.addEventListener('blur', () => {
-            // Only update if book exists or if title is filled
             if (book.id || titleInput.value.trim()) {
                 this.updateBook(book.id || number, { 
                     book_title: titleInput.value.trim() || book.book_title,
@@ -545,14 +871,61 @@ class AnnualView {
             }
         });
         
-        completedCheckbox.addEventListener('change', () => {
-            // Only update if book exists or if title is filled
+        // Page progress event listeners
+        currentPageInput.addEventListener('blur', () => {
             if (book.id || titleInput.value.trim()) {
+                const currentPage = parseInt(currentPageInput.value) || 0;
+                const totalPages = parseInt(totalPagesInput.value) || 0;
+                
+                // Auto-complete if current page equals total pages
+                const shouldComplete = totalPages > 0 && currentPage >= totalPages;
+                
                 this.updateBook(book.id || number, { 
+                    book_title: titleInput.value.trim() || book.book_title,
+                    current_page: currentPage,
+                    completed: shouldComplete || completedCheckbox.checked,
+                    order_index: number - 1 
+                });
+                
+                this.updateBookProgressBar(progressFill, currentPage, totalPages);
+                
+                if (shouldComplete && !completedCheckbox.checked) {
+                    completedCheckbox.checked = true;
+                }
+            }
+        });
+        
+        totalPagesInput.addEventListener('blur', () => {
+            if (book.id || titleInput.value.trim()) {
+                const totalPages = parseInt(totalPagesInput.value) || 0;
+                const currentPage = parseInt(currentPageInput.value) || 0;
+                
+                this.updateBook(book.id || number, { 
+                    book_title: titleInput.value.trim() || book.book_title,
+                    total_pages: totalPages,
+                    order_index: number - 1 
+                });
+                
+                this.updateBookProgressBar(progressFill, currentPage, totalPages);
+            }
+        });
+        
+        completedCheckbox.addEventListener('change', () => {
+            if (book.id || titleInput.value.trim()) {
+                const updates = { 
                     book_title: titleInput.value.trim() || book.book_title,
                     completed: completedCheckbox.checked, 
                     order_index: number - 1 
-                });
+                };
+                
+                // If marking complete and has total pages, set current to total
+                if (completedCheckbox.checked && totalPagesInput.value) {
+                    updates.current_page = parseInt(totalPagesInput.value);
+                    currentPageInput.value = totalPagesInput.value;
+                    this.updateBookProgressBar(progressFill, updates.current_page, parseInt(totalPagesInput.value));
+                }
+                
+                this.updateBook(book.id || number, updates);
             }
         });
         
@@ -561,6 +934,29 @@ class AnnualView {
         });
         
         return entry;
+    }
+    
+    /**
+     * Update book progress bar
+     */
+    updateBookProgressBar(progressFill, currentPage, totalPages) {
+        if (!progressFill) return;
+        
+        if (totalPages && totalPages > 0) {
+            const percentage = Math.min(100, Math.round((currentPage || 0) / totalPages * 100));
+            progressFill.style.width = `${percentage}%`;
+            
+            // Color based on progress
+            if (percentage >= 100) {
+                progressFill.style.background = 'var(--success-color, #10b981)';
+            } else if (percentage >= 50) {
+                progressFill.style.background = 'var(--accent-primary)';
+            } else {
+                progressFill.style.background = 'var(--accent-tertiary)';
+            }
+        } else {
+            progressFill.style.width = '0%';
+        }
     }
 
     /**

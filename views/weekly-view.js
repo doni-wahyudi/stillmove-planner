@@ -22,6 +22,11 @@ class WeeklyView {
         this.selectedCategory = null;
         this.editingBlock = null;
         this.categories = [];
+        
+        // Drag and drop state
+        this.draggedBlock = null;
+        this.draggedElement = null;
+        this.dragStartSlot = null;
     }
 
     /**
@@ -97,6 +102,70 @@ class WeeklyView {
         
         // Time block modal
         this.setupModalListeners();
+        
+        // Recurring time block button
+        document.getElementById('add-recurring-btn')?.addEventListener('click', () => this.openRecurringModal());
+        
+        // Template buttons
+        document.getElementById('save-template-btn')?.addEventListener('click', () => this.openSaveTemplateModal());
+        document.getElementById('load-template-btn')?.addEventListener('click', () => this.openLoadTemplateModal());
+        
+        // Recurring modal listeners
+        this.setupRecurringModalListeners();
+        
+        // Template modal listeners
+        this.setupTemplateModalListeners();
+    }
+
+    /**
+     * Setup template modal event listeners
+     */
+    setupTemplateModalListeners() {
+        // Save template modal
+        const saveModal = document.getElementById('save-template-modal');
+        if (saveModal) {
+            saveModal.querySelectorAll('.modal-close').forEach(btn => {
+                btn.addEventListener('click', () => this.closeSaveTemplateModal());
+            });
+            saveModal.addEventListener('click', (e) => {
+                if (e.target === saveModal) this.closeSaveTemplateModal();
+            });
+            document.getElementById('confirm-save-template-btn')?.addEventListener('click', () => this.saveTemplate());
+        }
+        
+        // Load template modal
+        const loadModal = document.getElementById('load-template-modal');
+        if (loadModal) {
+            loadModal.querySelectorAll('.modal-close').forEach(btn => {
+                btn.addEventListener('click', () => this.closeLoadTemplateModal());
+            });
+            loadModal.addEventListener('click', (e) => {
+                if (e.target === loadModal) this.closeLoadTemplateModal();
+            });
+        }
+    }
+
+    /**
+     * Setup recurring modal event listeners
+     */
+    setupRecurringModalListeners() {
+        const modal = document.getElementById('recurring-modal');
+        if (!modal) return;
+        
+        const closeButtons = modal.querySelectorAll('.modal-close');
+        const saveButton = document.getElementById('save-recurring-btn');
+        
+        closeButtons.forEach(btn => {
+            btn.addEventListener('click', () => this.closeRecurringModal());
+        });
+        
+        saveButton?.addEventListener('click', () => this.saveRecurringBlocks());
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                this.closeRecurringModal();
+            }
+        });
     }
 
     /**
@@ -175,6 +244,16 @@ class WeeklyView {
     }
     
     /**
+     * Go to a specific date
+     */
+    async goToDate(date) {
+        this.currentDate = new Date(date);
+        this.weekStart = this.getWeekStart(this.currentDate);
+        this.updateWeekDisplay();
+        await this.loadData();
+    }
+    
+    /**
      * Export current week's time blocks to iCal
      */
     exportToICal() {
@@ -234,6 +313,16 @@ class WeeklyView {
         }
         
         document.getElementById('current-week-range').textContent = displayText;
+        
+        // Update breadcrumb context
+        const breadcrumbContext = document.getElementById('breadcrumb-context');
+        if (breadcrumbContext) {
+            if (startMonth === endMonth) {
+                breadcrumbContext.textContent = `${startMonth} ${startDay}-${endDay}, ${year}`;
+            } else {
+                breadcrumbContext.textContent = `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`;
+            }
+        }
         
         // Update day headers (Monday = 1, Sunday = 0)
         const dayOrder = [1, 2, 3, 4, 5, 6, 0]; // Monday to Sunday
@@ -443,6 +532,50 @@ class WeeklyView {
                 }
                 
                 scoreEl.style.display = 'flex';
+            }
+        }
+        
+        // Calculate best performing day
+        this.updateBestDayAnalysis();
+    }
+    
+    /**
+     * Calculate and display the best performing day of the week
+     */
+    updateBestDayAnalysis() {
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const dayCounts = [0, 0, 0, 0, 0, 0, 0]; // Sun-Sat
+        
+        // Count time blocks per day
+        this.timeBlocks.forEach(block => {
+            const blockDate = new Date(block.date);
+            const dayOfWeek = blockDate.getDay();
+            dayCounts[dayOfWeek]++;
+        });
+        
+        // Find the day with most blocks
+        let maxCount = 0;
+        let bestDayIndex = -1;
+        
+        dayCounts.forEach((count, index) => {
+            if (count > maxCount) {
+                maxCount = count;
+                bestDayIndex = index;
+            }
+        });
+        
+        // Update UI
+        const analysisEl = document.getElementById('best-day-analysis');
+        const nameEl = document.getElementById('best-day-name');
+        const countEl = document.getElementById('best-day-count');
+        
+        if (analysisEl && nameEl && countEl) {
+            if (maxCount > 0) {
+                nameEl.textContent = dayNames[bestDayIndex];
+                countEl.textContent = `(${maxCount} blocks)`;
+                analysisEl.style.display = 'flex';
+            } else {
+                analysisEl.style.display = 'none';
             }
         }
     }
@@ -747,13 +880,29 @@ class WeeklyView {
                 // Store category color as CSS variable for potential use
                 slot.style.setProperty('--category-color', categoryColor);
                 
-                // Only show activity text in the first slot
-                if (i === 0) {
+                // Clear slot content first
+                slot.innerHTML = '';
+                
+                // Determine slot position and styling
+                const isFirstSlot = (i === 0);
+                const isLastSlot = (i === slotsToFill - 1);
+                const isSingleSlot = (slotsToFill === 1);
+                
+                // Set border radius based on position
+                if (isSingleSlot) {
+                    slot.style.borderRadius = '8px';
+                } else if (isFirstSlot) {
                     slot.style.borderRadius = '8px 8px 0 0';
-                    
+                } else if (isLastSlot) {
+                    slot.style.borderRadius = '0 0 8px 8px';
+                } else {
+                    slot.style.borderRadius = '0';
+                }
+                
+                // Add activity text to first slot
+                if (isFirstSlot) {
                     const contentDiv = document.createElement('div');
                     contentDiv.className = 'time-block-content';
-                    // Use theme-aware text color instead of hardcoded white
                     contentDiv.style.color = 'inherit';
                     contentDiv.style.fontSize = '0.85rem';
                     contentDiv.style.fontWeight = '600';
@@ -761,18 +910,39 @@ class WeeklyView {
                     contentDiv.style.whiteSpace = 'normal';
                     contentDiv.style.wordWrap = 'break-word';
                     contentDiv.style.lineHeight = '1.3';
-                    contentDiv.textContent = block.activity;
                     
-                    slot.innerHTML = '';
+                    // Add category icon
+                    const icon = this.getCategoryIcon(block.category);
+                    contentDiv.innerHTML = `<span class="block-icon">${icon}</span> ${block.activity}`;
                     slot.appendChild(contentDiv);
-                } else if (i === slotsToFill - 1) {
-                    // Last slot - round bottom corners
-                    slot.style.borderRadius = '0 0 8px 8px';
-                    slot.innerHTML = '';
-                } else {
-                    // Middle slots - no rounded corners
-                    slot.style.borderRadius = '0';
-                    slot.innerHTML = '';
+                }
+                
+                // Add resize handle to last slot (or single slot)
+                if (isLastSlot) {
+                    const resizeHandle = document.createElement('div');
+                    resizeHandle.className = 'time-block-resize-handle';
+                    resizeHandle.dataset.blockId = block.id;
+                    slot.appendChild(resizeHandle);
+                    
+                    resizeHandle.addEventListener('mousedown', (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        this.handleResizeStart(e, block, slot);
+                    });
+                }
+                
+                // Make the first slot draggable
+                if (i === 0) {
+                    slot.draggable = true;
+                    slot.dataset.blockId = block.id;
+                    
+                    slot.addEventListener('dragstart', (e) => {
+                        this.handleDragStart(e, block, slot);
+                    });
+                    
+                    slot.addEventListener('dragend', (e) => {
+                        this.handleDragEnd(e);
+                    });
                 }
                 
                 // Store block data and click handler on all slots
@@ -1234,8 +1404,93 @@ class WeeklyView {
     }
 
     /**
-     * Render categories in the legend
+     * Icon library for categories
      */
+    getIconLibrary() {
+        return [
+            // People & Activities
+            '👤', '👨‍👩‍👧‍👦', '👥', '🤝', '💪', '🏃', '🧘', '🚴', '🏋️', '⚽',
+            // Work & Business
+            '💼', '📊', '💰', '📈', '🏢', '💻', '📱', '🖥️', '⌨️', '🔧',
+            // Education & Learning
+            '📚', '📖', '✏️', '🎓', '🔬', '🧪', '📝', '🎯', '💡', '🧠',
+            // Creative & Entertainment
+            '🎨', '🎬', '🎵', '🎮', '🎭', '📷', '🎸', '🎤', '🎧', '🎪',
+            // Travel & Places
+            '✈️', '🚗', '🚀', '🏠', '🏖️', '⛰️', '🌍', '🗺️', '🧳', '🚢',
+            // Food & Lifestyle
+            '🍳', '🍕', '☕', '🍷', '🛒', '🛍️', '💅', '💇', '🧹', '🏡',
+            // Nature & Weather
+            '🌱', '🌸', '🌳', '🌞', '🌙', '⭐', '🔥', '💧', '❄️', '🌈',
+            // Communication & Social
+            '📧', '📞', '💬', '📣', '🎉', '🎊', '❤️', '💝', '🤗', '😊',
+            // Time & Planning
+            '📅', '⏰', '⏳', '📌', '🔔', '✅', '📋', '🗓️', '⚡', '🎯',
+            // Health & Wellness
+            '🏥', '💊', '🩺', '🧘‍♀️', '😴', '🧠', '💆', '🌿', '🍎', '💪'
+        ];
+    }
+    
+    /**
+     * Get default icon for a category name
+     */
+    getDefaultCategoryIcon(categoryName) {
+        const defaults = {
+            'Personal': '👤',
+            'Work': '💼',
+            'Business': '📊',
+            'Family': '👨‍👩‍👧‍👦',
+            'Education': '📚',
+            'Social': '🎉',
+            'Project': '🚀',
+            'Health': '💪',
+            'Finance': '💰',
+            'Travel': '✈️',
+            'Creative': '🎨',
+            'Meeting': '🤝',
+            'Exercise': '🏃',
+            'Meditation': '🧘',
+            'Reading': '📖',
+            'Cooking': '🍳',
+            'Shopping': '🛒',
+            'Hobby': '🎮'
+        };
+        return defaults[categoryName] || '📌';
+    }
+    
+    /**
+     * Get icon for a category (checks custom icons first)
+     */
+    getCategoryIcon(categoryName) {
+        // Check for custom icon in localStorage
+        const customIcons = this.getCustomCategoryIcons();
+        if (customIcons[categoryName]) {
+            return customIcons[categoryName];
+        }
+        return this.getDefaultCategoryIcon(categoryName);
+    }
+    
+    /**
+     * Get custom category icons from localStorage
+     */
+    getCustomCategoryIcons() {
+        try {
+            const stored = localStorage.getItem('stillmove_category_icons');
+            return stored ? JSON.parse(stored) : {};
+        } catch {
+            return {};
+        }
+    }
+    
+    /**
+     * Save custom category icon to localStorage
+     */
+    saveCategoryIcon(categoryName, icon) {
+        const customIcons = this.getCustomCategoryIcons();
+        customIcons[categoryName] = icon;
+        localStorage.setItem('stillmove_category_icons', JSON.stringify(customIcons));
+    }
+    
     renderCategories() {
         const container = document.getElementById('category-list');
         if (!container) return;
@@ -1251,9 +1506,11 @@ class WeeklyView {
             item.setAttribute('aria-label', `${category.name} category`);
             
             const gradient = `linear-gradient(135deg, ${category.color_start} 0%, ${category.color_end} 100%)`;
+            const icon = this.getCategoryIcon(category.name);
             
             item.innerHTML = `
                 <span class="category-color" style="background: ${gradient};" aria-hidden="true"></span>
+                <span class="category-icon" aria-hidden="true">${icon}</span>
                 <span class="category-name">${category.name}</span>
             `;
             
@@ -1267,16 +1524,22 @@ class WeeklyView {
      * Update category dropdowns in modals
      */
     updateCategorySelects() {
-        const select = document.getElementById('block-category');
-        if (!select) return;
+        const selects = [
+            document.getElementById('block-category'),
+            document.getElementById('recurring-category')
+        ];
         
-        select.innerHTML = '';
-        
-        this.categories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category.name;
-            option.textContent = category.name;
-            select.appendChild(option);
+        selects.forEach(select => {
+            if (!select) return;
+            
+            select.innerHTML = '';
+            
+            this.categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.name;
+                option.textContent = category.name;
+                select.appendChild(option);
+            });
         });
     }
 
@@ -1352,6 +1615,20 @@ class WeeklyView {
         colorStartInput.value = category.color_start;
         colorEndInput.value = category.color_end;
         
+        // Add icon picker button before the name input
+        const iconBtn = document.createElement('button');
+        iconBtn.className = 'category-icon-btn';
+        iconBtn.type = 'button';
+        iconBtn.title = 'Change icon';
+        iconBtn.textContent = this.getCategoryIcon(category.name);
+        iconBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.openIconPicker(category.name, iconBtn);
+        });
+        
+        // Insert icon button at the beginning
+        item.insertBefore(iconBtn, preview);
+        
         // Disable delete for default categories
         if (category.is_default) {
             deleteBtn.disabled = true;
@@ -1380,6 +1657,72 @@ class WeeklyView {
         });
         
         return item;
+    }
+    
+    /**
+     * Open icon picker popup
+     */
+    openIconPicker(categoryName, buttonEl) {
+        // Remove any existing picker
+        const existingPicker = document.querySelector('.icon-picker-popup');
+        if (existingPicker) {
+            existingPicker.remove();
+        }
+        
+        // Create picker popup
+        const picker = document.createElement('div');
+        picker.className = 'icon-picker-popup';
+        
+        const icons = this.getIconLibrary();
+        const currentIcon = this.getCategoryIcon(categoryName);
+        
+        picker.innerHTML = `
+            <div class="icon-picker-header">
+                <span>Choose Icon</span>
+                <button class="icon-picker-close" type="button">×</button>
+            </div>
+            <div class="icon-picker-grid">
+                ${icons.map(icon => `
+                    <button class="icon-picker-item ${icon === currentIcon ? 'selected' : ''}" 
+                            type="button" 
+                            data-icon="${icon}">${icon}</button>
+                `).join('')}
+            </div>
+        `;
+        
+        // Position near the button
+        const rect = buttonEl.getBoundingClientRect();
+        picker.style.position = 'fixed';
+        picker.style.top = `${rect.bottom + 5}px`;
+        picker.style.left = `${rect.left}px`;
+        picker.style.zIndex = '10000';
+        
+        document.body.appendChild(picker);
+        
+        // Event listeners
+        picker.querySelector('.icon-picker-close').addEventListener('click', () => {
+            picker.remove();
+        });
+        
+        picker.querySelectorAll('.icon-picker-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const icon = item.dataset.icon;
+                this.saveCategoryIcon(categoryName, icon);
+                buttonEl.textContent = icon;
+                this.renderCategories();
+                this.renderTimeBlocks();
+                picker.remove();
+            });
+        });
+        
+        // Close on outside click
+        const closeOnOutside = (e) => {
+            if (!picker.contains(e.target) && e.target !== buttonEl) {
+                picker.remove();
+                document.removeEventListener('click', closeOnOutside);
+            }
+        };
+        setTimeout(() => document.addEventListener('click', closeOnOutside), 0);
     }
 
     /**
@@ -1496,6 +1839,603 @@ class WeeklyView {
     getCategoryColor(categoryName) {
         const category = this.getCategoryByName(categoryName);
         return category ? category.color_start : '#999999';
+    }
+
+    // ==================== DRAG AND DROP ====================
+
+    /**
+     * Handle drag start
+     */
+    handleDragStart(e, block, slot) {
+        this.draggedBlock = block;
+        this.draggedElement = slot;
+        this.dragStartSlot = {
+            day: parseInt(slot.dataset.day),
+            hour: parseInt(slot.dataset.hour),
+            minute: parseInt(slot.dataset.minute)
+        };
+        
+        // Set drag data
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', block.id);
+        
+        // Add dragging class
+        slot.classList.add('dragging');
+        
+        // Setup drop zones
+        this.setupDropZones();
+    }
+
+    /**
+     * Handle drag end
+     */
+    handleDragEnd(e) {
+        if (this.draggedElement) {
+            this.draggedElement.classList.remove('dragging');
+        }
+        
+        // Remove drop zone highlights
+        document.querySelectorAll('.time-slot').forEach(slot => {
+            slot.classList.remove('drag-over', 'drop-target');
+        });
+        
+        this.draggedBlock = null;
+        this.draggedElement = null;
+        this.dragStartSlot = null;
+    }
+
+    /**
+     * Setup drop zones for drag and drop
+     */
+    setupDropZones() {
+        document.querySelectorAll('.time-slot').forEach(slot => {
+            // Skip slots that already have blocks (except the dragged one)
+            if (slot.classList.contains('has-block') && slot !== this.draggedElement) {
+                return;
+            }
+            
+            slot.classList.add('drop-target');
+            
+            slot.addEventListener('dragover', this.handleDragOver.bind(this));
+            slot.addEventListener('dragenter', this.handleDragEnter.bind(this));
+            slot.addEventListener('dragleave', this.handleDragLeave.bind(this));
+            slot.addEventListener('drop', this.handleDrop.bind(this));
+        });
+    }
+
+    /**
+     * Handle drag over
+     */
+    handleDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    }
+
+    /**
+     * Handle drag enter
+     */
+    handleDragEnter(e) {
+        e.preventDefault();
+        const slot = e.currentTarget;
+        if (slot.classList.contains('drop-target')) {
+            slot.classList.add('drag-over');
+        }
+    }
+
+    /**
+     * Handle drag leave
+     */
+    handleDragLeave(e) {
+        const slot = e.currentTarget;
+        slot.classList.remove('drag-over');
+    }
+
+    /**
+     * Handle drop
+     */
+    async handleDrop(e) {
+        e.preventDefault();
+        const slot = e.currentTarget;
+        slot.classList.remove('drag-over');
+        
+        if (!this.draggedBlock) return;
+        
+        // Store reference before async operation (dragEnd may clear it)
+        const blockToMove = this.draggedBlock;
+        const blockId = blockToMove.id;
+        
+        const newDay = parseInt(slot.dataset.day);
+        const newHour = parseInt(slot.dataset.hour);
+        const newMinute = parseInt(slot.dataset.minute);
+        
+        // Calculate new date
+        const newDate = new Date(this.weekStart);
+        newDate.setDate(newDate.getDate() + newDay);
+        
+        // Calculate new times
+        const newStartTime = `${String(newHour).padStart(2, '0')}:${String(newMinute).padStart(2, '0')}`;
+        
+        // Calculate duration from original block
+        let durationMinutes = 30;
+        if (blockToMove.end_time) {
+            const startParts = blockToMove.start_time.split(':');
+            const endParts = blockToMove.end_time.split(':');
+            const startMins = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
+            const endMins = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
+            durationMinutes = endMins - startMins;
+        }
+        
+        // Calculate new end time
+        const endTotalMinutes = newHour * 60 + newMinute + durationMinutes;
+        const endHour = Math.floor(endTotalMinutes / 60);
+        const endMin = endTotalMinutes % 60;
+        const newEndTime = `${String(endHour).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`;
+        
+        try {
+            // Update the block in database
+            await dataService.updateTimeBlock(blockId, {
+                date: formatDate(newDate),
+                start_time: newStartTime,
+                end_time: newEndTime
+            });
+            
+            // Update local data - find the block in the array
+            const localBlock = this.timeBlocks.find(b => b.id === blockId);
+            if (localBlock) {
+                localBlock.date = formatDate(newDate);
+                localBlock.start_time = newStartTime;
+                localBlock.end_time = newEndTime;
+            }
+            
+            // Re-render
+            this.renderTimeBlocks();
+            this.showSuccess('Time block moved');
+        } catch (error) {
+            console.error('Failed to move time block:', error);
+            this.showError('Failed to move time block');
+        }
+    }
+
+    // ==================== RESIZE TIME BLOCKS ====================
+
+    /**
+     * Handle resize start
+     */
+    handleResizeStart(e, block, slot) {
+        e.preventDefault();
+        
+        this.resizingBlock = block;
+        this.resizeStartY = e.clientY;
+        this.resizeStartSlot = slot;
+        
+        // Calculate original end time in minutes
+        const endParts = block.end_time.split(':');
+        this.resizeOriginalEndMinutes = parseInt(endParts[0]) * 60 + parseInt(endParts[1]);
+        
+        // Add resizing class
+        slot.classList.add('resizing');
+        
+        // Bind move and end handlers
+        this.boundResizeMove = this.handleResizeMove.bind(this);
+        this.boundResizeEnd = this.handleResizeEnd.bind(this);
+        
+        document.addEventListener('mousemove', this.boundResizeMove);
+        document.addEventListener('mouseup', this.boundResizeEnd);
+    }
+
+    /**
+     * Handle resize move
+     */
+    handleResizeMove(e) {
+        if (!this.resizingBlock) return;
+        
+        const deltaY = e.clientY - this.resizeStartY;
+        // Each 30px of movement = 30 minutes (one slot)
+        const slotHeight = 30;
+        const deltaSlots = Math.round(deltaY / slotHeight);
+        const deltaMinutes = deltaSlots * 30;
+        
+        // Calculate new end time
+        let newEndMinutes = this.resizeOriginalEndMinutes + deltaMinutes;
+        
+        // Minimum duration: 30 minutes
+        const startParts = this.resizingBlock.start_time.split(':');
+        const startMinutes = parseInt(startParts[0]) * 60 + parseInt(startParts[1]);
+        if (newEndMinutes < startMinutes + 30) {
+            newEndMinutes = startMinutes + 30;
+        }
+        
+        // Maximum: END_HOUR (23:00)
+        if (newEndMinutes > END_HOUR * 60) {
+            newEndMinutes = END_HOUR * 60;
+        }
+        
+        // Store preview end time
+        this.resizePreviewEndMinutes = newEndMinutes;
+        
+        // Show preview by highlighting affected slots
+        this.showResizePreview();
+    }
+
+    /**
+     * Show resize preview
+     */
+    showResizePreview() {
+        // Clear previous preview
+        document.querySelectorAll('.resize-preview').forEach(slot => {
+            slot.classList.remove('resize-preview');
+        });
+        
+        if (!this.resizingBlock || !this.resizePreviewEndMinutes) return;
+        
+        const blockDate = new Date(this.resizingBlock.date);
+        let dayOfWeek = blockDate.getDay();
+        dayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        
+        const startParts = this.resizingBlock.start_time.split(':');
+        const startHour = parseInt(startParts[0]);
+        const startMinute = parseInt(startParts[1]);
+        
+        const endHour = Math.floor(this.resizePreviewEndMinutes / 60);
+        const endMinute = this.resizePreviewEndMinutes % 60;
+        
+        // Highlight slots from current end to new end
+        const currentEndParts = this.resizingBlock.end_time.split(':');
+        const currentEndMinutes = parseInt(currentEndParts[0]) * 60 + parseInt(currentEndParts[1]);
+        
+        if (this.resizePreviewEndMinutes > currentEndMinutes) {
+            // Extending - highlight new slots
+            let hour = Math.floor(currentEndMinutes / 60);
+            let minute = currentEndMinutes % 60;
+            
+            while (hour * 60 + minute < this.resizePreviewEndMinutes) {
+                const slot = document.querySelector(
+                    `.time-slot[data-day="${dayOfWeek}"][data-hour="${hour}"][data-minute="${minute}"]`
+                );
+                if (slot && !slot.classList.contains('has-block')) {
+                    slot.classList.add('resize-preview');
+                }
+                minute += 30;
+                if (minute >= 60) {
+                    minute = 0;
+                    hour++;
+                }
+            }
+        }
+    }
+
+    /**
+     * Handle resize end
+     */
+    async handleResizeEnd(e) {
+        document.removeEventListener('mousemove', this.boundResizeMove);
+        document.removeEventListener('mouseup', this.boundResizeEnd);
+        
+        // Clear preview
+        document.querySelectorAll('.resize-preview').forEach(slot => {
+            slot.classList.remove('resize-preview');
+        });
+        
+        if (this.resizeStartSlot) {
+            this.resizeStartSlot.classList.remove('resizing');
+        }
+        
+        if (!this.resizingBlock || !this.resizePreviewEndMinutes) {
+            this.resizingBlock = null;
+            return;
+        }
+        
+        // Calculate new end time
+        const endHour = Math.floor(this.resizePreviewEndMinutes / 60);
+        const endMinute = this.resizePreviewEndMinutes % 60;
+        const newEndTime = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+        
+        // Only update if changed
+        if (newEndTime !== this.resizingBlock.end_time) {
+            try {
+                const blockId = this.resizingBlock.id;
+                await dataService.updateTimeBlock(blockId, { end_time: newEndTime });
+                
+                // Update local data
+                const localBlock = this.timeBlocks.find(b => b.id === blockId);
+                if (localBlock) {
+                    localBlock.end_time = newEndTime;
+                }
+                
+                this.renderTimeBlocks();
+                this.showSuccess('Time block resized');
+            } catch (error) {
+                console.error('Failed to resize time block:', error);
+                this.showError('Failed to resize time block');
+            }
+        }
+        
+        this.resizingBlock = null;
+        this.resizePreviewEndMinutes = null;
+    }
+
+    // ==================== RECURRING TIME BLOCKS ====================
+
+    /**
+     * Open recurring time block modal
+     */
+    openRecurringModal() {
+        const modal = document.getElementById('recurring-modal');
+        if (!modal) return;
+        
+        // Reset form
+        document.getElementById('recurring-activity').value = '';
+        document.getElementById('recurring-category').value = this.selectedCategory || 'Personal';
+        document.getElementById('recurring-start-time').value = '09:00';
+        document.getElementById('recurring-end-time').value = '10:00';
+        
+        // Reset day checkboxes
+        document.querySelectorAll('.recurring-day-checkbox').forEach(cb => {
+            cb.checked = false;
+        });
+        
+        modal.style.display = 'flex';
+    }
+
+    /**
+     * Close recurring modal
+     */
+    closeRecurringModal() {
+        const modal = document.getElementById('recurring-modal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    /**
+     * Save recurring time blocks
+     */
+    async saveRecurringBlocks() {
+        const activity = document.getElementById('recurring-activity').value.trim();
+        const category = document.getElementById('recurring-category').value;
+        const startTime = document.getElementById('recurring-start-time').value;
+        const endTime = document.getElementById('recurring-end-time').value;
+        
+        if (!activity || !startTime) {
+            this.showError('Please fill in activity and start time');
+            return;
+        }
+        
+        // Get selected days
+        const selectedDays = [];
+        document.querySelectorAll('.recurring-day-checkbox:checked').forEach(cb => {
+            selectedDays.push(parseInt(cb.value));
+        });
+        
+        if (selectedDays.length === 0) {
+            this.showError('Please select at least one day');
+            return;
+        }
+        
+        try {
+            const createdBlocks = [];
+            
+            for (const dayOffset of selectedDays) {
+                const date = new Date(this.weekStart);
+                date.setDate(date.getDate() + dayOffset);
+                
+                const blockData = {
+                    date: formatDate(date),
+                    start_time: startTime,
+                    end_time: endTime || null,
+                    activity,
+                    category
+                };
+                
+                const created = await dataService.createTimeBlock(blockData);
+                createdBlocks.push(created);
+                this.timeBlocks.push(created);
+            }
+            
+            this.renderTimeBlocks();
+            this.closeRecurringModal();
+            this.showSuccess(`Created ${createdBlocks.length} recurring time blocks`);
+        } catch (error) {
+            console.error('Failed to create recurring blocks:', error);
+            this.showError('Failed to create recurring time blocks');
+        }
+    }
+
+    // ==================== SCHEDULE TEMPLATES ====================
+
+    /**
+     * Open save template modal
+     */
+    openSaveTemplateModal() {
+        if (this.timeBlocks.length === 0) {
+            this.showError('No time blocks to save as template');
+            return;
+        }
+        
+        const modal = document.getElementById('save-template-modal');
+        if (!modal) return;
+        
+        document.getElementById('template-name').value = '';
+        modal.style.display = 'flex';
+    }
+
+    /**
+     * Close save template modal
+     */
+    closeSaveTemplateModal() {
+        const modal = document.getElementById('save-template-modal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    /**
+     * Save current week as template
+     */
+    saveTemplate() {
+        const name = document.getElementById('template-name').value.trim();
+        if (!name) {
+            this.showError('Please enter a template name');
+            return;
+        }
+        
+        // Convert time blocks to template format (day of week + time, no specific dates)
+        const templateBlocks = this.timeBlocks.map(block => {
+            const blockDate = new Date(block.date);
+            let dayOfWeek = blockDate.getDay();
+            // Convert to Monday=0 format
+            dayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+            
+            return {
+                dayOfWeek,
+                start_time: block.start_time,
+                end_time: block.end_time,
+                activity: block.activity,
+                category: block.category
+            };
+        });
+        
+        // Get existing templates from localStorage
+        const templates = JSON.parse(localStorage.getItem('weeklyTemplates') || '[]');
+        
+        // Check if template with same name exists
+        const existingIndex = templates.findIndex(t => t.name === name);
+        if (existingIndex >= 0) {
+            if (!confirm(`Template "${name}" already exists. Overwrite?`)) {
+                return;
+            }
+            templates[existingIndex] = { name, blocks: templateBlocks, createdAt: new Date().toISOString() };
+        } else {
+            templates.push({ name, blocks: templateBlocks, createdAt: new Date().toISOString() });
+        }
+        
+        localStorage.setItem('weeklyTemplates', JSON.stringify(templates));
+        this.closeSaveTemplateModal();
+        this.showSuccess(`Template "${name}" saved with ${templateBlocks.length} blocks`);
+    }
+
+    /**
+     * Open load template modal
+     */
+    openLoadTemplateModal() {
+        const modal = document.getElementById('load-template-modal');
+        if (!modal) return;
+        
+        this.renderTemplateList();
+        modal.style.display = 'flex';
+    }
+
+    /**
+     * Close load template modal
+     */
+    closeLoadTemplateModal() {
+        const modal = document.getElementById('load-template-modal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    /**
+     * Render template list in modal
+     */
+    renderTemplateList() {
+        const container = document.getElementById('template-list');
+        if (!container) return;
+        
+        const templates = JSON.parse(localStorage.getItem('weeklyTemplates') || '[]');
+        
+        if (templates.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📋</div>
+                    <div class="empty-state-title">No templates saved</div>
+                    <div class="empty-state-description">Save your current week's schedule as a template to reuse it later.</div>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = templates.map((template, index) => `
+            <div class="template-item" data-index="${index}">
+                <div class="template-info">
+                    <span class="template-name">${template.name}</span>
+                    <span class="template-blocks">${template.blocks.length} blocks</span>
+                </div>
+                <div class="template-actions">
+                    <button class="btn-small btn-apply-template" data-index="${index}">Apply</button>
+                    <button class="btn-small btn-delete-template" data-index="${index}">🗑️</button>
+                </div>
+            </div>
+        `).join('');
+        
+        // Add event listeners
+        container.querySelectorAll('.btn-apply-template').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const index = parseInt(e.target.dataset.index);
+                this.applyTemplate(templates[index]);
+            });
+        });
+        
+        container.querySelectorAll('.btn-delete-template').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const index = parseInt(e.target.dataset.index);
+                this.deleteTemplate(index);
+            });
+        });
+    }
+
+    /**
+     * Apply a template to the current week
+     */
+    async applyTemplate(template) {
+        const replaceExisting = confirm('Do you want to replace existing time blocks?\n\nClick OK to replace, Cancel to add alongside existing blocks.');
+        
+        try {
+            // If replacing, delete existing blocks first
+            if (replaceExisting) {
+                for (const block of this.timeBlocks) {
+                    await dataService.deleteTimeBlock(block.id);
+                }
+                this.timeBlocks = [];
+            }
+            
+            // Create new blocks from template
+            for (const templateBlock of template.blocks) {
+                const date = new Date(this.weekStart);
+                date.setDate(date.getDate() + templateBlock.dayOfWeek);
+                
+                const blockData = {
+                    date: formatDate(date),
+                    start_time: templateBlock.start_time,
+                    end_time: templateBlock.end_time,
+                    activity: templateBlock.activity,
+                    category: templateBlock.category
+                };
+                
+                const created = await dataService.createTimeBlock(blockData);
+                this.timeBlocks.push(created);
+            }
+            
+            this.renderTimeBlocks();
+            this.closeLoadTemplateModal();
+            this.showSuccess(`Applied template "${template.name}" with ${template.blocks.length} blocks`);
+        } catch (error) {
+            console.error('Failed to apply template:', error);
+            this.showError('Failed to apply template');
+        }
+    }
+
+    /**
+     * Delete a template
+     */
+    deleteTemplate(index) {
+        const templates = JSON.parse(localStorage.getItem('weeklyTemplates') || '[]');
+        const template = templates[index];
+        
+        if (!confirm(`Delete template "${template.name}"?`)) {
+            return;
+        }
+        
+        templates.splice(index, 1);
+        localStorage.setItem('weeklyTemplates', JSON.stringify(templates));
+        this.renderTemplateList();
+        this.showSuccess('Template deleted');
     }
 }
 

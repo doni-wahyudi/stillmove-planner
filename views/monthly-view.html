@@ -13,6 +13,62 @@
         </div>
     </div>
 
+    <!-- Monthly Summary Dashboard -->
+    <section class="monthly-summary-dashboard" aria-labelledby="summary-heading">
+        <h3 id="summary-heading" class="sr-only">Monthly Summary</h3>
+        <div class="summary-cards">
+            <div class="summary-card">
+                <div class="summary-icon">📅</div>
+                <div class="summary-content">
+                    <span class="summary-value" id="summary-time-blocks">0</span>
+                    <span class="summary-label">Time Blocks</span>
+                </div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-icon">⏱️</div>
+                <div class="summary-content">
+                    <span class="summary-value" id="summary-hours">0h</span>
+                    <span class="summary-label">Scheduled</span>
+                </div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-icon">✅</div>
+                <div class="summary-content">
+                    <span class="summary-value" id="summary-checklist">0%</span>
+                    <span class="summary-label">Checklist Done</span>
+                </div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-icon">🎯</div>
+                <div class="summary-content">
+                    <span class="summary-value" id="summary-action-plans">0%</span>
+                    <span class="summary-label">Action Plans</span>
+                </div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-icon">🔥</div>
+                <div class="summary-content">
+                    <span class="summary-value" id="summary-habits">0%</span>
+                    <span class="summary-label">Habits Rate</span>
+                </div>
+            </div>
+        </div>
+        <!-- Weekly Progress Trend -->
+        <div class="weekly-trend-container">
+            <h4>Weekly Progress</h4>
+            <div class="weekly-trend-chart" id="weekly-trend-chart">
+                <!-- Bars will be dynamically generated -->
+            </div>
+            <div class="weekly-trend-labels">
+                <span>Week 1</span>
+                <span>Week 2</span>
+                <span>Week 3</span>
+                <span>Week 4</span>
+                <span>Week 5</span>
+            </div>
+        </div>
+    </section>
+
     <!-- Top Row: Calendar + Categories -->
     <div class="monthly-content-top">
         <!-- Calendar Grid -->
@@ -121,6 +177,14 @@
         <button class="delete-action-plan-btn" aria-label="Delete action plan">×</button>
     </div>
 </template>
+
+<!-- Sidebar Toggle Button (Mobile) -->
+<button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle categories sidebar" title="Categories">
+    📂
+</button>
+
+<!-- Sidebar Overlay (Mobile) -->
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
 
 <!-- Category Manager Modal -->
 <div id="category-manager-modal" class="modal" style="display: none;">

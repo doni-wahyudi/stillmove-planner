@@ -10,6 +10,9 @@
                 <span aria-hidden="true">→</span>
             </button>
             <button id="today-week-btn" class="btn-today" aria-label="Go to current week" data-tooltip="Press T">Today</button>
+            <button id="add-recurring-btn" class="btn-icon" aria-label="Add recurring time block" title="Add recurring blocks">🔄</button>
+            <button id="save-template-btn" class="btn-icon" aria-label="Save as template" title="Save week as template">💾</button>
+            <button id="load-template-btn" class="btn-icon" aria-label="Load template" title="Load template">📂</button>
             <button id="export-ical-btn" class="btn-icon btn-export" aria-label="Export to calendar" title="Export to iCal">📤</button>
         </div>
     </div>
@@ -46,6 +49,11 @@
                         </svg>
                     </div>
                     <span class="score-label">Productivity</span>
+                </div>
+                <div id="best-day-analysis" class="best-day-analysis" style="display: none;">
+                    <span class="best-day-icon">🏆</span>
+                    <span class="best-day-text">Best day: <strong id="best-day-name">-</strong></span>
+                    <span class="best-day-count" id="best-day-count"></span>
                 </div>
             </div>
             
@@ -264,3 +272,115 @@
         <button class="delete-category-btn" aria-label="Delete category">×</button>
     </div>
 </template>
+
+<!-- Save Template Modal -->
+<div id="save-template-modal" class="modal" style="display: none;">
+    <div class="modal-content modal-small">
+        <div class="modal-header">
+            <h3>Save as Template</h3>
+            <button class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-description">Save your current week's schedule as a reusable template.</p>
+            <div class="form-group">
+                <label for="template-name">Template Name</label>
+                <input type="text" id="template-name" placeholder="e.g., Work Week, Study Schedule" required />
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="confirm-save-template-btn" class="btn-primary">Save Template</button>
+            <button class="btn-secondary modal-close">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Load Template Modal -->
+<div id="load-template-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Load Template</h3>
+            <button class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-description">Apply a saved template to the current week.</p>
+            <div id="template-list" class="template-list">
+                <!-- Templates will be loaded here -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary modal-close">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Recurring Time Block Modal -->
+<div id="recurring-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Add Recurring Time Blocks</h3>
+            <button class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="recurring-activity">Activity</label>
+                <input type="text" id="recurring-activity" placeholder="Activity description" required />
+            </div>
+            <div class="form-group">
+                <label for="recurring-category">Category</label>
+                <select id="recurring-category">
+                    <!-- Categories will be dynamically loaded -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="recurring-start-time">Start Time</label>
+                <input type="time" id="recurring-start-time" step="1800" required />
+            </div>
+            <div class="form-group">
+                <label for="recurring-end-time">End Time</label>
+                <input type="time" id="recurring-end-time" step="1800" />
+            </div>
+            <div class="form-group">
+                <label>Days of the Week</label>
+                <div class="recurring-days-grid">
+                    <label class="recurring-day-label">
+                        <input type="checkbox" class="recurring-day-checkbox" value="0" />
+                        <span>Mon</span>
+                    </label>
+                    <label class="recurring-day-label">
+                        <input type="checkbox" class="recurring-day-checkbox" value="1" />
+                        <span>Tue</span>
+                    </label>
+                    <label class="recurring-day-label">
+                        <input type="checkbox" class="recurring-day-checkbox" value="2" />
+                        <span>Wed</span>
+                    </label>
+                    <label class="recurring-day-label">
+                        <input type="checkbox" class="recurring-day-checkbox" value="3" />
+                        <span>Thu</span>
+                    </label>
+                    <label class="recurring-day-label">
+                        <input type="checkbox" class="recurring-day-checkbox" value="4" />
+                        <span>Fri</span>
+                    </label>
+                    <label class="recurring-day-label">
+                        <input type="checkbox" class="recurring-day-checkbox" value="5" />
+                        <span>Sat</span>
+                    </label>
+                    <label class="recurring-day-label">
+                        <input type="checkbox" class="recurring-day-checkbox" value="6" />
+                        <span>Sun</span>
+                    </label>
+                </div>
+            </div>
+            <div class="recurring-quick-select">
+                <button type="button" class="btn-small" onclick="document.querySelectorAll('.recurring-day-checkbox').forEach((cb,i) => cb.checked = i < 5)">Weekdays</button>
+                <button type="button" class="btn-small" onclick="document.querySelectorAll('.recurring-day-checkbox').forEach((cb,i) => cb.checked = i >= 5)">Weekend</button>
+                <button type="button" class="btn-small" onclick="document.querySelectorAll('.recurring-day-checkbox').forEach(cb => cb.checked = true)">All Days</button>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="save-recurring-btn" class="btn-primary">Create Blocks</button>
+            <button class="btn-secondary modal-close">Cancel</button>
+        </div>
+    </div>
+</div>

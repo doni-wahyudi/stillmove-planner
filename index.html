@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stillmove Planner</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -35,8 +36,11 @@
                 <li role="none"><a href="#action-plan" data-view="action-plan" role="menuitem" aria-label="Navigate to Action Plan view">Action Plan</a></li>
                 <li role="none"><a href="#pomodoro" data-view="pomodoro" role="menuitem" aria-label="Navigate to Pomodoro Timer view" data-tooltip="Press P">Pomodoro</a></li>
             </ul>
-            <div class="nav-search">
-                <button id="search-toggle-btn" class="search-toggle-btn" aria-label="Search" data-tooltip="Press /">
+            <div class="nav-actions">
+                <button id="keyboard-help-btn" class="nav-icon-btn" aria-label="Keyboard shortcuts" title="Keyboard Shortcuts (?)">
+                    <span aria-hidden="true">⌨️</span>
+                </button>
+                <button id="search-toggle-btn" class="nav-icon-btn" aria-label="Search" title="Search (/)">
                     <span aria-hidden="true">🔍</span>
                 </button>
                 <div id="search-container" class="search-container hidden">
@@ -56,6 +60,13 @@
             </div>
         </nav>
 
+        <!-- Breadcrumb Navigation -->
+        <nav id="breadcrumb-nav" class="breadcrumb-nav" aria-label="Breadcrumb">
+            <span id="breadcrumb-view" class="breadcrumb-view"></span>
+            <span class="breadcrumb-separator">›</span>
+            <span id="breadcrumb-context" class="breadcrumb-context"></span>
+        </nav>
+
         <!-- Main Content Area -->
         <main id="main-content" class="main-content" role="main" aria-label="Main content">
             <!-- Views will be loaded here dynamically -->
@@ -71,6 +82,30 @@
         <!-- Toast Notifications -->
         <div id="toast-container" class="toast-container" role="region" aria-live="polite" aria-label="Notifications"></div>
         
+        <!-- Bottom Navigation (Mobile) -->
+        <nav id="bottom-nav" class="bottom-nav" role="navigation" aria-label="Mobile navigation">
+            <a href="#weekly" data-view="weekly" class="bottom-nav-item" aria-label="Weekly view">
+                <span class="bottom-nav-icon">📅</span>
+                <span class="bottom-nav-label">Weekly</span>
+            </a>
+            <a href="#monthly" data-view="monthly" class="bottom-nav-item" aria-label="Monthly view">
+                <span class="bottom-nav-icon">📆</span>
+                <span class="bottom-nav-label">Monthly</span>
+            </a>
+            <a href="#habits" data-view="habits" class="bottom-nav-item" aria-label="Habits view">
+                <span class="bottom-nav-icon">✨</span>
+                <span class="bottom-nav-label">Habits</span>
+            </a>
+            <a href="#annual" data-view="annual" class="bottom-nav-item" aria-label="Annual view">
+                <span class="bottom-nav-icon">🎯</span>
+                <span class="bottom-nav-label">Annual</span>
+            </a>
+            <a href="#settings" data-view="settings" class="bottom-nav-item" aria-label="Settings">
+                <span class="bottom-nav-icon">⚙️</span>
+                <span class="bottom-nav-label">Settings</span>
+            </a>
+        </nav>
+
         <!-- Quick Add Floating Action Button -->
         <div id="fab-container" class="fab-container">
             <div id="fab-menu" class="fab-menu">

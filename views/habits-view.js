@@ -20,6 +20,7 @@ class HabitsView {
         this.moodEntries = [];
         this.sleepEntries = [];
         this.waterEntries = [];
+        this.annualGoals = []; // For linking habits to goals
         
         this.selectedMoodDate = null;
     }
@@ -65,6 +66,9 @@ class HabitsView {
         // Add habit buttons
         document.getElementById('add-daily-habit-btn')?.addEventListener('click', () => this.addDailyHabit());
         document.getElementById('add-weekly-habit-btn')?.addEventListener('click', () => this.addWeeklyHabit());
+        
+        // Habit bundles button
+        document.getElementById('habit-bundles-btn')?.addEventListener('click', () => this.openHabitBundlesModal());
         
         // Habit filter
         document.getElementById('daily-habits-filter')?.addEventListener('change', (e) => this.filterHabits(e.target.value));
@@ -131,6 +135,17 @@ class HabitsView {
         this.updateMonthYearDisplay();
         await this.loadData();
     }
+    
+    /**
+     * Go to a specific date
+     */
+    async goToDate(date) {
+        const d = new Date(date);
+        this.currentYear = d.getFullYear();
+        this.currentMonth = d.getMonth() + 1;
+        this.updateMonthYearDisplay();
+        await this.loadData();
+    }
 
     /**
      * Update month/year display
@@ -141,6 +156,12 @@ class HabitsView {
         const display = `${monthNames[this.currentMonth - 1]} ${this.currentYear}`;
         const el = document.getElementById('habits-current-month-year');
         if (el) el.textContent = display;
+        
+        // Update breadcrumb context
+        const breadcrumbContext = document.getElementById('breadcrumb-context');
+        if (breadcrumbContext) {
+            breadcrumbContext.textContent = display;
+        }
     }
 
     /**
@@ -172,6 +193,9 @@ class HabitsView {
             // Load habits
             this.dailyHabits = await dataService.getDailyHabits();
             this.weeklyHabits = await dataService.getWeeklyHabits();
+            
+            // Load annual goals for linking
+            this.annualGoals = await dataService.getAnnualGoals(this.currentYear);
             
             // Get date range for the month
             const startDate = `${this.currentYear}-${String(this.currentMonth).padStart(2, '0')}-01`;
@@ -281,7 +305,102 @@ class HabitsView {
             }
         });
         
+        // Goal linking (only for daily habits)
+        if (type === 'daily') {
+            this.setupGoalLinking(item, habit);
+        }
+        
         return item;
+    }
+    
+    /**
+     * Setup goal linking for a habit item
+     */
+    setupGoalLinking(item, habit) {
+        const linkBtn = item.querySelector('.link-goal-btn');
+        const goalLinkContainer = item.querySelector('.habit-goal-link');
+        const goalSelect = item.querySelector('.habit-goal-select');
+        const linkedDisplay = item.querySelector('.linked-goal-display');
+        const goalNameSpan = item.querySelector('.goal-name');
+        const unlinkBtn = item.querySelector('.unlink-goal-btn');
+        
+        if (!linkBtn || !goalSelect) return;
+        
+        // Populate goal select
+        goalSelect.innerHTML = '<option value="">-- Select a goal --</option>';
+        this.annualGoals.forEach(goal => {
+            const option = document.createElement('option');
+            option.value = goal.id;
+            option.textContent = goal.title || 'Unnamed Goal';
+            goalSelect.appendChild(option);
+        });
+        
+        // Show linked goal if exists
+        if (habit.linked_goal_id) {
+            const linkedGoal = this.annualGoals.find(g => g.id === habit.linked_goal_id);
+            if (linkedGoal) {
+                goalNameSpan.textContent = linkedGoal.title || 'Unnamed Goal';
+                linkedDisplay.style.display = 'block';
+                linkBtn.style.opacity = '0.5';
+            }
+        }
+        
+        // Toggle goal selector
+        linkBtn.addEventListener('click', () => {
+            const isVisible = goalLinkContainer.style.display === 'block';
+            goalLinkContainer.style.display = isVisible ? 'none' : 'block';
+            if (!isVisible) {
+                goalSelect.value = habit.linked_goal_id || '';
+            }
+        });
+        
+        // Handle goal selection
+        goalSelect.addEventListener('change', async () => {
+            const goalId = goalSelect.value || null;
+            await this.linkHabitToGoal(habit.id, goalId);
+            
+            // Update display
+            if (goalId) {
+                const linkedGoal = this.annualGoals.find(g => g.id === goalId);
+                goalNameSpan.textContent = linkedGoal?.title || 'Unnamed Goal';
+                linkedDisplay.style.display = 'block';
+                linkBtn.style.opacity = '0.5';
+            } else {
+                linkedDisplay.style.display = 'none';
+                linkBtn.style.opacity = '1';
+            }
+            
+            goalLinkContainer.style.display = 'none';
+        });
+        
+        // Unlink goal
+        unlinkBtn?.addEventListener('click', async () => {
+            await this.linkHabitToGoal(habit.id, null);
+            linkedDisplay.style.display = 'none';
+            linkBtn.style.opacity = '1';
+        });
+    }
+    
+    /**
+     * Link a habit to an annual goal
+     */
+    async linkHabitToGoal(habitId, goalId) {
+        try {
+            await dataService.updateDailyHabit(habitId, { linked_goal_id: goalId });
+            
+            // Update local state
+            const habit = this.dailyHabits.find(h => h.id === habitId);
+            if (habit) {
+                habit.linked_goal_id = goalId;
+            }
+            
+            if (window.showToast) {
+                window.showToast(goalId ? 'Habit linked to goal' : 'Habit unlinked from goal', 'success');
+            }
+        } catch (error) {
+            console.error('Failed to link habit to goal:', error);
+            this.showError('Failed to link habit. Please try again.');
+        }
     }
 
     /**
@@ -324,12 +443,22 @@ class HabitsView {
                 
                 const cell = document.createElement('div');
                 cell.className = 'grid-cell checkbox-cell';
+                if (completion?.notes) {
+                    cell.classList.add('has-note');
+                    cell.title = completion.notes;
+                }
                 
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.checked = completion?.completed || false;
                 checkbox.addEventListener('change', () => {
                     this.toggleDailyHabitCompletion(habit.id, date, checkbox.checked, cell);
+                });
+                
+                // Double-click to add/edit note
+                cell.addEventListener('dblclick', (e) => {
+                    e.preventDefault();
+                    this.showHabitNoteModal(habit, date, completion?.notes || '');
                 });
                 
                 cell.appendChild(checkbox);
@@ -392,9 +521,267 @@ class HabitsView {
         // Render heatmap
         this.renderHeatmap();
         
+        // Render achievement badges
+        this.renderAchievements();
+        
+        // Render daily challenge
+        this.renderDailyChallenge();
+        
+        // Update points display
+        this.updatePointsDisplay();
+        
         // Check for milestone celebrations
         const overallProgress = this.calculateOverallProgress();
         this.showMilestoneCelebration(overallProgress);
+    }
+    
+    /**
+     * Calculate and display total points
+     */
+    updatePointsDisplay() {
+        const pointsEl = document.getElementById('total-points');
+        if (!pointsEl) return;
+        
+        const points = this.calculateTotalPoints();
+        pointsEl.textContent = points.toLocaleString();
+        
+        // Add animation if points changed
+        pointsEl.classList.add('points-updated');
+        setTimeout(() => pointsEl.classList.remove('points-updated'), 500);
+    }
+    
+    /**
+     * Calculate total points based on habits and achievements
+     */
+    calculateTotalPoints() {
+        let points = 0;
+        
+        // Points for each habit completion (10 XP each)
+        const completedHabits = this.dailyHabitCompletions.filter(c => c.completed).length;
+        points += completedHabits * 10;
+        
+        // Bonus points for streaks
+        this.dailyHabits.forEach(habit => {
+            const streak = this.calculateStreak(habit.id);
+            if (streak >= 7) points += 50;   // Week streak bonus
+            if (streak >= 14) points += 100; // 2-week bonus
+            if (streak >= 30) points += 250; // Month bonus
+            if (streak >= 100) points += 1000; // Century bonus
+        });
+        
+        // Points for achievements
+        const achievements = this.calculateAchievements();
+        const earnedCount = achievements.filter(a => a.earned).length;
+        points += earnedCount * 100; // 100 XP per achievement
+        
+        // Bonus for perfect days
+        if (this.hasPerfectDay()) points += 50;
+        
+        // Challenge completion bonus
+        const challenge = this.getDailyChallenge();
+        const progress = this.getChallengeProgress(challenge);
+        if (progress >= challenge.target) points += 25;
+        
+        return points;
+    }
+    
+    /**
+     * Render achievement badges
+     */
+    renderAchievements() {
+        const container = document.getElementById('achievements-grid');
+        if (!container) return;
+        
+        // Calculate achievements
+        const achievements = this.calculateAchievements();
+        
+        container.innerHTML = achievements.map(badge => `
+            <div class="achievement-badge ${badge.earned ? 'earned' : 'locked'}" title="${badge.description}">
+                <span class="badge-icon">${badge.icon}</span>
+                <span class="badge-name">${badge.name}</span>
+                ${badge.earned ? `<span class="badge-date">${badge.earnedDate || ''}</span>` : '<span class="badge-lock">🔒</span>'}
+            </div>
+        `).join('');
+    }
+    
+    /**
+     * Calculate which achievements have been earned
+     */
+    calculateAchievements() {
+        const achievements = [
+            { id: 'first-habit', name: 'First Step', icon: '👣', description: 'Complete your first habit', check: () => this.dailyHabitCompletions.some(c => c.completed) },
+            { id: 'streak-3', name: 'Getting Started', icon: '🌱', description: '3-day streak on any habit', check: () => this.getMaxStreak() >= 3 },
+            { id: 'streak-7', name: 'Week Warrior', icon: '⚔️', description: '7-day streak on any habit', check: () => this.getMaxStreak() >= 7 },
+            { id: 'streak-14', name: 'Fortnight Fighter', icon: '🛡️', description: '14-day streak on any habit', check: () => this.getMaxStreak() >= 14 },
+            { id: 'streak-30', name: 'Monthly Master', icon: '👑', description: '30-day streak on any habit', check: () => this.getMaxStreak() >= 30 },
+            { id: 'streak-100', name: 'Century Club', icon: '💯', description: '100-day streak on any habit', check: () => this.getMaxStreak() >= 100 },
+            { id: 'perfect-day', name: 'Perfect Day', icon: '⭐', description: 'Complete all habits in one day', check: () => this.hasPerfectDay() },
+            { id: 'perfect-week', name: 'Perfect Week', icon: '🌟', description: '7 perfect days in a row', check: () => this.getPerfectDayStreak() >= 7 },
+            { id: 'five-habits', name: 'Habit Builder', icon: '🏗️', description: 'Track 5 or more habits', check: () => this.dailyHabits.length >= 5 },
+            { id: 'ten-habits', name: 'Habit Master', icon: '🎓', description: 'Track 10 or more habits', check: () => this.dailyHabits.length >= 10 },
+            { id: 'early-bird', name: 'Early Bird', icon: '🐦', description: 'Complete a habit before 8 AM', check: () => false }, // Would need timestamp tracking
+            { id: 'consistency', name: 'Consistent', icon: '📈', description: '80%+ completion rate this month', check: () => this.calculateOverallProgress() >= 80 },
+        ];
+        
+        return achievements.map(badge => ({
+            ...badge,
+            earned: badge.check()
+        }));
+    }
+    
+    /**
+     * Get the maximum streak across all habits
+     */
+    getMaxStreak() {
+        let maxStreak = 0;
+        this.dailyHabits.forEach(habit => {
+            const streak = this.calculateStreak(habit.id);
+            if (streak > maxStreak) maxStreak = streak;
+        });
+        return maxStreak;
+    }
+    
+    /**
+     * Check if there's been a perfect day (all habits completed)
+     */
+    hasPerfectDay() {
+        if (this.dailyHabits.length === 0) return false;
+        
+        const daysInMonth = getDaysInMonth(this.currentYear, this.currentMonth);
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${this.currentYear}-${String(this.currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            let allCompleted = true;
+            
+            for (const habit of this.dailyHabits) {
+                const completion = this.dailyHabitCompletions.find(
+                    c => c.habit_id === habit.id && c.date === dateStr && c.completed
+                );
+                if (!completion) {
+                    allCompleted = false;
+                    break;
+                }
+            }
+            
+            if (allCompleted) return true;
+        }
+        return false;
+    }
+    
+    /**
+     * Get the streak of perfect days
+     */
+    getPerfectDayStreak() {
+        if (this.dailyHabits.length === 0) return 0;
+        
+        let streak = 0;
+        let currentDate = new Date();
+        
+        while (true) {
+            const dateStr = formatDate(currentDate);
+            let allCompleted = true;
+            
+            for (const habit of this.dailyHabits) {
+                const completion = this.dailyHabitCompletions.find(
+                    c => c.habit_id === habit.id && c.date === dateStr && c.completed
+                );
+                if (!completion) {
+                    allCompleted = false;
+                    break;
+                }
+            }
+            
+            if (allCompleted) {
+                streak++;
+                currentDate.setDate(currentDate.getDate() - 1);
+            } else {
+                break;
+            }
+            
+            // Safety limit
+            if (streak > 365) break;
+        }
+        
+        return streak;
+    }
+    
+    /**
+     * Render daily challenge
+     */
+    renderDailyChallenge() {
+        const container = document.getElementById('daily-challenge');
+        if (!container) return;
+        
+        const challenge = this.getDailyChallenge();
+        const progress = this.getChallengeProgress(challenge);
+        const isComplete = progress >= challenge.target;
+        
+        container.innerHTML = `
+            <div class="challenge-card ${isComplete ? 'complete' : ''}">
+                <div class="challenge-header">
+                    <span class="challenge-icon">${challenge.icon}</span>
+                    <span class="challenge-type">${challenge.type}</span>
+                </div>
+                <p class="challenge-text">${challenge.text}</p>
+                <div class="challenge-progress">
+                    <div class="challenge-progress-bar">
+                        <div class="challenge-progress-fill" style="width: ${Math.min(100, (progress / challenge.target) * 100)}%"></div>
+                    </div>
+                    <span class="challenge-progress-text">${progress}/${challenge.target}</span>
+                </div>
+                ${isComplete ? '<div class="challenge-complete">✅ Challenge Complete!</div>' : ''}
+            </div>
+        `;
+    }
+    
+    /**
+     * Get today's challenge based on the date (deterministic)
+     */
+    getDailyChallenge() {
+        const today = new Date();
+        const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
+        
+        const challenges = [
+            { type: 'Streak', icon: '🔥', text: 'Maintain or extend a streak today', target: 1, check: 'streak' },
+            { type: 'Perfect Day', icon: '⭐', text: 'Complete all your habits today', target: this.dailyHabits.length || 1, check: 'all' },
+            { type: 'Early Start', icon: '🌅', text: 'Complete at least 3 habits today', target: 3, check: 'count' },
+            { type: 'Halfway', icon: '🎯', text: 'Complete at least half your habits', target: Math.ceil((this.dailyHabits.length || 2) / 2), check: 'count' },
+            { type: 'Consistency', icon: '📈', text: 'Complete the same habits as yesterday', target: 1, check: 'consistency' },
+            { type: 'Push Yourself', icon: '💪', text: 'Complete one more habit than yesterday', target: 1, check: 'improvement' },
+            { type: 'Focus', icon: '🎯', text: 'Complete your first 3 habits', target: 3, check: 'first3' },
+        ];
+        
+        // Use day of year to pick a challenge (deterministic per day)
+        const challengeIndex = dayOfYear % challenges.length;
+        return challenges[challengeIndex];
+    }
+    
+    /**
+     * Get progress towards today's challenge
+     */
+    getChallengeProgress(challenge) {
+        const today = formatDate(new Date());
+        let todayCompletions = 0;
+        
+        this.dailyHabits.forEach(habit => {
+            const completion = this.dailyHabitCompletions.find(
+                c => c.habit_id === habit.id && c.date === today && c.completed
+            );
+            if (completion) todayCompletions++;
+        });
+        
+        switch (challenge.check) {
+            case 'all':
+            case 'count':
+            case 'first3':
+                return todayCompletions;
+            case 'streak':
+                return this.getMaxStreak() > 0 ? 1 : 0;
+            case 'consistency':
+            case 'improvement':
+                return todayCompletions > 0 ? 1 : 0;
+            default:
+                return todayCompletions;
+        }
     }
     
     /**
@@ -567,6 +954,67 @@ class HabitsView {
         `;
         
         heatmapContainer.innerHTML = heatmapHTML;
+        
+        // Render streak trend chart
+        this.renderStreakChart();
+    }
+    
+    /**
+     * Render streak trend chart showing daily completion rates over last 30 days
+     */
+    renderStreakChart() {
+        const chartContainer = document.getElementById('streak-chart');
+        if (!chartContainer || this.dailyHabits.length === 0) return;
+        
+        const today = new Date();
+        const totalHabits = this.dailyHabits.length;
+        const days = 30;
+        const data = [];
+        
+        // Calculate completion percentage for each of the last 30 days
+        for (let i = days - 1; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            const dateStr = formatDate(date);
+            
+            let completed = 0;
+            this.dailyHabits.forEach(habit => {
+                const completion = this.dailyHabitCompletions.find(
+                    c => c.habit_id === habit.id && c.date === dateStr && c.completed
+                );
+                if (completion) completed++;
+            });
+            
+            const percentage = totalHabits > 0 ? (completed / totalHabits) * 100 : 0;
+            data.push({
+                date: dateStr,
+                day: date.getDate(),
+                percentage,
+                isToday: i === 0
+            });
+        }
+        
+        // Build chart HTML - simple bar chart
+        const maxHeight = 60; // pixels
+        let chartHTML = '<div class="streak-bars">';
+        
+        data.forEach(({ day, percentage, isToday, date }) => {
+            const height = (percentage / 100) * maxHeight;
+            let levelClass = 'low';
+            if (percentage >= 80) levelClass = 'high';
+            else if (percentage >= 50) levelClass = 'medium';
+            
+            const todayClass = isToday ? ' today' : '';
+            chartHTML += `
+                <div class="streak-bar-container${todayClass}" title="${date}: ${percentage.toFixed(0)}%">
+                    <div class="streak-bar ${levelClass}" style="height: ${height}px;"></div>
+                    <span class="streak-bar-label">${day}</span>
+                </div>
+            `;
+        });
+        
+        chartHTML += '</div>';
+        chartContainer.innerHTML = chartHTML;
     }
     
     /**
@@ -704,6 +1152,144 @@ class HabitsView {
         } catch (error) {
             console.error('Failed to add daily habit:', error);
             this.showError('Failed to add habit. Please try again.');
+        }
+    }
+
+    /**
+     * Open habit bundles modal
+     */
+    openHabitBundlesModal() {
+        const modal = document.getElementById('habit-bundles-modal');
+        if (!modal) return;
+        
+        modal.style.display = 'flex';
+        
+        // Setup event listeners
+        modal.querySelectorAll('.modal-close').forEach(btn => {
+            btn.addEventListener('click', () => this.closeHabitBundlesModal());
+        });
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) this.closeHabitBundlesModal();
+        });
+        
+        // Bundle card click handlers
+        modal.querySelectorAll('.habit-bundle-card button').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const card = e.target.closest('.habit-bundle-card');
+                const bundleName = card.dataset.bundle;
+                this.addHabitBundle(bundleName);
+            });
+        });
+    }
+    
+    /**
+     * Close habit bundles modal
+     */
+    closeHabitBundlesModal() {
+        const modal = document.getElementById('habit-bundles-modal');
+        if (modal) modal.style.display = 'none';
+    }
+    
+    /**
+     * Get habit bundle definitions
+     */
+    getHabitBundles() {
+        return {
+            morning: [
+                'Wake up early (6 AM)',
+                'Morning meditation',
+                'Exercise 30 min',
+                'Healthy breakfast',
+                'Plan the day'
+            ],
+            fitness: [
+                'Workout session',
+                'Walk 10,000 steps',
+                'Stretch/Yoga',
+                'Drink 8 glasses water',
+                'Track calories'
+            ],
+            productivity: [
+                'Deep work (2+ hours)',
+                'No social media',
+                'Review daily goals',
+                'Learn something new',
+                'Evening journal'
+            ],
+            wellness: [
+                'Meditate 10 min',
+                'Write 3 gratitudes',
+                'Sleep 8 hours',
+                'No screens 1hr before bed',
+                'Self-care activity'
+            ],
+            learning: [
+                'Read 30 minutes',
+                'Practice a skill',
+                'Take notes',
+                'Review flashcards',
+                'Teach/share knowledge'
+            ],
+            mindfulness: [
+                'Morning meditation',
+                'Breathing exercises',
+                'Mindful eating',
+                'Evening reflection',
+                'Digital detox hour'
+            ]
+        };
+    }
+    
+    /**
+     * Add a habit bundle
+     */
+    async addHabitBundle(bundleName) {
+        const bundles = this.getHabitBundles();
+        const habits = bundles[bundleName];
+        
+        if (!habits) {
+            this.showError('Bundle not found');
+            return;
+        }
+        
+        // Check if we have room
+        const availableSlots = 30 - this.dailyHabits.length;
+        if (availableSlots < habits.length) {
+            this.showError(`Not enough slots. You have ${availableSlots} available, bundle needs ${habits.length}.`);
+            return;
+        }
+        
+        try {
+            let addedCount = 0;
+            for (const habitName of habits) {
+                // Check if habit already exists
+                const exists = this.dailyHabits.some(h => 
+                    h.habit_name.toLowerCase() === habitName.toLowerCase()
+                );
+                
+                if (!exists) {
+                    const newHabit = {
+                        habit_name: habitName,
+                        order_index: this.dailyHabits.length
+                    };
+                    const created = await dataService.createDailyHabit(newHabit);
+                    this.dailyHabits.push(created);
+                    addedCount++;
+                }
+            }
+            
+            this.renderDailyHabits();
+            this.closeHabitBundlesModal();
+            
+            if (addedCount > 0) {
+                this.showSuccess(`Added ${addedCount} habits from ${bundleName} bundle!`);
+            } else {
+                this.showSuccess('All habits from this bundle already exist.');
+            }
+        } catch (error) {
+            console.error('Failed to add habit bundle:', error);
+            this.showError('Failed to add habits. Please try again.');
         }
     }
 
@@ -1391,19 +1977,132 @@ class HabitsView {
     }
 
     /**
+     * Show habit note modal for adding/editing notes
+     */
+    showHabitNoteModal(habit, date, existingNote) {
+        // Remove existing modal if any
+        const existingModal = document.getElementById('habit-note-modal');
+        if (existingModal) existingModal.remove();
+        
+        const formattedDate = new Date(date).toLocaleDateString(undefined, { 
+            weekday: 'short', month: 'short', day: 'numeric' 
+        });
+        
+        const modal = document.createElement('div');
+        modal.id = 'habit-note-modal';
+        modal.className = 'modal';
+        modal.style.display = 'flex';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 400px;">
+                <div class="modal-header">
+                    <h3>📝 Habit Note</h3>
+                    <button class="modal-close" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p style="color: var(--text-secondary); margin-bottom: 0.5rem; font-size: 0.85rem;">
+                        <strong>${habit.habit_name}</strong> • ${formattedDate}
+                    </p>
+                    <textarea id="habit-note-input" 
+                              placeholder="Add a note about this habit completion..."
+                              rows="4"
+                              style="width: 100%; resize: vertical;">${existingNote}</textarea>
+                    <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.5rem;">
+                        💡 Tip: Double-click any habit cell to add a note
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary modal-close">Cancel</button>
+                    <button class="btn-primary" id="save-habit-note-btn">Save Note</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Focus textarea
+        modal.querySelector('#habit-note-input').focus();
+        
+        // Close handlers
+        modal.querySelectorAll('.modal-close').forEach(btn => {
+            btn.addEventListener('click', () => modal.remove());
+        });
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+        
+        // Save handler
+        modal.querySelector('#save-habit-note-btn').addEventListener('click', async () => {
+            const note = modal.querySelector('#habit-note-input').value.trim();
+            await this.saveHabitNote(habit.id, date, note);
+            modal.remove();
+        });
+        
+        // Enter key to save (Ctrl+Enter)
+        modal.querySelector('#habit-note-input').addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                const note = e.target.value.trim();
+                await this.saveHabitNote(habit.id, date, note);
+                modal.remove();
+            }
+        });
+    }
+    
+    /**
+     * Save habit note
+     */
+    async saveHabitNote(habitId, date, note) {
+        try {
+            // Update the completion with the note
+            await dataService.updateHabitNote(habitId, date, note);
+            
+            // Update local state
+            const completion = this.dailyHabitCompletions.find(
+                c => c.habit_id === habitId && c.date === date
+            );
+            if (completion) {
+                completion.notes = note;
+            } else {
+                this.dailyHabitCompletions.push({ 
+                    habit_id: habitId, 
+                    date, 
+                    completed: false, 
+                    notes: note 
+                });
+            }
+            
+            // Re-render grid to show note indicator
+            this.renderDailyHabitsGrid();
+            
+            if (window.showToast) {
+                window.showToast(note ? 'Note saved!' : 'Note removed', 'success');
+            }
+        } catch (error) {
+            console.error('Failed to save habit note:', error);
+            this.showError('Failed to save note. Please try again.');
+        }
+    }
+
+    /**
      * Show error message
      */
     showError(message) {
-        // TODO: Implement toast notification
-        alert(message);
+        if (window.showToast) {
+            window.showToast(message, 'error');
+        } else {
+            alert(message);
+        }
     }
 
     /**
      * Show success message
      */
     showSuccess(message) {
-        // TODO: Implement toast notification
-        console.log(message);
+        if (window.showToast) {
+            window.showToast(message, 'success');
+        } else {
+            console.log(message);
+        }
     }
 }
 

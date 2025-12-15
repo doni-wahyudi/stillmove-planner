@@ -74,6 +74,67 @@ class MonthlyView {
         
         // Manage categories button
         document.getElementById('manage-categories-btn')?.addEventListener('click', () => this.openCategoryManager());
+        
+        // Sidebar toggle (mobile)
+        this.setupSidebarToggle();
+    }
+    
+    /**
+     * Setup sidebar toggle for mobile
+     */
+    setupSidebarToggle() {
+        const toggleBtn = document.getElementById('sidebar-toggle');
+        const sidebar = document.querySelector('.categories-sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        
+        if (!toggleBtn || !sidebar) return;
+        
+        // Add close button to sidebar
+        if (!sidebar.querySelector('.sidebar-close')) {
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'sidebar-close';
+            closeBtn.innerHTML = '×';
+            closeBtn.setAttribute('aria-label', 'Close sidebar');
+            closeBtn.addEventListener('click', () => this.closeSidebar());
+            sidebar.insertBefore(closeBtn, sidebar.firstChild);
+        }
+        
+        toggleBtn.addEventListener('click', () => {
+            const isOpen = sidebar.classList.contains('open');
+            if (isOpen) {
+                this.closeSidebar();
+            } else {
+                this.openSidebar();
+            }
+        });
+        
+        overlay?.addEventListener('click', () => this.closeSidebar());
+    }
+    
+    /**
+     * Open sidebar
+     */
+    openSidebar() {
+        const sidebar = document.querySelector('.categories-sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const toggleBtn = document.getElementById('sidebar-toggle');
+        
+        sidebar?.classList.add('open');
+        overlay?.classList.add('visible');
+        toggleBtn?.classList.add('active');
+    }
+    
+    /**
+     * Close sidebar
+     */
+    closeSidebar() {
+        const sidebar = document.querySelector('.categories-sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const toggleBtn = document.getElementById('sidebar-toggle');
+        
+        sidebar?.classList.remove('open');
+        overlay?.classList.remove('visible');
+        toggleBtn?.classList.remove('active');
     }
 
     /**
@@ -105,6 +166,17 @@ class MonthlyView {
         this.updateMonthYearDisplay();
         await this.loadData();
     }
+    
+    /**
+     * Go to a specific date
+     */
+    async goToDate(date) {
+        const d = new Date(date);
+        this.currentYear = d.getFullYear();
+        this.currentMonth = d.getMonth() + 1;
+        this.updateMonthYearDisplay();
+        await this.loadData();
+    }
 
     /**
      * Update month/year display
@@ -114,6 +186,12 @@ class MonthlyView {
                            'July', 'August', 'September', 'October', 'November', 'December'];
         const displayText = `${monthNames[this.currentMonth - 1]} ${this.currentYear}`;
         document.getElementById('current-month-year').textContent = displayText;
+        
+        // Update breadcrumb context
+        const breadcrumbContext = document.getElementById('breadcrumb-context');
+        if (breadcrumbContext) {
+            breadcrumbContext.textContent = displayText;
+        }
     }
 
     /**
@@ -141,10 +219,144 @@ class MonthlyView {
             this.renderNotes();
             this.renderActionPlan();
             
+            // Update summary dashboard
+            await this.updateSummaryDashboard();
+            
         } catch (error) {
             console.error('Failed to load monthly data:', error);
             this.showError('Failed to load data. Please try again.');
         }
+    }
+    
+    /**
+     * Update the monthly summary dashboard
+     */
+    async updateSummaryDashboard() {
+        try {
+            // Get all time blocks for the month
+            const daysInMonth = getDaysInMonth(this.currentYear, this.currentMonth);
+            let totalTimeBlocks = 0;
+            let totalMinutes = 0;
+            const weeklyData = [0, 0, 0, 0, 0]; // 5 weeks max
+            
+            // Fetch time blocks for each day
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(this.currentYear, this.currentMonth - 1, day);
+                const dateStr = formatDate(date);
+                const weekIndex = Math.floor((day - 1) / 7);
+                
+                try {
+                    const timeBlocks = await dataService.getTimeBlocks(dateStr);
+                    if (timeBlocks && timeBlocks.length > 0) {
+                        totalTimeBlocks += timeBlocks.length;
+                        weeklyData[weekIndex] += timeBlocks.length;
+                        
+                        // Calculate total minutes
+                        timeBlocks.forEach(block => {
+                            if (block.start_time && block.end_time) {
+                                const [startH, startM] = block.start_time.split(':').map(Number);
+                                const [endH, endM] = block.end_time.split(':').map(Number);
+                                const minutes = (endH * 60 + endM) - (startH * 60 + startM);
+                                if (minutes > 0) totalMinutes += minutes;
+                            }
+                        });
+                    }
+                } catch (e) {
+                    // Ignore errors for individual days
+                }
+            }
+            
+            // Calculate checklist completion
+            const checklist = this.monthlyData.checklist || [];
+            const checklistTotal = checklist.length;
+            const checklistDone = checklist.filter(item => item.completed).length;
+            const checklistPercent = checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0;
+            
+            // Calculate action plan progress
+            const actionPlans = (this.monthlyData.action_plan || []).filter(item => item.type !== 'day_categories');
+            const actionPlanTotal = actionPlans.length;
+            const actionPlanProgress = actionPlanTotal > 0 
+                ? Math.round(actionPlans.reduce((sum, p) => sum + (p.progress || 0), 0) / actionPlanTotal)
+                : 0;
+            
+            // Get habits completion rate for the month
+            let habitsRate = 0;
+            try {
+                const habits = await dataService.getHabits();
+                if (habits && habits.length > 0) {
+                    let totalChecks = 0;
+                    let completedChecks = 0;
+                    
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        const date = new Date(this.currentYear, this.currentMonth - 1, day);
+                        if (date > new Date()) break; // Don't count future days
+                        
+                        const dateStr = formatDate(date);
+                        const habitData = await dataService.getHabitData(dateStr);
+                        
+                        habits.forEach(habit => {
+                            totalChecks++;
+                            if (habitData && habitData[habit.id]) {
+                                completedChecks++;
+                            }
+                        });
+                    }
+                    
+                    habitsRate = totalChecks > 0 ? Math.round((completedChecks / totalChecks) * 100) : 0;
+                }
+            } catch (e) {
+                console.error('Error calculating habits rate:', e);
+            }
+            
+            // Update UI
+            const timeBlocksEl = document.getElementById('summary-time-blocks');
+            const hoursEl = document.getElementById('summary-hours');
+            const checklistEl = document.getElementById('summary-checklist');
+            const actionPlansEl = document.getElementById('summary-action-plans');
+            const habitsEl = document.getElementById('summary-habits');
+            
+            if (timeBlocksEl) timeBlocksEl.textContent = totalTimeBlocks;
+            if (hoursEl) hoursEl.textContent = `${Math.round(totalMinutes / 60)}h`;
+            if (checklistEl) checklistEl.textContent = `${checklistPercent}%`;
+            if (actionPlansEl) actionPlansEl.textContent = `${actionPlanProgress}%`;
+            if (habitsEl) habitsEl.textContent = `${habitsRate}%`;
+            
+            // Render weekly trend chart
+            this.renderWeeklyTrendChart(weeklyData);
+            
+        } catch (error) {
+            console.error('Error updating summary dashboard:', error);
+        }
+    }
+    
+    /**
+     * Render weekly trend chart
+     */
+    renderWeeklyTrendChart(weeklyData) {
+        const container = document.getElementById('weekly-trend-chart');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        const maxValue = Math.max(...weeklyData, 1);
+        const currentWeek = Math.floor((new Date().getDate() - 1) / 7);
+        const isCurrentMonth = this.currentYear === new Date().getFullYear() && 
+                               this.currentMonth === new Date().getMonth() + 1;
+        
+        weeklyData.forEach((value, index) => {
+            const bar = document.createElement('div');
+            bar.className = 'trend-bar';
+            if (isCurrentMonth && index === currentWeek) {
+                bar.classList.add('current-week');
+            }
+            
+            const height = maxValue > 0 ? (value / maxValue) * 100 : 0;
+            bar.style.height = `${Math.max(height, 5)}%`;
+            bar.dataset.value = value;
+            bar.title = `Week ${index + 1}: ${value} blocks`;
+            
+            container.appendChild(bar);
+        });
     }
 
     /**

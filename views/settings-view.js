@@ -260,6 +260,12 @@ class SettingsView {
             if (!validation.valid) {
                 throw new Error(`Invalid file format: ${validation.errors.join(', ')}`);
             }
+            
+            // Show warnings if any
+            if (validation.warnings && validation.warnings.length > 0) {
+                console.warn('Import warnings:', validation.warnings);
+                showToast(`Warning: ${validation.warnings.length} data issues found`, 'warning');
+            }
 
             // Confirm with user
             const confirmMessage = mode === 'replace' 
@@ -270,6 +276,26 @@ class SettingsView {
                 statusDiv.textContent = 'Import cancelled';
                 statusDiv.className = 'status-message';
                 return;
+            }
+
+            // Auto-backup before import
+            statusDiv.textContent = 'Creating backup before import...';
+            try {
+                const backupData = await dataService.exportAllData();
+                const backupFilename = `planner-backup-before-import-${new Date().toISOString().split('T')[0]}.json`;
+                dataService.downloadExportFile(backupData, backupFilename);
+                showToast('Backup created automatically', 'success');
+                
+                // Small delay to ensure backup download starts
+                await new Promise(resolve => setTimeout(resolve, 500));
+            } catch (backupError) {
+                console.warn('Auto-backup failed:', backupError);
+                // Ask user if they want to continue without backup
+                if (!confirm('Could not create automatic backup. Continue with import anyway?')) {
+                    statusDiv.textContent = 'Import cancelled - backup failed';
+                    statusDiv.className = 'status-message warning';
+                    return;
+                }
             }
 
             // Import data

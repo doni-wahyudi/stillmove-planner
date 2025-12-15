@@ -11,6 +11,12 @@
             </button>
             <button id="habits-today-btn" class="btn-today" aria-label="Go to current month" data-tooltip="Press T">Today</button>
         </div>
+        <!-- Points Display -->
+        <div class="points-display" aria-label="Your points">
+            <span class="points-icon">⭐</span>
+            <span class="points-value" id="total-points">0</span>
+            <span class="points-label">XP</span>
+        </div>
     </div>
 
     <!-- Tab Switcher -->
@@ -36,7 +42,10 @@
                 <div id="daily-habits-list" class="habits-list" role="list" aria-label="Daily habits list">
                     <!-- Habit names will be added here -->
                 </div>
-                <button id="add-daily-habit-btn" class="btn-secondary" aria-label="Add new daily habit">+ Add Habit</button>
+                <div class="habit-buttons">
+                    <button id="add-daily-habit-btn" class="btn-secondary" aria-label="Add new daily habit">+ Add Habit</button>
+                    <button id="habit-bundles-btn" class="btn-icon" aria-label="Add habit bundle" title="Quick-start bundles">📦</button>
+                </div>
             </section>
 
             <div class="habits-grid-container">
@@ -49,6 +58,35 @@
                 <h3 id="daily-progress-heading">Monthly Progress</h3>
                 <div id="daily-progress-list" class="progress-list">
                     <!-- Progress items will be added here dynamically -->
+                </div>
+                
+                <!-- Streak Trend Chart -->
+                <div class="streak-chart-section">
+                    <h4>Streak Trends (Last 30 Days)</h4>
+                    <div id="streak-chart" class="streak-chart">
+                        <!-- Chart will be generated dynamically -->
+                    </div>
+                    <div class="streak-chart-legend">
+                        <span class="legend-item"><span class="legend-color high"></span> 80%+</span>
+                        <span class="legend-item"><span class="legend-color medium"></span> 50-79%</span>
+                        <span class="legend-item"><span class="legend-color low"></span> &lt;50%</span>
+                    </div>
+                </div>
+                
+                <!-- Achievement Badges -->
+                <div class="achievements-section">
+                    <h4>🏆 Achievements</h4>
+                    <div id="achievements-grid" class="achievements-grid">
+                        <!-- Badges will be generated dynamically -->
+                    </div>
+                </div>
+                
+                <!-- Daily Challenge -->
+                <div class="daily-challenge-section">
+                    <h4>🎯 Today's Challenge</h4>
+                    <div id="daily-challenge" class="daily-challenge">
+                        <!-- Challenge will be generated dynamically -->
+                    </div>
                 </div>
             </aside>
         </div>
@@ -162,8 +200,23 @@
 <!-- Habit Item Template -->
 <template id="habit-item-template">
     <div class="habit-item" data-habit-id="">
-        <input type="text" class="habit-name" placeholder="Habit name" maxlength="50" />
-        <button class="delete-habit-btn" aria-label="Delete habit">×</button>
+        <div class="habit-item-main">
+            <input type="text" class="habit-name" placeholder="Habit name" maxlength="50" />
+            <button class="link-goal-btn" aria-label="Link to goal" title="Link to annual goal">🎯</button>
+            <button class="delete-habit-btn" aria-label="Delete habit">×</button>
+        </div>
+        <div class="habit-goal-link" style="display: none;">
+            <select class="habit-goal-select" aria-label="Select goal to link">
+                <option value="">-- Select a goal --</option>
+            </select>
+        </div>
+        <div class="linked-goal-display" style="display: none;">
+            <span class="linked-goal-badge">
+                <span class="goal-icon">🎯</span>
+                <span class="goal-name"></span>
+                <button class="unlink-goal-btn" aria-label="Unlink goal">×</button>
+            </span>
+        </div>
     </div>
 </template>
 
@@ -175,3 +228,69 @@
         <button class="delete-habit-btn" aria-label="Delete habit">×</button>
     </div>
 </template>
+
+<!-- Habit Bundles Modal -->
+<div id="habit-bundles-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>📦 Quick-Start Habit Bundles</h3>
+            <button class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-description">Add a pre-built set of habits to get started quickly.</p>
+            <div class="habit-bundles-grid">
+                <div class="habit-bundle-card" data-bundle="morning">
+                    <div class="bundle-icon">🌅</div>
+                    <div class="bundle-info">
+                        <h4>Morning Routine</h4>
+                        <p>Wake early, Meditate, Exercise, Healthy breakfast, Plan day</p>
+                    </div>
+                    <button class="btn-primary btn-small">Add</button>
+                </div>
+                <div class="habit-bundle-card" data-bundle="fitness">
+                    <div class="bundle-icon">💪</div>
+                    <div class="bundle-info">
+                        <h4>Fitness</h4>
+                        <p>Workout, 10k steps, Stretch, Drink water, Track calories</p>
+                    </div>
+                    <button class="btn-primary btn-small">Add</button>
+                </div>
+                <div class="habit-bundle-card" data-bundle="productivity">
+                    <div class="bundle-icon">🚀</div>
+                    <div class="bundle-info">
+                        <h4>Productivity</h4>
+                        <p>Deep work, No social media, Review goals, Learn something, Journal</p>
+                    </div>
+                    <button class="btn-primary btn-small">Add</button>
+                </div>
+                <div class="habit-bundle-card" data-bundle="wellness">
+                    <div class="bundle-icon">🧘</div>
+                    <div class="bundle-info">
+                        <h4>Wellness</h4>
+                        <p>Meditate, Gratitude, Sleep 8hrs, No screens before bed, Self-care</p>
+                    </div>
+                    <button class="btn-primary btn-small">Add</button>
+                </div>
+                <div class="habit-bundle-card" data-bundle="learning">
+                    <div class="bundle-icon">📚</div>
+                    <div class="bundle-info">
+                        <h4>Learning</h4>
+                        <p>Read 30min, Practice skill, Take notes, Review flashcards, Teach someone</p>
+                    </div>
+                    <button class="btn-primary btn-small">Add</button>
+                </div>
+                <div class="habit-bundle-card" data-bundle="mindfulness">
+                    <div class="bundle-icon">🧠</div>
+                    <div class="bundle-info">
+                        <h4>Mindfulness</h4>
+                        <p>Morning meditation, Breathing exercises, Mindful eating, Evening reflection, Digital detox</p>
+                    </div>
+                    <button class="btn-primary btn-small">Add</button>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary modal-close">Close</button>
+        </div>
+    </div>
+</div>
