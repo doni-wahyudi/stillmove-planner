@@ -26,6 +26,55 @@ class MonthlyView {
         this.monthlyData = null;
         this.selectedCategory = null;
         this.categories = [];
+        
+        // Calendar enhancement data
+        this.timeBlocksData = {}; // { 'YYYY-MM-DD': [blocks] }
+        this.habitsData = {}; // { 'YYYY-MM-DD': { completed, total } }
+        this.deadlinesData = {}; // { 'YYYY-MM-DD': [goals] }
+        
+        // Multi-day selection state
+        this.isDragging = false;
+        this.dragStartDate = null;
+        this.dragEndDate = null;
+        this.selectedDateRange = [];
+        
+        // Tooltip element
+        this.tooltipEl = null;
+    }
+
+    /**
+     * Calculate number of 30-minute time slots for a time block
+     * @param {Object} block - Time block with start_time and end_time
+     * @returns {number} Number of 30-minute slots (minimum 1)
+     */
+    calculateTimeSlots(block) {
+        if (!block.start_time || !block.end_time) {
+            return 1; // Default to 1 slot if times are missing
+        }
+        
+        const [startH, startM] = block.start_time.split(':').map(Number);
+        const [endH, endM] = block.end_time.split(':').map(Number);
+        
+        const startMinutes = startH * 60 + startM;
+        const endMinutes = endH * 60 + endM;
+        const durationMinutes = endMinutes - startMinutes;
+        
+        if (durationMinutes <= 0) {
+            return 1; // Invalid duration, default to 1
+        }
+        
+        // Each slot is 30 minutes, round up
+        return Math.ceil(durationMinutes / 30);
+    }
+    
+    /**
+     * Calculate total time slots for an array of time blocks
+     * @param {Array} blocks - Array of time blocks
+     * @returns {number} Total number of 30-minute slots
+     */
+    calculateTotalTimeSlots(blocks) {
+        if (!blocks || blocks.length === 0) return 0;
+        return blocks.reduce((total, block) => total + this.calculateTimeSlots(block), 0);
     }
 
     /**
@@ -213,6 +262,9 @@ class MonthlyView {
                 };
             }
             
+            // Load calendar enhancement data
+            await this.loadCalendarData();
+            
             // Render all components
             this.renderCalendar();
             this.renderChecklist();
@@ -229,13 +281,68 @@ class MonthlyView {
     }
     
     /**
+     * Load calendar enhancement data (time blocks, habits, deadlines)
+     */
+    async loadCalendarData() {
+        const daysInMonth = getDaysInMonth(this.currentYear, this.currentMonth);
+        const startDate = `${this.currentYear}-${String(this.currentMonth).padStart(2, '0')}-01`;
+        const endDate = `${this.currentYear}-${String(this.currentMonth).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
+        
+        // Reset data
+        this.timeBlocksData = {};
+        this.habitsData = {};
+        this.deadlinesData = {};
+        
+        try {
+            // Load time blocks for the entire month
+            const timeBlocks = await dataService.getTimeBlocksRange(startDate, endDate);
+            timeBlocks.forEach(block => {
+                if (!this.timeBlocksData[block.date]) {
+                    this.timeBlocksData[block.date] = [];
+                }
+                this.timeBlocksData[block.date].push(block);
+            });
+            
+            // Load daily habits and completions
+            const dailyHabits = await dataService.getDailyHabits();
+            const habitCompletions = await dataService.getDailyHabitCompletions(startDate, endDate);
+            
+            // Calculate habit completion per day
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${this.currentYear}-${String(this.currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayCompletions = habitCompletions.filter(c => c.date === dateStr && c.completed);
+                this.habitsData[dateStr] = {
+                    completed: dayCompletions.length,
+                    total: dailyHabits.length
+                };
+            }
+            
+            // Load goal deadlines
+            const annualGoals = await dataService.getAnnualGoals(this.currentYear);
+            annualGoals.forEach(goal => {
+                if (goal.deadline) {
+                    const deadlineDate = goal.deadline.split('T')[0]; // Handle ISO format
+                    if (deadlineDate >= startDate && deadlineDate <= endDate) {
+                        if (!this.deadlinesData[deadlineDate]) {
+                            this.deadlinesData[deadlineDate] = [];
+                        }
+                        this.deadlinesData[deadlineDate].push(goal);
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error loading calendar data:', error);
+        }
+    }
+    
+    /**
      * Update the monthly summary dashboard
      */
     async updateSummaryDashboard() {
         try {
             // Get all time blocks for the month
             const daysInMonth = getDaysInMonth(this.currentYear, this.currentMonth);
-            let totalTimeBlocks = 0;
+            let totalTimeSlots = 0; // Count 30-min slots, not activities
             let totalMinutes = 0;
             const weeklyData = [0, 0, 0, 0, 0]; // 5 weeks max
             
@@ -248,11 +355,13 @@ class MonthlyView {
                 try {
                     const timeBlocks = await dataService.getTimeBlocks(dateStr);
                     if (timeBlocks && timeBlocks.length > 0) {
-                        totalTimeBlocks += timeBlocks.length;
-                        weeklyData[weekIndex] += timeBlocks.length;
-                        
-                        // Calculate total minutes
+                        // Calculate slots for each time block based on duration
                         timeBlocks.forEach(block => {
+                            const slots = this.calculateTimeSlots(block);
+                            totalTimeSlots += slots;
+                            weeklyData[weekIndex] += slots;
+                            
+                            // Calculate total minutes
                             if (block.start_time && block.end_time) {
                                 const [startH, startM] = block.start_time.split(':').map(Number);
                                 const [endH, endM] = block.end_time.split(':').map(Number);
@@ -315,7 +424,7 @@ class MonthlyView {
             const actionPlansEl = document.getElementById('summary-action-plans');
             const habitsEl = document.getElementById('summary-habits');
             
-            if (timeBlocksEl) timeBlocksEl.textContent = totalTimeBlocks;
+            if (timeBlocksEl) timeBlocksEl.textContent = totalTimeSlots;
             if (hoursEl) hoursEl.textContent = `${Math.round(totalMinutes / 60)}h`;
             if (checklistEl) checklistEl.textContent = `${checklistPercent}%`;
             if (actionPlansEl) actionPlansEl.textContent = `${actionPlanProgress}%`;
@@ -374,22 +483,66 @@ class MonthlyView {
         // Get the first day of the month (0 = Sunday, 6 = Saturday)
         const firstDay = new Date(this.currentYear, this.currentMonth - 1, 1).getDay();
         
-        // Add empty cells for days before the first day of the month
-        for (let i = 0; i < firstDay; i++) {
-            const emptyCell = document.createElement('div');
-            emptyCell.className = 'calendar-day empty';
-            container.appendChild(emptyCell);
+        // Calculate week rows needed
+        const totalCells = firstDay + daysInMonth;
+        const weeksNeeded = Math.ceil(totalCells / 7);
+        
+        let dayCounter = 1;
+        
+        for (let week = 0; week < weeksNeeded; week++) {
+            const weekRow = document.createElement('div');
+            weekRow.className = 'calendar-week-row';
+            weekRow.setAttribute('role', 'row');
+            
+            // Add week number cell
+            const weekNumCell = document.createElement('div');
+            weekNumCell.className = 'week-number-cell';
+            const weekNumber = this.getWeekNumber(new Date(this.currentYear, this.currentMonth - 1, dayCounter > daysInMonth ? daysInMonth : Math.max(1, dayCounter - firstDay + week * 7)));
+            weekNumCell.textContent = weekNumber;
+            weekNumCell.title = `Week ${weekNumber}`;
+            weekRow.appendChild(weekNumCell);
+            
+            // Add day cells for this week
+            for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
+                const cellIndex = week * 7 + dayOfWeek;
+                
+                if (cellIndex < firstDay || dayCounter > daysInMonth) {
+                    // Empty cell
+                    const emptyCell = document.createElement('div');
+                    emptyCell.className = 'calendar-day empty';
+                    emptyCell.setAttribute('role', 'gridcell');
+                    weekRow.appendChild(emptyCell);
+                } else {
+                    // Day cell
+                    const dayCell = this.createDayCell(dayCounter);
+                    weekRow.appendChild(dayCell);
+                    dayCounter++;
+                }
+            }
+            
+            container.appendChild(weekRow);
         }
         
-        // Add cells for each day of the month
-        for (let day = 1; day <= daysInMonth; day++) {
-            const dayCell = this.createDayCell(day);
-            container.appendChild(dayCell);
-        }
+        // Create tooltip element if not exists
+        this.createTooltip();
+        
+        // Setup drag selection for multi-day events
+        this.setupDragSelection();
+    }
+    
+    /**
+     * Get ISO week number
+     */
+    getWeekNumber(date) {
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        const dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
     }
 
     /**
-     * Create a calendar day cell
+     * Create a calendar day cell with indicators
      */
     createDayCell(day) {
         const template = document.getElementById('calendar-day-template');
@@ -407,17 +560,653 @@ class MonthlyView {
             cell.classList.add('today');
         }
         
-        // Add click handler for category assignment
+        // Check if date is in the past
+        if (date < new Date(today.getFullYear(), today.getMonth(), today.getDate())) {
+            cell.classList.add('past');
+        }
+        
+        // Add activity indicators
+        this.addDayIndicators(cell, dateStr);
+        
+        // Add deadline indicator
+        this.addDeadlineIndicator(cell, dateStr);
+        
+        // Click handler - open add event modal
         cell.addEventListener('click', (e) => {
-            if (this.selectedCategory) {
-                this.assignCategoryToDay(dateStr, this.selectedCategory);
+            if (!this.isDragging && !e.shiftKey) {
+                this.showAddEventModal(dateStr);
             }
         });
         
-        // Load and display category color if assigned
-        // (This would be stored in a separate data structure or as part of monthly data)
+        // Hover handlers for tooltip
+        cell.addEventListener('mouseenter', (e) => this.showDayPreview(e, dateStr));
+        cell.addEventListener('mouseleave', () => this.hideDayPreview());
+        cell.addEventListener('focus', (e) => this.showDayPreview(e, dateStr));
+        cell.addEventListener('blur', () => this.hideDayPreview());
+        
+        // Keyboard navigation
+        cell.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.showAddEventModal(dateStr);
+            }
+        });
         
         return cell;
+    }
+    
+    /**
+     * Add activity indicators to day cell
+     */
+    addDayIndicators(cell, dateStr) {
+        const indicatorsContainer = cell.querySelector('.day-indicators');
+        if (!indicatorsContainer) return;
+        
+        // Time blocks indicator - count by 30-min slots, not activities
+        const timeBlocks = this.timeBlocksData[dateStr] || [];
+        const timeBlocksIndicator = indicatorsContainer.querySelector('.indicator-dot.time-blocks');
+        if (timeBlocksIndicator) {
+            const totalSlots = this.calculateTotalTimeSlots(timeBlocks);
+            if (totalSlots > 0) {
+                timeBlocksIndicator.classList.add('active');
+                timeBlocksIndicator.dataset.count = totalSlots;
+                timeBlocksIndicator.title = `${totalSlots} time slots (${timeBlocks.length} activities)`;
+                // Intensity based on slot count (more slots = busier day)
+                if (totalSlots >= 10) {
+                    timeBlocksIndicator.classList.add('high');
+                } else if (totalSlots >= 5) {
+                    timeBlocksIndicator.classList.add('medium');
+                }
+            }
+        }
+        
+        // Habits indicator
+        const habitsData = this.habitsData[dateStr];
+        const habitsIndicator = indicatorsContainer.querySelector('.indicator-dot.habits');
+        if (habitsIndicator && habitsData && habitsData.total > 0) {
+            const percentage = (habitsData.completed / habitsData.total) * 100;
+            if (percentage > 0) {
+                habitsIndicator.classList.add('active');
+                habitsIndicator.dataset.percentage = Math.round(percentage);
+                if (percentage >= 80) {
+                    habitsIndicator.classList.add('high');
+                } else if (percentage >= 50) {
+                    habitsIndicator.classList.add('medium');
+                }
+            }
+        }
+    }
+    
+    /**
+     * Add deadline indicator to day cell
+     */
+    addDeadlineIndicator(cell, dateStr) {
+        const deadlines = this.deadlinesData[dateStr] || [];
+        const indicator = cell.querySelector('.day-deadline-indicator');
+        
+        if (indicator && deadlines.length > 0) {
+            indicator.classList.add('active');
+            indicator.textContent = '🎯';
+            indicator.title = `${deadlines.length} goal${deadlines.length > 1 ? 's' : ''} due`;
+            
+            // Check if any deadline is overdue
+            const today = new Date();
+            const cellDate = new Date(dateStr);
+            if (cellDate < today) {
+                indicator.classList.add('overdue');
+                cell.classList.add('has-overdue');
+            }
+        }
+    }
+    
+    /**
+     * Show add event modal for a specific day
+     */
+    showAddEventModal(dateStr) {
+        const date = new Date(dateStr);
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+        
+        const formattedDate = `${dayNames[date.getDay()]}, ${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+        
+        // Build category options
+        const categoryOptions = this.categories.map(c => 
+            `<option value="${c.name}">${c.name}</option>`
+        ).join('');
+        
+        if (window.Modal) {
+            window.Modal.show({
+                title: `Add Event - ${formattedDate}`,
+                content: `
+                    <div class="form-group">
+                        <label for="event-title">Event Title *</label>
+                        <input type="text" id="event-title" placeholder="What's happening?" autofocus />
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="event-start-time">Start Time</label>
+                            <input type="time" id="event-start-time" value="09:00" />
+                        </div>
+                        <div class="form-group">
+                            <label for="event-end-time">End Time</label>
+                            <input type="time" id="event-end-time" value="10:00" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="event-category">Category</label>
+                        <select id="event-category">
+                            ${categoryOptions}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="event-notes">Notes (optional)</label>
+                        <textarea id="event-notes" rows="2" placeholder="Additional details..."></textarea>
+                    </div>
+                    <div class="form-actions-hint">
+                        <span class="hint-text">💡 This will create a time block in your weekly schedule</span>
+                    </div>
+                `,
+                buttons: [
+                    { text: 'Cancel', className: 'btn-secondary', action: 'cancel' },
+                    { 
+                        text: 'Add Event', 
+                        className: 'btn-primary', 
+                        action: 'add',
+                        primary: true,
+                        onClick: () => this.createEventFromModal(dateStr),
+                        closeOnClick: false
+                    }
+                ]
+            });
+            
+            // Focus title input after modal opens
+            setTimeout(() => {
+                document.getElementById('event-title')?.focus();
+            }, 100);
+        } else {
+            // Fallback to simple prompt
+            const title = prompt(`Add event for ${formattedDate}:`);
+            if (title) {
+                this.createQuickEvent(dateStr, title);
+            }
+        }
+    }
+    
+    /**
+     * Create event from modal form
+     */
+    async createEventFromModal(dateStr) {
+        const title = document.getElementById('event-title')?.value?.trim();
+        const startTime = document.getElementById('event-start-time')?.value;
+        const endTime = document.getElementById('event-end-time')?.value;
+        const category = document.getElementById('event-category')?.value;
+        const notes = document.getElementById('event-notes')?.value?.trim();
+        
+        if (!title) {
+            if (window.showToast) {
+                window.showToast('Please enter an event title', 'error');
+            }
+            return;
+        }
+        
+        // Validate times
+        if (startTime >= endTime) {
+            if (window.showToast) {
+                window.showToast('End time must be after start time', 'error');
+            }
+            return;
+        }
+        
+        try {
+            // Create time block
+            await dataService.createTimeBlock({
+                date: dateStr,
+                start_time: startTime,
+                end_time: endTime,
+                activity: title,
+                category: category,
+                notes: notes || null
+            });
+            
+            // Close modal
+            if (window.Modal) {
+                window.Modal.close();
+            }
+            
+            // Update local data
+            if (!this.timeBlocksData[dateStr]) {
+                this.timeBlocksData[dateStr] = [];
+            }
+            this.timeBlocksData[dateStr].push({
+                date: dateStr,
+                start_time: startTime,
+                end_time: endTime,
+                activity: title,
+                category: category
+            });
+            
+            // Re-render calendar to show updated indicators
+            this.renderCalendar();
+            
+            // Update summary
+            await this.updateSummaryDashboard();
+            
+            if (window.showToast) {
+                window.showToast(`Event "${title}" added to ${dateStr}`, 'success');
+            }
+        } catch (error) {
+            console.error('Failed to create event:', error);
+            if (window.showToast) {
+                window.showToast('Failed to create event. Please try again.', 'error');
+            }
+        }
+    }
+    
+    /**
+     * Create quick event (fallback without modal)
+     */
+    async createQuickEvent(dateStr, title) {
+        try {
+            await dataService.createTimeBlock({
+                date: dateStr,
+                start_time: '09:00',
+                end_time: '10:00',
+                activity: title,
+                category: this.categories[0]?.name || 'Personal'
+            });
+            
+            // Update local data and re-render
+            if (!this.timeBlocksData[dateStr]) {
+                this.timeBlocksData[dateStr] = [];
+            }
+            this.timeBlocksData[dateStr].push({
+                date: dateStr,
+                start_time: '09:00',
+                end_time: '10:00',
+                activity: title
+            });
+            
+            this.renderCalendar();
+            await this.updateSummaryDashboard();
+            
+            if (window.showToast) {
+                window.showToast(`Event "${title}" added`, 'success');
+            }
+        } catch (error) {
+            console.error('Failed to create quick event:', error);
+        }
+    }
+    
+    /**
+     * Create tooltip element
+     */
+    createTooltip() {
+        if (this.tooltipEl) return;
+        
+        this.tooltipEl = document.createElement('div');
+        this.tooltipEl.className = 'day-preview-tooltip';
+        this.tooltipEl.style.display = 'none';
+        document.body.appendChild(this.tooltipEl);
+    }
+    
+    /**
+     * Show day preview tooltip on hover
+     */
+    showDayPreview(event, dateStr) {
+        if (!this.tooltipEl) return;
+        
+        const date = new Date(dateStr);
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        
+        const timeBlocks = this.timeBlocksData[dateStr] || [];
+        const habitsData = this.habitsData[dateStr] || { completed: 0, total: 0 };
+        const deadlines = this.deadlinesData[dateStr] || [];
+        
+        // Calculate total time slots (30-min each)
+        const totalSlots = this.calculateTotalTimeSlots(timeBlocks);
+        
+        const habitsPercent = habitsData.total > 0 
+            ? Math.round((habitsData.completed / habitsData.total) * 100) 
+            : 0;
+        
+        // Build activities list (max 4) with duration
+        const activitiesList = timeBlocks.slice(0, 4).map(block => {
+            const slots = this.calculateTimeSlots(block);
+            const duration = slots * 30; // minutes
+            const durationStr = duration >= 60 ? `${duration / 60}h` : `${duration}m`;
+            return `<li>${block.start_time?.slice(0, 5) || ''} - ${block.activity || 'Untitled'} (${durationStr})</li>`;
+        }).join('');
+        
+        const moreCount = timeBlocks.length > 4 ? timeBlocks.length - 4 : 0;
+        
+        // Build deadlines list
+        const deadlinesList = deadlines.map(goal => 
+            `<li>${goal.title || 'Untitled goal'}</li>`
+        ).join('');
+        
+        this.tooltipEl.innerHTML = `
+            <div class="preview-header">
+                <span class="preview-date">${monthNames[date.getMonth()]} ${date.getDate()}</span>
+                <span class="preview-day-name">${dayNames[date.getDay()]}</span>
+            </div>
+            <div class="preview-content">
+                <div class="preview-section">
+                    <span class="preview-icon">📅</span>
+                    <span class="preview-label">Scheduled:</span>
+                    <span class="preview-value">${totalSlots} slots (${timeBlocks.length} activities)</span>
+                </div>
+                <div class="preview-section">
+                    <span class="preview-icon">✅</span>
+                    <span class="preview-label">Habits:</span>
+                    <span class="preview-value">${habitsData.completed}/${habitsData.total} (${habitsPercent}%)</span>
+                </div>
+                ${deadlines.length > 0 ? `
+                    <div class="preview-section deadlines">
+                        <span class="preview-icon">🎯</span>
+                        <span class="preview-label">Deadlines:</span>
+                        <ul class="preview-deadlines-list">${deadlinesList}</ul>
+                    </div>
+                ` : ''}
+                ${timeBlocks.length > 0 ? `
+                    <div class="preview-activities">
+                        <div class="preview-activities-title">Activities:</div>
+                        <ul class="preview-activities-list">
+                            ${activitiesList}
+                            ${moreCount > 0 ? `<li class="more">+${moreCount} more...</li>` : ''}
+                        </ul>
+                    </div>
+                ` : '<div class="preview-empty">No activities scheduled</div>'}
+            </div>
+            <div class="preview-footer">
+                <span class="preview-hint">Click to add event</span>
+            </div>
+        `;
+        
+        // Position tooltip
+        const rect = event.target.closest('.calendar-day').getBoundingClientRect();
+        const tooltipRect = this.tooltipEl.getBoundingClientRect();
+        
+        let left = rect.right + 10;
+        let top = rect.top;
+        
+        // Adjust if tooltip would go off screen
+        if (left + 250 > window.innerWidth) {
+            left = rect.left - 260;
+        }
+        if (top + 200 > window.innerHeight) {
+            top = window.innerHeight - 210;
+        }
+        
+        this.tooltipEl.style.left = `${left}px`;
+        this.tooltipEl.style.top = `${top}px`;
+        this.tooltipEl.style.display = 'block';
+    }
+    
+    /**
+     * Hide day preview tooltip
+     */
+    hideDayPreview() {
+        if (this.tooltipEl) {
+            this.tooltipEl.style.display = 'none';
+        }
+    }
+    
+    /**
+     * Setup drag selection for multi-day events
+     */
+    setupDragSelection() {
+        const container = document.getElementById('calendar-days');
+        if (!container) return;
+        
+        container.addEventListener('mousedown', (e) => {
+            const dayCell = e.target.closest('.calendar-day:not(.empty)');
+            if (!dayCell || e.button !== 0) return;
+            
+            // Only start drag if shift is held or after a small delay
+            if (e.shiftKey) {
+                e.preventDefault();
+                this.startDragSelection(dayCell.dataset.date);
+            }
+        });
+        
+        container.addEventListener('mousemove', (e) => {
+            if (!this.isDragging) return;
+            
+            const dayCell = e.target.closest('.calendar-day:not(.empty)');
+            if (dayCell) {
+                this.updateDragSelection(dayCell.dataset.date);
+            }
+        });
+        
+        container.addEventListener('mouseup', (e) => {
+            if (this.isDragging) {
+                this.endDragSelection();
+            }
+        });
+        
+        // Cancel drag if mouse leaves calendar
+        container.addEventListener('mouseleave', () => {
+            if (this.isDragging) {
+                this.cancelDragSelection();
+            }
+        });
+    }
+    
+    /**
+     * Start drag selection
+     */
+    startDragSelection(dateStr) {
+        this.isDragging = true;
+        this.dragStartDate = dateStr;
+        this.dragEndDate = dateStr;
+        this.updateSelectedRange();
+    }
+    
+    /**
+     * Update drag selection
+     */
+    updateDragSelection(dateStr) {
+        this.dragEndDate = dateStr;
+        this.updateSelectedRange();
+    }
+    
+    /**
+     * End drag selection
+     */
+    endDragSelection() {
+        this.isDragging = false;
+        
+        if (this.selectedDateRange.length > 1) {
+            this.showMultiDayEventModal();
+        }
+        
+        // Clear visual selection after a delay
+        setTimeout(() => {
+            this.clearSelectedRange();
+        }, 100);
+    }
+    
+    /**
+     * Cancel drag selection
+     */
+    cancelDragSelection() {
+        this.isDragging = false;
+        this.clearSelectedRange();
+    }
+    
+    /**
+     * Update selected date range visual
+     */
+    updateSelectedRange() {
+        // Clear previous selection
+        document.querySelectorAll('.calendar-day.in-range').forEach(cell => {
+            cell.classList.remove('in-range', 'range-start', 'range-end');
+        });
+        
+        if (!this.dragStartDate || !this.dragEndDate) return;
+        
+        const start = new Date(this.dragStartDate);
+        const end = new Date(this.dragEndDate);
+        
+        // Ensure start is before end
+        const [rangeStart, rangeEnd] = start <= end ? [start, end] : [end, start];
+        
+        this.selectedDateRange = [];
+        
+        // Highlight all days in range
+        const current = new Date(rangeStart);
+        while (current <= rangeEnd) {
+            const dateStr = formatDate(current);
+            this.selectedDateRange.push(dateStr);
+            
+            const cell = document.querySelector(`.calendar-day[data-date="${dateStr}"]`);
+            if (cell) {
+                cell.classList.add('in-range');
+                if (dateStr === formatDate(rangeStart)) cell.classList.add('range-start');
+                if (dateStr === formatDate(rangeEnd)) cell.classList.add('range-end');
+            }
+            
+            current.setDate(current.getDate() + 1);
+        }
+    }
+    
+    /**
+     * Clear selected range visual
+     */
+    clearSelectedRange() {
+        document.querySelectorAll('.calendar-day.in-range').forEach(cell => {
+            cell.classList.remove('in-range', 'range-start', 'range-end');
+        });
+        this.selectedDateRange = [];
+        this.dragStartDate = null;
+        this.dragEndDate = null;
+    }
+    
+    /**
+     * Show modal for creating multi-day event
+     */
+    showMultiDayEventModal() {
+        const startDate = this.selectedDateRange[0];
+        const endDate = this.selectedDateRange[this.selectedDateRange.length - 1];
+        const dayCount = this.selectedDateRange.length;
+        
+        // Use the modal component if available
+        if (window.Modal) {
+            window.Modal.show({
+                title: 'Create Multi-Day Event',
+                content: `
+                    <div class="form-group">
+                        <label>Date Range</label>
+                        <p class="date-range-display">${startDate} to ${endDate} (${dayCount} days)</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="multiday-event-name">Event Name</label>
+                        <input type="text" id="multiday-event-name" placeholder="e.g., Vacation, Project Sprint" />
+                    </div>
+                    <div class="form-group">
+                        <label for="multiday-event-category">Category</label>
+                        <select id="multiday-event-category">
+                            ${this.categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="multiday-event-notes">Notes</label>
+                        <textarea id="multiday-event-notes" rows="3" placeholder="Optional notes..."></textarea>
+                    </div>
+                `,
+                buttons: [
+                    { text: 'Cancel', className: 'btn-secondary', action: 'cancel' },
+                    { 
+                        text: 'Create Event', 
+                        className: 'btn-primary', 
+                        action: 'create',
+                        primary: true,
+                        onClick: () => this.createMultiDayEvent(),
+                        closeOnClick: false
+                    }
+                ]
+            });
+            
+            // Focus the name input
+            setTimeout(() => {
+                document.getElementById('multiday-event-name')?.focus();
+            }, 100);
+        } else {
+            // Fallback to simple prompt
+            const eventName = prompt(`Create event for ${dayCount} days (${startDate} to ${endDate}):`);
+            if (eventName) {
+                this.applyMultiDayEvent(eventName, this.categories[0]?.name || 'Personal');
+            }
+        }
+    }
+    
+    /**
+     * Create multi-day event from modal
+     */
+    createMultiDayEvent() {
+        const name = document.getElementById('multiday-event-name')?.value;
+        const category = document.getElementById('multiday-event-category')?.value;
+        const notes = document.getElementById('multiday-event-notes')?.value;
+        
+        if (!name) {
+            if (window.showToast) {
+                window.showToast('Please enter an event name', 'error');
+            }
+            return;
+        }
+        
+        this.applyMultiDayEvent(name, category, notes);
+        
+        if (window.Modal) {
+            window.Modal.close();
+        }
+    }
+    
+    /**
+     * Apply multi-day event to calendar
+     */
+    applyMultiDayEvent(name, category, notes = '') {
+        // Store in monthly data
+        if (!this.monthlyData.multi_day_events) {
+            this.monthlyData.multi_day_events = [];
+        }
+        
+        this.monthlyData.multi_day_events.push({
+            name,
+            category,
+            notes,
+            start_date: this.selectedDateRange[0],
+            end_date: this.selectedDateRange[this.selectedDateRange.length - 1],
+            dates: [...this.selectedDateRange]
+        });
+        
+        // Apply visual styling to days
+        const categoryObj = this.getCategoryByName(category);
+        this.selectedDateRange.forEach(dateStr => {
+            const cell = document.querySelector(`.calendar-day[data-date="${dateStr}"]`);
+            if (cell && categoryObj) {
+                cell.style.background = `linear-gradient(135deg, ${categoryObj.color_start}40 0%, ${categoryObj.color_end}40 100%)`;
+                cell.classList.add('has-event');
+                
+                // Add event label to first day
+                if (dateStr === this.selectedDateRange[0]) {
+                    const eventLabel = document.createElement('div');
+                    eventLabel.className = 'multi-day-event-label';
+                    eventLabel.textContent = name;
+                    eventLabel.style.background = `linear-gradient(135deg, ${categoryObj.color_start} 0%, ${categoryObj.color_end} 100%)`;
+                    cell.appendChild(eventLabel);
+                }
+            }
+        });
+        
+        // Save to database
+        this.saveMonthlyData();
+        
+        if (window.showToast) {
+            window.showToast(`Created "${name}" event`, 'success');
+        }
     }
 
     /**

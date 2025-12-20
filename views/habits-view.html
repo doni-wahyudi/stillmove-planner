@@ -52,6 +52,39 @@
                 <div id="daily-habits-grid" class="habits-grid" role="grid" aria-label="Daily habits tracking grid">
                     <!-- Grid will be generated dynamically -->
                 </div>
+                
+                <!-- Habit Tracking Chart -->
+                <div class="habit-chart-container">
+                    <div class="habit-chart-header">
+                        <h4>📊 Habit Tracking Chart</h4>
+                        <select id="habit-chart-select" class="habit-chart-select" aria-label="Select habit to chart">
+                            <option value="">Select a habit...</option>
+                        </select>
+                    </div>
+                    <div class="habit-chart-info">
+                        <span class="info-text">💡 Double-click habit cells to add count values (e.g., pages read). Checked habits without notes count as 1.</span>
+                    </div>
+                    <div class="habit-line-chart" id="habit-line-chart">
+                        <svg id="habit-chart-svg" class="habit-chart-svg" viewBox="0 0 600 150" preserveAspectRatio="none">
+                            <!-- Grid lines -->
+                            <g class="chart-grid" id="chart-grid"></g>
+                            <!-- Area fill -->
+                            <path class="chart-area" id="chart-area"></path>
+                            <!-- Line -->
+                            <path class="chart-line" id="chart-line"></path>
+                            <!-- Data points -->
+                            <g class="chart-points" id="chart-points"></g>
+                        </svg>
+                        <div class="chart-y-axis" id="chart-y-axis"></div>
+                        <div class="chart-x-axis" id="chart-x-axis"></div>
+                    </div>
+                    <div class="habit-chart-stats" id="habit-chart-stats">
+                        <span class="stat-item"><strong>Total:</strong> <span id="habit-stat-total">0</span></span>
+                        <span class="stat-item"><strong>Avg:</strong> <span id="habit-stat-avg">0</span>/day</span>
+                        <span class="stat-item"><strong>Max:</strong> <span id="habit-stat-max">0</span></span>
+                        <span class="stat-item"><strong>Days:</strong> <span id="habit-stat-days">0</span></span>
+                    </div>
+                </div>
             </div>
 
             <aside class="habits-progress" aria-labelledby="daily-progress-heading">

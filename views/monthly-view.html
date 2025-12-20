@@ -76,6 +76,7 @@
             <h3 id="calendar-heading" class="sr-only">Monthly Calendar</h3>
             <div class="calendar-grid" role="grid" aria-label="Monthly calendar">
                 <div class="calendar-header" role="row">
+                    <div class="week-number-label" role="columnheader">Wk</div>
                     <div class="day-label" role="columnheader">Sun</div>
                     <div class="day-label" role="columnheader">Mon</div>
                     <div class="day-label" role="columnheader">Tue</div>
@@ -87,6 +88,11 @@
                 <div id="calendar-days" class="calendar-days" role="rowgroup">
                     <!-- Calendar days will be dynamically added here -->
                 </div>
+            </div>
+            <div class="calendar-legend">
+                <span class="legend-item"><span class="legend-dot time-blocks"></span> Time Blocks</span>
+                <span class="legend-item"><span class="legend-dot habits"></span> Habits Done</span>
+                <span class="legend-item"><span class="legend-dot deadline"></span> Deadline</span>
             </div>
         </section>
 
@@ -139,9 +145,50 @@
 
 <!-- Calendar Day Template -->
 <template id="calendar-day-template">
-    <div class="calendar-day" data-date="">
-        <div class="day-number"></div>
+    <div class="calendar-day" data-date="" tabindex="0" role="gridcell">
+        <div class="day-header">
+            <span class="day-number"></span>
+            <span class="day-deadline-indicator" title="Goals due" aria-label="Has deadline"></span>
+        </div>
+        <div class="day-indicators">
+            <span class="indicator-dot time-blocks" title="Time blocks scheduled" aria-hidden="true"></span>
+            <span class="indicator-dot habits" title="Habit completion" aria-hidden="true"></span>
+        </div>
         <div class="day-events"></div>
+    </div>
+</template>
+
+<!-- Day Preview Tooltip Template -->
+<template id="day-preview-template">
+    <div class="day-preview-tooltip">
+        <div class="preview-header">
+            <span class="preview-date"></span>
+            <span class="preview-day-name"></span>
+        </div>
+        <div class="preview-content">
+            <div class="preview-section time-blocks-section">
+                <span class="preview-icon">📅</span>
+                <span class="preview-label">Time Blocks:</span>
+                <span class="preview-value">0</span>
+            </div>
+            <div class="preview-section habits-section">
+                <span class="preview-icon">✅</span>
+                <span class="preview-label">Habits:</span>
+                <span class="preview-value">0%</span>
+            </div>
+            <div class="preview-section deadlines-section" style="display: none;">
+                <span class="preview-icon">🎯</span>
+                <span class="preview-label">Deadlines:</span>
+                <ul class="preview-deadlines-list"></ul>
+            </div>
+            <div class="preview-activities">
+                <div class="preview-activities-title">Activities:</div>
+                <ul class="preview-activities-list"></ul>
+            </div>
+        </div>
+        <div class="preview-footer">
+            <span class="preview-hint">Click to view in Weekly</span>
+        </div>
     </div>
 </template>
 

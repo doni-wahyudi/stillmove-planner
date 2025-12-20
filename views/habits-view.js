@@ -265,6 +265,9 @@ class HabitsView {
         
         // Calculate and display progress
         this.calculateDailyProgress();
+        
+        // Initialize habit tracking chart
+        this.initHabitChart();
     }
 
     /**
@@ -2103,6 +2106,233 @@ class HabitsView {
         } else {
             console.log(message);
         }
+    }
+    
+    /**
+     * Initialize habit tracking chart
+     */
+    initHabitChart() {
+        const select = document.getElementById('habit-chart-select');
+        if (!select) return;
+        
+        // Populate select dropdown with daily habits
+        select.innerHTML = '<option value="">Select a habit...</option>';
+        this.dailyHabits.forEach(habit => {
+            const option = document.createElement('option');
+            option.value = habit.id;
+            option.textContent = habit.habit_name || 'Unnamed Habit';
+            select.appendChild(option);
+        });
+        
+        // Add change listener
+        select.addEventListener('change', () => {
+            const habitId = select.value;
+            if (habitId) {
+                this.renderHabitChart(habitId);
+            } else {
+                this.clearHabitChart();
+            }
+        });
+        
+        // Auto-select first habit if available
+        if (this.dailyHabits.length > 0) {
+            select.value = this.dailyHabits[0].id;
+            this.renderHabitChart(this.dailyHabits[0].id);
+        }
+    }
+    
+    /**
+     * Get habit count value from completion
+     * If notes contain a number, use that; otherwise 1 if completed, 0 if not
+     */
+    getHabitCountValue(completion) {
+        if (!completion || !completion.completed) {
+            return 0;
+        }
+        
+        // Check if notes contain a number
+        if (completion.notes) {
+            const noteValue = parseFloat(completion.notes);
+            if (!isNaN(noteValue) && noteValue > 0) {
+                return noteValue;
+            }
+        }
+        
+        // Default to 1 if completed but no numeric note
+        return 1;
+    }
+    
+    /**
+     * Render habit line chart for selected habit
+     */
+    renderHabitChart(habitId) {
+        const chartLine = document.getElementById('chart-line');
+        const chartArea = document.getElementById('chart-area');
+        const chartPoints = document.getElementById('chart-points');
+        const chartGrid = document.getElementById('chart-grid');
+        const xAxis = document.getElementById('chart-x-axis');
+        const yAxis = document.getElementById('chart-y-axis');
+        
+        if (!chartLine || !chartArea) return;
+        
+        const daysInMonth = getDaysInMonth(this.currentYear, this.currentMonth);
+        const dailyValues = [];
+        
+        // Calculate values for each day
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${this.currentYear}-${String(this.currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const completion = this.dailyHabitCompletions.find(
+                c => c.habit_id === habitId && c.date === dateStr
+            );
+            const value = this.getHabitCountValue(completion);
+            dailyValues.push({ day, date: dateStr, value, completion });
+        }
+        
+        // Calculate stats
+        const total = dailyValues.reduce((sum, d) => sum + d.value, 0);
+        const daysWithData = dailyValues.filter(d => d.value > 0).length;
+        const avg = daysWithData > 0 ? (total / daysWithData).toFixed(1) : 0;
+        const maxValue = Math.max(...dailyValues.map(d => d.value));
+        const max = Math.max(maxValue, 1);
+        
+        // Update stats display
+        const totalEl = document.getElementById('habit-stat-total');
+        const avgEl = document.getElementById('habit-stat-avg');
+        const maxEl = document.getElementById('habit-stat-max');
+        const daysEl = document.getElementById('habit-stat-days');
+        
+        if (totalEl) totalEl.textContent = total;
+        if (avgEl) avgEl.textContent = avg;
+        if (maxEl) maxEl.textContent = maxValue;
+        if (daysEl) daysEl.textContent = daysWithData;
+        
+        // SVG dimensions
+        const width = 600;
+        const height = 150;
+        const padding = { top: 10, right: 10, bottom: 5, left: 5 };
+        const chartWidth = width - padding.left - padding.right;
+        const chartHeight = height - padding.top - padding.bottom;
+        
+        // Generate points
+        const points = dailyValues.map((d, i) => {
+            const x = padding.left + (i / (daysInMonth - 1)) * chartWidth;
+            const y = padding.top + chartHeight - (d.value / max) * chartHeight;
+            return { x, y, ...d };
+        });
+        
+        // Create line path
+        const linePath = points.map((p, i) => 
+            `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
+        ).join(' ');
+        
+        // Create area path (closed shape for fill)
+        const areaPath = linePath + 
+            ` L ${points[points.length - 1].x} ${padding.top + chartHeight}` +
+            ` L ${padding.left} ${padding.top + chartHeight} Z`;
+        
+        // Set paths
+        chartLine.setAttribute('d', linePath);
+        chartArea.setAttribute('d', areaPath);
+        
+        // Render grid lines
+        if (chartGrid) {
+            chartGrid.innerHTML = '';
+            // Horizontal grid lines (4 lines)
+            for (let i = 0; i <= 4; i++) {
+                const y = padding.top + (i / 4) * chartHeight;
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', padding.left);
+                line.setAttribute('y1', y);
+                line.setAttribute('x2', width - padding.right);
+                line.setAttribute('y2', y);
+                line.setAttribute('class', 'grid-line');
+                chartGrid.appendChild(line);
+            }
+        }
+        
+        // Render data points
+        if (chartPoints) {
+            chartPoints.innerHTML = '';
+            const habit = this.dailyHabits.find(h => h.id === habitId);
+            
+            points.forEach((p) => {
+                if (p.value > 0) {
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', p.x);
+                    circle.setAttribute('cy', p.y);
+                    circle.setAttribute('r', 4);
+                    circle.setAttribute('class', 'data-point');
+                    
+                    // Tooltip
+                    const noteText = p.completion?.notes ? ` (${p.completion.notes})` : '';
+                    circle.setAttribute('data-tooltip', `Day ${p.day}: ${p.value}${noteText}`);
+                    
+                    // Click handler
+                    circle.style.cursor = 'pointer';
+                    circle.addEventListener('click', () => {
+                        if (habit) {
+                            this.showHabitNoteModal(habit, p.date, p.completion?.notes || '');
+                        }
+                    });
+                    
+                    chartPoints.appendChild(circle);
+                }
+            });
+        }
+        
+        // Render X axis labels
+        if (xAxis) {
+            xAxis.innerHTML = '';
+            [1, Math.ceil(daysInMonth / 4), Math.ceil(daysInMonth / 2), Math.ceil(3 * daysInMonth / 4), daysInMonth].forEach(day => {
+                const label = document.createElement('span');
+                label.className = 'axis-label';
+                label.textContent = day;
+                const percent = ((day - 1) / (daysInMonth - 1)) * 100;
+                label.style.left = `${percent}%`;
+                xAxis.appendChild(label);
+            });
+        }
+        
+        // Render Y axis labels
+        if (yAxis) {
+            yAxis.innerHTML = '';
+            [0, Math.round(max / 2), max].forEach((val, i) => {
+                const label = document.createElement('span');
+                label.className = 'axis-label';
+                label.textContent = val;
+                label.style.bottom = `${(i / 2) * 100}%`;
+                yAxis.appendChild(label);
+            });
+        }
+    }
+    
+    /**
+     * Clear habit chart
+     */
+    clearHabitChart() {
+        const chartLine = document.getElementById('chart-line');
+        const chartArea = document.getElementById('chart-area');
+        const chartPoints = document.getElementById('chart-points');
+        const chartGrid = document.getElementById('chart-grid');
+        const xAxis = document.getElementById('chart-x-axis');
+        const yAxis = document.getElementById('chart-y-axis');
+        
+        if (chartLine) chartLine.setAttribute('d', '');
+        if (chartArea) chartArea.setAttribute('d', '');
+        if (chartPoints) chartPoints.innerHTML = '';
+        if (chartGrid) chartGrid.innerHTML = '';
+        if (xAxis) xAxis.innerHTML = '';
+        if (yAxis) yAxis.innerHTML = '';
+        
+        const totalEl = document.getElementById('habit-stat-total');
+        const avgEl = document.getElementById('habit-stat-avg');
+        const maxEl = document.getElementById('habit-stat-max');
+        const daysEl = document.getElementById('habit-stat-days');
+        
+        if (totalEl) totalEl.textContent = '0';
+        if (avgEl) avgEl.textContent = '0';
+        if (maxEl) maxEl.textContent = '0';
+        if (daysEl) daysEl.textContent = '0';
     }
 }
 
