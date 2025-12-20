@@ -55,6 +55,9 @@
                     <span class="best-day-text">Best day: <strong id="best-day-name">-</strong></span>
                     <span class="best-day-count" id="best-day-count"></span>
                 </div>
+                <button id="ai-weekly-insights-btn" class="ai-insights-btn" title="Get AI-powered weekly insights">
+                    ✨ AI Insights
+                </button>
             </div>
             
             <!-- Weekly Goals -->
@@ -222,7 +225,10 @@
             </div>
             <div class="form-group">
                 <label for="block-activity">Activity</label>
-                <input type="text" id="block-activity" placeholder="Activity description" required />
+                <div class="activity-input-group">
+                    <input type="text" id="block-activity" placeholder="Activity description" required />
+                    <button type="button" id="ai-categorize-btn" class="btn-icon ai-categorize-btn" title="Auto-categorize with AI">✨</button>
+                </div>
             </div>
             <div class="form-group">
                 <label for="block-category">Category</label>

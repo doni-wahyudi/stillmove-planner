@@ -5,6 +5,7 @@
 
 import dataService from '../js/data-service.js';
 import { formatDate, getCategoryColor, getCategoryGradient } from '../js/utils.js';
+import aiService from '../js/ai-service.js';
 
 // Time slot configuration (4:00 to 23:00 in 30-minute increments)
 const START_HOUR = 4;
@@ -115,6 +116,10 @@ class WeeklyView {
         
         // Template modal listeners
         this.setupTemplateModalListeners();
+        
+        // AI features
+        document.getElementById('ai-weekly-insights-btn')?.addEventListener('click', () => this.showAIWeeklyInsights());
+        document.getElementById('ai-categorize-btn')?.addEventListener('click', () => this.aiCategorizeActivity());
     }
 
     /**
@@ -2436,6 +2441,235 @@ class WeeklyView {
         localStorage.setItem('weeklyTemplates', JSON.stringify(templates));
         this.renderTemplateList();
         this.showSuccess('Template deleted');
+    }
+    
+    /**
+     * AI: Auto-categorize activity
+     */
+    async aiCategorizeActivity() {
+        const activityInput = document.getElementById('block-activity');
+        const categorySelect = document.getElementById('block-category');
+        
+        if (!activityInput || !categorySelect) return;
+        
+        const activity = activityInput.value.trim();
+        if (!activity) {
+            if (window.showToast) {
+                window.showToast('Please enter an activity first', 'error');
+            }
+            return;
+        }
+        
+        if (!aiService.isAvailable()) {
+            if (window.Toast) {
+                window.Toast.error('AI not configured. Set up your API key in Settings > AI Settings');
+            }
+            return;
+        }
+        
+        const btn = document.getElementById('ai-categorize-btn');
+        const originalText = btn.textContent;
+        btn.textContent = '⏳';
+        btn.disabled = true;
+        
+        try {
+            const categoryNames = this.categories.map(c => c.name);
+            const suggestedCategory = await aiService.categorizeActivity(activity, categoryNames);
+            
+            // Set the category
+            categorySelect.value = suggestedCategory;
+            
+            if (window.showToast) {
+                window.showToast(`Categorized as "${suggestedCategory}"`, 'success');
+            }
+        } catch (error) {
+            console.error('AI categorization failed:', error);
+            if (window.showToast) {
+                window.showToast('Failed to categorize. Try again.', 'error');
+            }
+        } finally {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+    }
+    
+    /**
+     * AI: Show weekly insights
+     */
+    async showAIWeeklyInsights() {
+        if (!aiService.isAvailable()) {
+            if (window.Toast) {
+                window.Toast.error('AI not configured. Set up your API key in Settings > AI Settings');
+            }
+            return;
+        }
+        
+        // Gather week data
+        const weekData = await this.gatherWeekDataForAI();
+        
+        // Create modal
+        const modal = document.createElement('div');
+        modal.className = 'modal ai-insights-modal';
+        modal.style.display = 'flex';
+        modal.innerHTML = `
+            <div class="modal-content modal-medium">
+                <div class="modal-header">
+                    <h3>✨ AI Weekly Insights</h3>
+                    <button class="modal-close-btn" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="ai-loading">
+                        <div class="ai-loading-spinner"></div>
+                        <p>Analyzing your week...</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        // Close handler
+        const closeModal = () => modal.remove();
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal || e.target.classList.contains('modal-close-btn') || e.target.classList.contains('ai-cancel-btn')) {
+                closeModal();
+            }
+        });
+        
+        try {
+            const insights = await aiService.generateWeeklyInsights(weekData);
+            
+            // Check if we got a valid response
+            const analysisText = insights && insights.trim() 
+                ? this.parseMarkdown(insights)
+                : 'No insights generated. The AI may have returned an empty response. Please try again.';
+            
+            modal.querySelector('.modal-body').innerHTML = `
+                <div class="ai-insights-content">
+                    <div class="insights-summary">
+                        <div class="insight-stat">
+                            <span class="insight-value">${weekData.timeBlocks}</span>
+                            <span class="insight-label">Time Blocks</span>
+                        </div>
+                        <div class="insight-stat">
+                            <span class="insight-value">${weekData.hours}h</span>
+                            <span class="insight-label">Scheduled</span>
+                        </div>
+                        <div class="insight-stat">
+                            <span class="insight-value">${weekData.habitsCompleted}/${weekData.habitsTotal}</span>
+                            <span class="insight-label">Habits</span>
+                        </div>
+                    </div>
+                    <div class="insights-text">
+                        <h4>📊 Analysis</h4>
+                        <div class="markdown-content">${analysisText}</div>
+                    </div>
+                </div>
+                <div class="ai-actions">
+                    <button class="btn-secondary ai-cancel-btn">Close</button>
+                </div>
+            `;
+        } catch (error) {
+            console.error('AI insights failed:', error);
+            modal.querySelector('.modal-body').innerHTML = `
+                <div class="ai-error">
+                    <p>😕 ${error.message || 'Failed to generate insights. Please try again.'}</p>
+                    <button class="btn-secondary ai-cancel-btn">Close</button>
+                </div>
+            `;
+        }
+    }
+    
+    /**
+     * Gather week data for AI analysis
+     */
+    async gatherWeekDataForAI() {
+        // Calculate hours
+        let totalMinutes = 0;
+        const categoryBreakdown = {};
+        
+        this.timeBlocks.forEach(block => {
+            if (block.start_time && block.end_time) {
+                const [startH, startM] = block.start_time.split(':').map(Number);
+                const [endH, endM] = block.end_time.split(':').map(Number);
+                const minutes = (endH * 60 + endM) - (startH * 60 + startM);
+                if (minutes > 0) {
+                    totalMinutes += minutes;
+                    const cat = block.category || 'Other';
+                    categoryBreakdown[cat] = (categoryBreakdown[cat] || 0) + minutes;
+                }
+            }
+        });
+        
+        // Get goals
+        const completedGoals = this.weeklyGoals.filter(g => g.completed).length;
+        
+        // Find best day
+        const dayBlocks = {};
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        this.timeBlocks.forEach(block => {
+            const day = new Date(block.date).getDay();
+            dayBlocks[dayNames[day]] = (dayBlocks[dayNames[day]] || 0) + 1;
+        });
+        const bestDay = Object.entries(dayBlocks).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
+        
+        // Fetch habits data for the week
+        let habitsCompleted = 0;
+        let habitsTotal = 0;
+        
+        try {
+            const dailyHabits = await dataService.getDailyHabits();
+            habitsTotal = dailyHabits.length * 7; // Total possible completions for the week
+            
+            // Get week date range
+            const weekEnd = new Date(this.weekStart);
+            weekEnd.setDate(weekEnd.getDate() + 6);
+            const startDate = formatDate(this.weekStart);
+            const endDate = formatDate(weekEnd);
+            
+            const completions = await dataService.getDailyHabitCompletions(startDate, endDate);
+            habitsCompleted = completions.filter(c => c.completed).length;
+        } catch (error) {
+            console.error('Failed to fetch habits data:', error);
+        }
+        
+        return {
+            timeBlocks: this.timeBlocks.length,
+            hours: Math.round(totalMinutes / 60),
+            habitsCompleted: habitsCompleted,
+            habitsTotal: habitsTotal,
+            goalsProgress: this.weeklyGoals.length > 0 ? Math.round((completedGoals / this.weeklyGoals.length) * 100) : 0,
+            bestDay: bestDay,
+            categoryBreakdown: Object.fromEntries(
+                Object.entries(categoryBreakdown).map(([k, v]) => [k, Math.round(v / 60) + 'h'])
+            )
+        };
+    }
+
+    /**
+     * Parse simple markdown to HTML
+     */
+    parseMarkdown(text) {
+        if (!text) return '';
+        
+        return text
+            // Bold: **text** or __text__
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/__(.+?)__/g, '<strong>$1</strong>')
+            // Italic: *text* or _text_
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            .replace(/_(.+?)_/g, '<em>$1</em>')
+            // Numbered lists: 1. item
+            .replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>')
+            // Bullet lists: - item or * item
+            .replace(/^[-*]\s+(.+)$/gm, '<li>$1</li>')
+            // Wrap consecutive <li> in <ul> or <ol>
+            .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+            // Line breaks
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br>')
+            // Wrap in paragraph if not already
+            .replace(/^(?!<)/, '<p>')
+            .replace(/(?!>)$/, '</p>');
     }
 }
 

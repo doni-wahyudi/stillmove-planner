@@ -3,96 +3,269 @@
         <h2>Settings</h2>
     </div>
 
+    <!-- Settings Tabs -->
+    <div class="settings-tabs">
+        <button class="settings-tab active" data-tab="general">⚙️ General</button>
+        <button class="settings-tab" data-tab="ai">✨ AI</button>
+        <button class="settings-tab" data-tab="profile">👤 Profile</button>
+        <button class="settings-tab" data-tab="data">💾 Data</button>
+    </div>
+
     <div class="settings-content">
-        <!-- Export Section -->
-        <section class="settings-section">
-            <h3>Export Data</h3>
-            <p>Download all your planner data as a JSON file for backup or transfer.</p>
-            <button id="export-data-btn" class="btn btn-primary">
-                <span class="btn-icon">📥</span>
-                Export All Data
-            </button>
-            <div id="export-status" class="status-message"></div>
-        </section>
+        <!-- General Tab -->
+        <div class="settings-tab-content active" id="tab-general">
+            <section class="settings-section">
+                <h3>Preferences</h3>
+                <div class="preferences-list">
+                    <div class="preference-item">
+                        <div class="preference-info">
+                            <label for="sound-enabled">Sound Effects</label>
+                            <p class="preference-description">Play sounds when completing habits</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="sound-enabled" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="preference-item">
+                        <div class="preference-info">
+                            <label for="haptic-enabled">Haptic Feedback</label>
+                            <p class="preference-description">Vibrate on mobile when completing habits</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="haptic-enabled" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </section>
 
-        <!-- Import Section -->
-        <section class="settings-section">
-            <h3>Import Data</h3>
-            <p>Import previously exported data. Choose whether to merge with existing data or replace it.</p>
-            
-            <div class="import-controls">
-                <input type="file" id="import-file-input" accept=".json" style="display: none;">
-                <button id="import-file-btn" class="btn btn-secondary">
-                    <span class="btn-icon">📤</span>
-                    Choose File
+            <section class="settings-section">
+                <h3>Display</h3>
+                <div class="settings-form">
+                    <div class="form-group">
+                        <label for="week-start">Week Starts On</label>
+                        <select id="week-start" class="form-select">
+                            <option value="0">Sunday</option>
+                            <option value="1">Monday</option>
+                            <option value="6">Saturday</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="date-format">Date Format</label>
+                        <select id="date-format" class="form-select">
+                            <option value="DD/MM/YYYY">DD/MM/YYYY (31/12/2025)</option>
+                            <option value="MM/DD/YYYY">MM/DD/YYYY (12/31/2025)</option>
+                            <option value="YYYY-MM-DD">YYYY-MM-DD (2025-12-31)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="time-format">Time Format</label>
+                        <select id="time-format" class="form-select">
+                            <option value="24h">24-hour (14:30)</option>
+                            <option value="12h">12-hour (2:30 PM)</option>
+                        </select>
+                    </div>
+                    <button id="save-display-btn" class="btn btn-primary">💾 Save Display Settings</button>
+                </div>
+                <div id="display-status" class="status-message"></div>
+            </section>
+        </div>
+
+        <!-- AI Tab -->
+        <div class="settings-tab-content" id="tab-ai">
+            <section class="settings-section ai-settings-section">
+                <h3>AI Configuration</h3>
+                <p>Configure AI-powered features like habit suggestions and weekly insights. Your API key is stored locally in your browser.</p>
+                
+                <div class="ai-settings-form">
+                    <div class="preference-item">
+                        <div class="preference-info">
+                            <label for="ai-enabled">Enable AI Features</label>
+                            <p class="preference-description">Turn on AI-powered suggestions and insights</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="ai-enabled">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="ai-config-fields" id="ai-config-fields">
+                        <div class="form-group">
+                            <label for="ai-provider">Provider</label>
+                            <select id="ai-provider" class="form-select">
+                                <option value="openrouter">OpenRouter (Recommended - Free models)</option>
+                                <option value="groq">Groq (Fast)</option>
+                                <option value="openai">OpenAI</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                            <p class="form-hint" id="provider-hint">OpenRouter offers free Gemini models with CORS support.</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ai-api-key">API Key</label>
+                            <div class="api-key-input-wrapper">
+                                <input type="password" id="ai-api-key" class="form-input" placeholder="Enter your API key">
+                                <button type="button" id="toggle-api-key" class="btn-icon-only" title="Show/Hide">👁️</button>
+                            </div>
+                            <p class="form-hint">Get your key: 
+                                <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">OpenRouter</a> | 
+                                <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq</a> | 
+                                <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI</a>
+                            </p>
+                        </div>
+
+                        <div class="form-group" id="custom-url-group" style="display: none;">
+                            <label for="ai-base-url">Base URL</label>
+                            <input type="text" id="ai-base-url" class="form-input" placeholder="https://api.example.com/v1">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ai-model">Model</label>
+                            <select id="ai-model" class="form-select"></select>
+                        </div>
+
+                        <div class="form-group" id="custom-model-group" style="display: none;">
+                            <label for="ai-custom-model">Custom Model ID</label>
+                            <input type="text" id="ai-custom-model" class="form-input" placeholder="model-name">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ai-temperature">Temperature</label>
+                            <div class="temperature-input-wrapper">
+                                <input type="range" id="ai-temperature" min="0" max="2" step="0.1" value="1">
+                                <span id="temperature-value">1.0</span>
+                            </div>
+                            <p class="form-hint">Lower = more focused, Higher = more creative. Some models only support 1.0</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ai-max-tokens">Max Tokens</label>
+                            <select id="ai-max-tokens" class="form-select">
+                                <option value="500">500 (Default)</option>
+                                <option value="1000">1000</option>
+                                <option value="2000">2000 (Reasoning models)</option>
+                                <option value="4000">4000 (Large responses)</option>
+                            </select>
+                            <p class="form-hint">Reasoning models (gpt-5, o1, o3) need 2000+ tokens</p>
+                        </div>
+
+                        <div class="ai-settings-actions">
+                            <button id="test-ai-btn" class="btn btn-secondary">🔌 Test Connection</button>
+                            <button id="save-ai-btn" class="btn btn-primary">💾 Save AI Settings</button>
+                        </div>
+                        <div id="ai-status" class="status-message"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Profile Tab -->
+        <div class="settings-tab-content" id="tab-profile">
+            <section class="settings-section profile-section">
+                <h3>Your Profile</h3>
+                <p>Manage your account information.</p>
+                
+                <div class="profile-form">
+                    <div class="form-group">
+                        <label for="display-name">Display Name</label>
+                        <input type="text" id="display-name" class="form-input" placeholder="Your name">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="user-email">Email</label>
+                        <input type="email" id="user-email" class="form-input" placeholder="your@email.com" disabled>
+                        <p class="form-hint">Email is managed through your account</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="timezone">Timezone</label>
+                        <select id="timezone" class="form-select">
+                            <option value="UTC">UTC (Coordinated Universal Time)</option>
+                            <option value="Asia/Jakarta">Asia/Jakarta (WIB, UTC+7)</option>
+                            <option value="Asia/Singapore">Asia/Singapore (SGT, UTC+8)</option>
+                            <option value="Asia/Tokyo">Asia/Tokyo (JST, UTC+9)</option>
+                            <option value="Asia/Shanghai">Asia/Shanghai (CST, UTC+8)</option>
+                            <option value="Asia/Kolkata">Asia/Kolkata (IST, UTC+5:30)</option>
+                            <option value="Asia/Dubai">Asia/Dubai (GST, UTC+4)</option>
+                            <option value="Europe/London">Europe/London (GMT/BST)</option>
+                            <option value="Europe/Paris">Europe/Paris (CET/CEST)</option>
+                            <option value="Europe/Berlin">Europe/Berlin (CET/CEST)</option>
+                            <option value="America/New_York">America/New York (EST/EDT)</option>
+                            <option value="America/Chicago">America/Chicago (CST/CDT)</option>
+                            <option value="America/Denver">America/Denver (MST/MDT)</option>
+                            <option value="America/Los_Angeles">America/Los Angeles (PST/PDT)</option>
+                            <option value="Australia/Sydney">Australia/Sydney (AEST/AEDT)</option>
+                            <option value="Pacific/Auckland">Pacific/Auckland (NZST/NZDT)</option>
+                        </select>
+                    </div>
+                    
+                    <button id="save-profile-btn" class="btn btn-primary">💾 Save Profile</button>
+                </div>
+                <div id="profile-status" class="status-message"></div>
+            </section>
+
+            <section class="settings-section danger-zone">
+                <h3>⚠️ Account Actions</h3>
+                <div class="danger-actions">
+                    <div class="danger-item">
+                        <div class="danger-info">
+                            <strong>Sign Out</strong>
+                            <p>Sign out of your account on this device.</p>
+                        </div>
+                        <button id="sign-out-btn" class="btn btn-secondary">Sign Out</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Data Tab -->
+        <div class="settings-tab-content" id="tab-data">
+            <section class="settings-section">
+                <h3>📥 Export Data</h3>
+                <p>Download all your planner data as a JSON file for backup or transfer.</p>
+                <button id="export-data-btn" class="btn btn-primary">
+                    <span class="btn-icon">📥</span> Export All Data
                 </button>
-                <span id="selected-file-name" class="file-name"></span>
-            </div>
+                <div id="export-status" class="status-message"></div>
+            </section>
 
-            <div class="import-mode" id="import-mode-section" style="display: none;">
-                <label>Import Mode:</label>
-                <div class="radio-group">
-                    <label>
-                        <input type="radio" name="import-mode" value="merge" checked>
-                        Merge with existing data
-                    </label>
-                    <label>
-                        <input type="radio" name="import-mode" value="replace">
-                        Replace existing data
-                    </label>
-                </div>
-                <button id="import-data-btn" class="btn btn-primary">Import Data</button>
-            </div>
-
-            <div id="import-status" class="status-message"></div>
-        </section>
-
-        <!-- Preferences Section -->
-        <section class="settings-section">
-            <h3>Preferences</h3>
-            <div class="preferences-list">
-                <div class="preference-item">
-                    <div class="preference-info">
-                        <label for="sound-enabled">Sound Effects</label>
-                        <p class="preference-description">Play sounds when completing habits</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="sound-enabled" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                <div class="preference-item">
-                    <div class="preference-info">
-                        <label for="haptic-enabled">Haptic Feedback</label>
-                        <p class="preference-description">Vibrate on mobile when completing habits</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="haptic-enabled" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-            </div>
-        </section>
-
-        <!-- Profile Section -->
-        <section class="settings-section">
-            <h3>Profile</h3>
-            <div class="profile-info">
-                <label for="display-name">Display Name:</label>
-                <input type="text" id="display-name" class="form-input" placeholder="Your name">
+            <section class="settings-section">
+                <h3>📤 Import Data</h3>
+                <p>Import previously exported data. Choose whether to merge with existing data or replace it.</p>
                 
-                <label for="timezone">Timezone:</label>
-                <select id="timezone" class="form-select">
-                    <option value="UTC">UTC</option>
-                    <option value="America/New_York">Eastern Time</option>
-                    <option value="America/Chicago">Central Time</option>
-                    <option value="America/Denver">Mountain Time</option>
-                    <option value="America/Los_Angeles">Pacific Time</option>
-                </select>
-                
-                <button id="save-profile-btn" class="btn btn-primary">Save Profile</button>
-            </div>
-            <div id="profile-status" class="status-message"></div>
-        </section>
+                <div class="import-controls">
+                    <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                    <button id="import-file-btn" class="btn btn-secondary">
+                        <span class="btn-icon">📤</span> Choose File
+                    </button>
+                    <span id="selected-file-name" class="file-name"></span>
+                </div>
+
+                <div class="import-mode" id="import-mode-section" style="display: none;">
+                    <label>Import Mode:</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="import-mode" value="merge" checked> Merge with existing data</label>
+                        <label><input type="radio" name="import-mode" value="replace"> Replace existing data</label>
+                    </div>
+                    <button id="import-data-btn" class="btn btn-primary">Import Data</button>
+                </div>
+                <div id="import-status" class="status-message"></div>
+            </section>
+
+            <section class="settings-section danger-zone">
+                <h3>⚠️ Danger Zone</h3>
+                <p>Irreversible actions. Please be careful.</p>
+                <div class="danger-actions">
+                    <div class="danger-item">
+                        <div class="danger-info">
+                            <strong>Clear Local Cache</strong>
+                            <p>Clear cached data stored in your browser. Your cloud data will remain safe.</p>
+                        </div>
+                        <button id="clear-cache-btn" class="btn btn-warning">Clear Cache</button>
+                    </div>
+                </div>
+            </section>
+        </div>
     </div>
 </div>

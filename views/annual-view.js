@@ -5,6 +5,7 @@
 
 import dataService from '../js/data-service.js';
 import { calculateGoalProgress } from '../js/utils.js';
+import aiService from '../js/ai-service.js';
 
 class AnnualView {
     constructor(stateManager) {
@@ -452,6 +453,12 @@ class AnnualView {
         
         card.querySelector('.delete-goal-btn').addEventListener('click', () => this.deleteGoal(goal.id));
         card.querySelector('.add-sub-goal-btn').addEventListener('click', () => this.addSubGoal(goal.id));
+        
+        // AI suggest habits button
+        const aiBtn = card.querySelector('.ai-suggest-habits-btn');
+        if (aiBtn) {
+            aiBtn.addEventListener('click', () => this.showAISuggestHabits(goal));
+        }
         
         // Setup drag and drop for sub-goals
         this.setupDragAndDrop(subGoalsList, goal.id);
@@ -1122,6 +1129,147 @@ class AnnualView {
     showError(message) {
         // TODO: Implement toast notification
         alert(message);
+    }
+    
+    /**
+     * Show AI suggest habits modal
+     */
+    async showAISuggestHabits(goal) {
+        if (!goal.title || goal.title.trim() === '') {
+            if (window.showToast) {
+                window.showToast('Please enter a goal title first', 'error');
+            } else {
+                alert('Please enter a goal title first');
+            }
+            return;
+        }
+        
+        // Check if AI is available
+        if (!aiService.isAvailable()) {
+            if (window.Toast) {
+                window.Toast.error('AI not configured. Set up your API key in Settings > AI Settings');
+            } else {
+                alert('AI not configured. Please set up your API key in Settings > AI Settings');
+            }
+            return;
+        }
+        
+        // Show loading modal
+        const modal = document.createElement('div');
+        modal.className = 'modal ai-suggestions-modal';
+        modal.style.display = 'flex';
+        modal.innerHTML = `
+            <div class="modal-content modal-medium">
+                <div class="modal-header">
+                    <h3>✨ AI Habit Suggestions</h3>
+                    <button class="modal-close-btn" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="ai-loading">
+                        <div class="ai-loading-spinner"></div>
+                        <p>Analyzing your goal and generating habit suggestions...</p>
+                        <p class="ai-goal-context">Goal: <strong>${goal.title}</strong></p>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        // Close function
+        const closeModal = () => modal.remove();
+        
+        // Event delegation for close buttons
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+            if (e.target.classList.contains('modal-close-btn') || e.target.classList.contains('ai-cancel-btn')) {
+                closeModal();
+            }
+        });
+        
+        try {
+            // Call AI service
+            const suggestions = await aiService.suggestHabitsForGoal(goal.title);
+            
+            if (!suggestions || suggestions.length === 0) {
+                modal.querySelector('.modal-body').innerHTML = `
+                    <div class="ai-error">
+                        <p>😕 Couldn't generate suggestions. Please try again.</p>
+                        <button class="btn-secondary ai-cancel-btn">Close</button>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Show suggestions
+            modal.querySelector('.modal-body').innerHTML = `
+                <p class="ai-intro">Based on your goal "<strong>${goal.title}</strong>", here are suggested daily habits:</p>
+                <div class="ai-suggestions-list">
+                    ${suggestions.map((s, i) => `
+                        <div class="ai-suggestion-item" data-index="${i}">
+                            <div class="suggestion-checkbox">
+                                <input type="checkbox" id="suggestion-${i}" checked />
+                            </div>
+                            <div class="suggestion-content">
+                                <label for="suggestion-${i}" class="suggestion-name">${s.name}</label>
+                                <p class="suggestion-reason">${s.reason}</p>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="ai-actions">
+                    <button class="btn-secondary ai-cancel-btn">Cancel</button>
+                    <button class="btn-primary ai-add-habits-btn">Add Selected Habits</button>
+                </div>
+            `;
+            
+            // Add habits button
+            modal.querySelector('.ai-add-habits-btn').addEventListener('click', async () => {
+                const selectedHabits = [];
+                modal.querySelectorAll('.ai-suggestion-item').forEach((item, i) => {
+                    const checkbox = item.querySelector('input[type="checkbox"]');
+                    if (checkbox.checked) {
+                        selectedHabits.push(suggestions[i]);
+                    }
+                });
+                
+                if (selectedHabits.length === 0) {
+                    if (window.showToast) {
+                        window.showToast('Please select at least one habit', 'error');
+                    }
+                    return;
+                }
+                
+                // Add habits to daily habits
+                try {
+                    for (const habit of selectedHabits) {
+                        await dataService.createDailyHabit({
+                            habit_name: habit.name,
+                            linked_goal_id: goal.id
+                        });
+                    }
+                    
+                    closeModal();
+                    
+                    if (window.showToast) {
+                        window.showToast(`Added ${selectedHabits.length} habit${selectedHabits.length > 1 ? 's' : ''} linked to your goal!`, 'success');
+                    }
+                } catch (error) {
+                    console.error('Failed to add habits:', error);
+                    if (window.showToast) {
+                        window.showToast('Failed to add habits. Please try again.', 'error');
+                    }
+                }
+            });
+            
+        } catch (error) {
+            console.error('AI suggestion failed:', error);
+            modal.querySelector('.modal-body').innerHTML = `
+                <div class="ai-error">
+                    <p>😕 ${error.message || 'Failed to get suggestions. Please try again.'}</p>
+                    <button class="btn-secondary ai-cancel-btn">Close</button>
+                </div>
+            `;
+        }
     }
 }
 
