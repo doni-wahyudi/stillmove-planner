@@ -1797,12 +1797,13 @@ select:focus {
     }
     
     /* === SCHEDULE GRID TIME SLOTS === */
-    .time-slot {
+    /* Only apply to time slots WITHOUT blocks when NOT in manual light mode */
+    html:not([data-theme="light"]) .time-slot:not(.has-block) {
         background: var(--bg-elevated) !important;
         border-color: var(--border-default) !important;
     }
     
-    .time-slot:hover {
+    html:not([data-theme="light"]) .time-slot:not(.has-block):hover {
         background: var(--accent-bg) !important;
     }
     
@@ -1811,12 +1812,12 @@ select:focus {
     }
     
     /* === DAY HEADERS === */
-    .day-header {
+    html:not([data-theme="light"]) .day-header {
         background: var(--bg-elevated) !important;
         border-color: var(--border-default) !important;
     }
     
-    .day-header:hover {
+    html:not([data-theme="light"]) .day-header:hover {
         background: var(--accent-bg) !important;
     }
 }
@@ -2376,33 +2377,33 @@ select:focus {
         color: var(--text-primary) !important;
     }
     
-    /* Force time slots */
-    body .time-slot {
+    /* Force time slots - only those WITHOUT blocks */
+    html:not([data-theme="light"]) body .time-slot:not(.has-block) {
         background: var(--bg-elevated) !important;
         border-color: var(--border-default) !important;
     }
     
     /* Force day headers */
-    body .day-header {
+    html:not([data-theme="light"]) body .day-header {
         background: var(--bg-elevated) !important;
         border-color: var(--border-default) !important;
     }
     
-    body .day-header.today {
+    html:not([data-theme="light"]) body .day-header.today {
         background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%) !important;
     }
     
     /* Force calendar days */
-    body .calendar-day {
+    html:not([data-theme="light"]) body .calendar-day {
         background: var(--bg-elevated) !important;
         border-color: var(--border-default) !important;
     }
     
-    body .calendar-day.today {
+    html:not([data-theme="light"]) body .calendar-day.today {
         background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%) !important;
     }
     
-    body .calendar-day.empty {
+    html:not([data-theme="light"]) body .calendar-day.empty {
         background: var(--bg-base) !important;
     }
     
@@ -2422,16 +2423,16 @@ select:focus {
         border-color: var(--border-default) !important;
     }
     
-    /* Force hover states */
+    /* Force hover states - exclude time-slot.has-block */
     body .weekly-goal-item:hover,
     body .habit-item:hover,
     body .sub-goal-item:hover,
     body .book-entry:hover,
     body .category-item:hover,
     body .mood-cell:hover,
-    body .time-slot:hover,
-    body .day-header:hover,
-    body .calendar-day:hover {
+    html:not([data-theme="light"]) body .time-slot:not(.has-block):hover,
+    html:not([data-theme="light"]) body .day-header:hover,
+    html:not([data-theme="light"]) body .calendar-day:hover {
         background: var(--accent-bg) !important;
     }
     
@@ -2499,9 +2500,10 @@ select:focus {
    ============================================================ */
 
 /* Base time block styling for dark mode */
+/* Only apply when browser prefers dark AND no manual light theme override */
 @media (prefers-color-scheme: dark) {
     /* Time slots with blocks - override inline styles */
-    body .time-slot.has-block {
+    html:not([data-theme="light"]) body .time-slot.has-block {
         background: var(--bg-elevated) !important;
         border-left-width: 4px !important;
         border-left-style: solid !important;
@@ -2509,12 +2511,12 @@ select:focus {
     }
     
     /* Time block content text */
-    body .time-slot.has-block .time-block-content {
+    html:not([data-theme="light"]) body .time-slot.has-block .time-block-content {
         color: var(--text-primary) !important;
     }
     
     /* Add subtle category tint via pseudo-element */
-    body .time-slot.has-block::before {
+    html:not([data-theme="light"]) body .time-slot.has-block::before {
         content: '';
         position: absolute;
         top: 0;
@@ -2557,19 +2559,19 @@ body .time-slot.has-block {
     z-index: 1;
 }
 
-/* Dark mode specific adjustments */
+/* Dark mode specific adjustments - only when NOT manually set to light */
 @media (prefers-color-scheme: dark) {
     /* Ensure time block text is visible */
-    body .time-slot.has-block {
+    html:not([data-theme="light"]) body .time-slot.has-block {
         color: var(--text-primary) !important;
     }
     
-    body .time-slot.has-block .time-block-content {
+    html:not([data-theme="light"]) body .time-slot.has-block .time-block-content {
         color: var(--text-primary) !important;
     }
     
     /* Slightly stronger tint in dark mode for visibility */
-    body .time-slot.has-block {
+    html:not([data-theme="light"]) body .time-slot.has-block {
         border-color: var(--border-default) !important;
     }
 }
@@ -8140,31 +8142,585 @@ html[data-theme="dark"] body::before {
     display: none;
 }
 
-/* Manual light mode override */
-html[data-theme="light"] {
-    --bg-base: #f8f5f0;
-    --bg-surface: #ffffff;
-    --bg-elevated: #ffffff;
-    --bg-input: #ffffff;
+/* Manual light mode override - MUST override dark mode media query */
+/* Using higher specificity to ensure light mode variables take precedence */
+html[data-theme="light"],
+html[data-theme="light"]:root {
+    --bg-base: #f8f5f0 !important;
+    --bg-surface: #ffffff !important;
+    --bg-elevated: #ffffff !important;
+    --bg-input: #ffffff !important;
     
-    --text-primary: #1a1a1a;
-    --text-secondary: #4a4a4a;
-    --text-muted: #666666;
-    --text-on-accent: #ffffff;
+    --text-primary: #1a1a1a !important;
+    --text-secondary: #4a4a4a !important;
+    --text-muted: #666666 !important;
+    --text-on-accent: #ffffff !important;
     
-    --accent-primary: #8b6642;
-    --accent-secondary: #a67c52;
-    --accent-tertiary: #d4a574;
-    --accent-bg: rgba(166, 124, 82, 0.08);
-    --accent-bg-hover: rgba(166, 124, 82, 0.12);
+    --accent-primary: #8b6642 !important;
+    --accent-secondary: #a67c52 !important;
+    --accent-tertiary: #d4a574 !important;
+    --accent-bg: rgba(166, 124, 82, 0.08) !important;
+    --accent-bg-hover: rgba(166, 124, 82, 0.12) !important;
     
-    --border-default: rgba(0, 0, 0, 0.08);
-    --border-strong: rgba(0, 0, 0, 0.15);
-    --border-accent: rgba(166, 124, 82, 0.3);
+    --border-default: rgba(0, 0, 0, 0.08) !important;
+    --border-strong: rgba(0, 0, 0, 0.15) !important;
+    --border-accent: rgba(166, 124, 82, 0.3) !important;
     
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+    
+    /* Override main.css dark mode variables */
+    --primary-color: #a67c52 !important;
+    --secondary-color: #d4a574 !important;
+    --background-color: #faf7f2 !important;
+    --surface-color: #ffffff !important;
+    --border-color: #e8dfd5 !important;
+    --error-color: #c85a54 !important;
+    --success-color: #7d9b6d !important;
+    --warning-color: #d4a574 !important;
+    --info-color: #8b9fa8 !important;
+}
+
+/* Force light mode body background */
+html[data-theme="light"] body {
+    background: #f8f5f0 !important;
+    color: #1a1a1a !important;
+}
+
+/* Force light mode for main layout elements */
+html[data-theme="light"] .main-nav {
+    background: linear-gradient(135deg, #faf7f2 0%, #f5ede1 100%) !important;
+    border-bottom-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+html[data-theme="light"] #view-container {
+    background-color: #fffef9 !important;
+    border-color: rgba(166, 124, 82, 0.2) !important;
+}
+
+html[data-theme="light"] .main-content {
+    background: transparent !important;
+}
+
+/* Force light mode for view backgrounds */
+html[data-theme="light"] .annual-view,
+html[data-theme="light"] .monthly-view,
+html[data-theme="light"] .weekly-view,
+html[data-theme="light"] .habits-view,
+html[data-theme="light"] .action-plan-view,
+html[data-theme="light"] .pomodoro-view,
+html[data-theme="light"] .settings-view {
+    background: linear-gradient(135deg, #faf7f2 0%, #f5ede1 100%) !important;
+}
+
+/* Force light mode for view headers */
+html[data-theme="light"] .view-header {
+    background: linear-gradient(135deg, #8b6642 0%, #d4a574 100%) !important;
+}
+
+/* Manual light mode - override dark mode media query styles */
+html[data-theme="light"] body::before {
+    display: block !important;
+}
+
+html[data-theme="light"] .reflection-section,
+html[data-theme="light"] .weekly-summary,
+html[data-theme="light"] .habit-item,
+html[data-theme="light"] .modal-content,
+html[data-theme="light"] .session-history,
+html[data-theme="light"] .timer-controls,
+html[data-theme="light"] .btn-today,
+html[data-theme="light"] .breadcrumb-nav,
+html[data-theme="light"] .best-day-analysis,
+html[data-theme="light"] .icon-picker-popup,
+html[data-theme="light"] .habit-bundle-card,
+html[data-theme="light"] .reading-filter,
+html[data-theme="light"] .reading-sort,
+html[data-theme="light"] .ai-config-fields,
+html[data-theme="light"] .goal-template-card,
+html[data-theme="light"] .focus-mode-indicator,
+html[data-theme="light"] .monthly-summary-dashboard,
+html[data-theme="light"] .habit-goal-select,
+html[data-theme="light"] .bottom-nav,
+html[data-theme="light"] .achievement-badge,
+html[data-theme="light"] .challenge-card,
+html[data-theme="light"] .points-display {
+    background: var(--bg-surface) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Time slot with block - DON'T override background, let inline category color show */
+html[data-theme="light"] .time-slot.has-block {
+    color: var(--text-primary) !important;
+    /* background is set by inline style from JavaScript */
+}
+
+html[data-theme="light"] .action-plan-table input[type="text"],
+html[data-theme="light"] .modal-content input[type="text"],
+html[data-theme="light"] .modal-content textarea,
+html[data-theme="light"] .modal-content select {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-default) !important;
+}
+
+html[data-theme="light"] .indicator-dot {
+    background: var(--border-strong) !important;
+}
+
+html[data-theme="light"] .time-block-resize-handle {
+    background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.1)) !important;
+}
+
+/* === COMPREHENSIVE LIGHT MODE OVERRIDES === */
+/* Override all dark mode media query styles when manually set to light */
+
+/* Time slots and schedule grid - exclude has-block to preserve inline category colors */
+html[data-theme="light"] .time-slot:not(.has-block) {
+    background: var(--bg-elevated) !important;
+    border-color: var(--border-default) !important;
+}
+
+html[data-theme="light"] .time-slot:not(.has-block):hover {
+    background: var(--accent-bg) !important;
+}
+
+/* Time slots WITH blocks - let inline styles show through */
+html[data-theme="light"] .time-slot.has-block {
+    /* Don't override background - let JS inline style apply */
+    border-color: var(--border-default) !important;
+}
+
+html[data-theme="light"] .day-header {
+    background: var(--bg-elevated) !important;
+    border-color: var(--border-default) !important;
+}
+
+html[data-theme="light"] .day-header:hover {
+    background: var(--accent-bg) !important;
+}
+
+html[data-theme="light"] .day-header.today {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%) !important;
+}
+
+/* Habits grid */
+html[data-theme="light"] .habits-grid-row.header {
+    background: var(--bg-elevated) !important;
+}
+
+html[data-theme="light"] .habits-grid-row.header .grid-cell {
+    background: var(--accent-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .grid-cell {
+    background: var(--bg-elevated) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-default) !important;
+}
+
+html[data-theme="light"] .habit-name-cell {
+    background: var(--bg-surface) !important;
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .checkbox-cell {
+    background: var(--bg-elevated) !important;
+}
+
+/* Action plan table */
+html[data-theme="light"] .action-plan-table input[type="text"],
+html[data-theme="light"] .action-plan-table textarea,
+html[data-theme="light"] .action-plan-table select {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-strong) !important;
+}
+
+html[data-theme="light"] .action-plan-table td {
+    background: transparent !important;
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .action-plan-table tbody tr {
+    background: var(--bg-elevated) !important;
+}
+
+html[data-theme="light"] .action-plan-table tbody tr:hover {
+    background: var(--accent-bg) !important;
+}
+
+/* Annual view textareas */
+html[data-theme="light"] .reflection-section textarea,
+html[data-theme="light"] .vision-board textarea,
+html[data-theme="light"] .bucket-list textarea {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-strong) !important;
+}
+
+/* Goal card inputs */
+html[data-theme="light"] .goal-card input[type="text"],
+html[data-theme="light"] .goal-card select,
+html[data-theme="light"] .goal-card textarea {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-strong) !important;
+}
+
+html[data-theme="light"] .goal-title {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .goal-category {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .sub-goal-item {
+    background: var(--bg-elevated) !important;
+}
+
+html[data-theme="light"] .sub-goal-text {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Habit items */
+html[data-theme="light"] .habit-item:not(.time-slot.has-block .habit-item) {
+    background: var(--bg-elevated) !important;
+    border-color: var(--border-default) !important;
+}
+
+html[data-theme="light"] .habit-item:hover {
+    background: var(--accent-bg) !important;
+}
+
+html[data-theme="light"] .habit-name {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-strong) !important;
+}
+
+html[data-theme="light"] .habit-target {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-strong) !important;
+}
+
+/* Weekly goal items */
+html[data-theme="light"] .weekly-goal-item {
+    background: var(--bg-elevated) !important;
+    border-color: var(--border-default) !important;
+}
+
+html[data-theme="light"] .weekly-goal-item:hover {
+    background: var(--accent-bg) !important;
+}
+
+html[data-theme="light"] .goal-text {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-strong) !important;
+}
+
+html[data-theme="light"] .goal-priority {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-strong) !important;
+}
+
+/* Category items */
+html[data-theme="light"] .category-item {
+    background: var(--bg-elevated) !important;
+}
+
+html[data-theme="light"] .category-item:hover {
+    background: var(--accent-bg) !important;
+}
+
+html[data-theme="light"] .category-name {
+    color: var(--text-primary) !important;
+}
+
+/* Checklist items */
+html[data-theme="light"] .checklist-item {
+    background: var(--bg-elevated) !important;
+    border-color: var(--border-default) !important;
+}
+
+html[data-theme="light"] .checklist-text {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Journal & gratitude */
+html[data-theme="light"] .journal-text,
+html[data-theme="light"] .gratitude-text {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-strong) !important;
+}
+
+/* Book entries */
+html[data-theme="light"] .book-entry {
+    background: var(--bg-elevated) !important;
+    border-color: var(--border-default) !important;
+}
+
+html[data-theme="light"] .book-entry:hover {
+    background: var(--accent-bg) !important;
+}
+
+html[data-theme="light"] .book-title,
+html[data-theme="light"] .book-author {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-strong) !important;
+}
+
+/* Sleep & water items */
+html[data-theme="light"] .sleep-item,
+html[data-theme="light"] .water-item {
+    background: var(--bg-elevated) !important;
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="light"] .sleep-duration,
+html[data-theme="light"] .water-percentage {
+    background: var(--accent-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Mood cells */
+html[data-theme="light"] .mood-cell {
+    background: var(--bg-elevated) !important;
+    border-color: var(--border-default) !important;
+}
+
+html[data-theme="light"] .mood-cell:hover {
+    background: var(--accent-bg) !important;
+}
+
+html[data-theme="light"] .mood-cell.selected {
+    background: var(--accent-bg-hover) !important;
+    border-color: var(--accent-primary) !important;
+}
+
+/* Calendar days */
+html[data-theme="light"] .calendar-day {
+    background: var(--bg-elevated) !important;
+    border-color: var(--border-default) !important;
+}
+
+html[data-theme="light"] .calendar-day:hover {
+    background: var(--accent-bg) !important;
+}
+
+html[data-theme="light"] .calendar-day.empty {
+    background: var(--bg-base) !important;
+}
+
+html[data-theme="light"] .day-number {
+    color: var(--text-primary) !important;
+}
+
+/* Daily sections */
+html[data-theme="light"] .daily-section {
+    background: var(--bg-surface) !important;
+    border-color: var(--border-default) !important;
+}
+
+html[data-theme="light"] .daily-section-content {
+    background: var(--bg-surface) !important;
+}
+
+/* Session items */
+html[data-theme="light"] .session-item {
+    background: var(--bg-elevated) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Progress items */
+html[data-theme="light"] .progress-item {
+    color: var(--text-primary) !important;
+    border-bottom-color: var(--border-default) !important;
+}
+
+/* Category manager */
+html[data-theme="light"] .category-manager-item {
+    background: var(--bg-elevated) !important;
+    border-color: var(--border-default) !important;
+}
+
+html[data-theme="light"] .category-manager-name {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-strong) !important;
+}
+
+/* Settings inputs */
+html[data-theme="light"] .settings-section input[type="text"],
+html[data-theme="light"] .settings-section input[type="email"],
+html[data-theme="light"] .settings-section select,
+html[data-theme="light"] .settings-section textarea {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-strong) !important;
+}
+
+html[data-theme="light"] .import-mode {
+    background: var(--bg-elevated) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Vision board & bucket list */
+html[data-theme="light"] .vision-board,
+html[data-theme="light"] .bucket-list {
+    background: var(--bg-surface) !important;
+    border-color: var(--border-default) !important;
+}
+
+/* Timer circle */
+html[data-theme="light"] .timer-circle {
+    background: var(--bg-surface) !important;
+    border-color: var(--border-default) !important;
+}
+
+/* Tabs */
+html[data-theme="light"] .tabs {
+    background: var(--bg-surface) !important;
+}
+
+/* Force all card sections */
+html[data-theme="light"] .reflection-section,
+html[data-theme="light"] .goals-section,
+html[data-theme="light"] .vision-section section,
+html[data-theme="light"] .reading-section,
+html[data-theme="light"] .goal-card,
+html[data-theme="light"] .habits-sidebar,
+html[data-theme="light"] .habits-grid-container,
+html[data-theme="light"] .habits-progress,
+html[data-theme="light"] .wellness-section,
+html[data-theme="light"] .weekly-goals,
+html[data-theme="light"] .category-legend,
+html[data-theme="light"] .schedule-section,
+html[data-theme="light"] .daily-sections,
+html[data-theme="light"] .settings-section,
+html[data-theme="light"] .calendar-section,
+html[data-theme="light"] .monthly-checklist,
+html[data-theme="light"] .monthly-notes,
+html[data-theme="light"] .categories-sidebar,
+html[data-theme="light"] .action-plan-content,
+html[data-theme="light"] .action-plan-section {
+    background: var(--bg-surface) !important;
+    border-color: var(--border-default) !important;
+}
+
+/* Force all inputs */
+html[data-theme="light"] body input[type="text"],
+html[data-theme="light"] body input[type="date"],
+html[data-theme="light"] body input[type="time"],
+html[data-theme="light"] body input[type="number"],
+html[data-theme="light"] body input[type="email"],
+html[data-theme="light"] body textarea,
+html[data-theme="light"] body select {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-strong) !important;
+}
+
+/* Force placeholder color */
+html[data-theme="light"] body input::placeholder,
+html[data-theme="light"] body textarea::placeholder {
+    color: var(--text-muted) !important;
+    opacity: 1 !important;
+}
+
+/* Time block */
+html[data-theme="light"] .time-block {
+    background: #ffffff !important;
+    border-color: #e5e7eb !important;
+}
+
+html[data-theme="light"] .time-block input,
+html[data-theme="light"] .time-block select {
+    background: #ffffff !important;
+    color: #111827 !important;
+    border-color: #e5e7eb !important;
+}
+
+html[data-theme="light"] .time-block-content {
+    color: #111827 !important;
+}
+
+html[data-theme="light"] .time-block-time {
+    color: #4a4a4a !important;
+}
+
+html[data-theme="light"] .time-block-activity {
+    color: #1a1a1a !important;
+}
+
+html[data-theme="light"] .time-slot.has-block .time-block-content {
+    color: #111827 !important;
+}
+
+/* CRITICAL: For time slots WITH blocks, don't set any background */
+/* This allows the inline style from JavaScript to show the category colors */
+/* We only set non-background properties here */
+html[data-theme="light"] .time-slot.has-block,
+html[data-theme="light"] body .time-slot.has-block {
+    /* DO NOT set background here - let inline style win */
+    border-color: var(--border-default) !important;
+}
+
+/* Ensure the ::before pseudo-element doesn't interfere */
+html[data-theme="light"] body .time-slot.has-block::before {
+    display: none !important;
+}
+
+/* Add goal buttons */
+html[data-theme="light"] #add-weekly-goal-btn,
+html[data-theme="light"] .btn-primary {
+    background: linear-gradient(135deg, #8b6642 0%, #a67c52 100%) !important;
+    color: #ffffff !important;
+}
+
+html[data-theme="light"] .add-sub-goal-btn {
+    background: transparent !important;
+    color: #a67c52 !important;
+    border-color: #a67c52 !important;
+}
+
+html[data-theme="light"] .add-sub-goal-btn:hover {
+    background: #a67c52 !important;
+    color: #ffffff !important;
+}
+
+html[data-theme="light"] .add-checklist-item-btn {
+    color: #a67c52 !important;
+    border-color: rgba(166, 124, 82, 0.3) !important;
+    background: transparent !important;
+}
+
+html[data-theme="light"] .add-checklist-item-btn:hover {
+    background: rgba(166, 124, 82, 0.08) !important;
+}
+
+/* Btn secondary */
+html[data-theme="light"] .btn-secondary {
+    background: var(--bg-surface) !important;
+    color: var(--accent-primary) !important;
+}
+
+/* Weekly summary */
+html[data-theme="light"] .weekly-summary {
+    background: var(--bg-surface) !important;
+    border-color: var(--border-default) !important;
 }
 
 /* Theme transition animation */

@@ -3690,8 +3690,8 @@ select:focus-visible,
 }
 
 .time-slot {
-    background: #fafbfc;
-    border: 1px solid #e2e8f0;
+    background: var(--bg-elevated, #fafbfc);
+    border: 1px solid var(--border-default, #e2e8f0);
     border-radius: 6px;
     min-height: 40px;
     cursor: pointer;
@@ -3701,8 +3701,8 @@ select:focus-visible,
 }
 
 .time-slot:hover {
-    background: rgba(166, 124, 82, 0.05);
-    border-color: var(--primary-color);
+    background: var(--accent-bg, rgba(166, 124, 82, 0.05));
+    border-color: var(--accent-primary, var(--primary-color));
 }
 
 /* Time Blocks */
