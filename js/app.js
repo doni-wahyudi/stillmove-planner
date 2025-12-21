@@ -3,6 +3,7 @@ import { APP_CONFIG } from './config.js';
 import { getSupabaseClient, isSupabaseConfigured } from './supabase-client.js';
 import authService from './auth-service.js';
 import { ErrorHandler } from './error-handler.js';
+import cacheService from './cache-service.js';
 
 /**
  * Application State Manager
@@ -397,6 +398,15 @@ class App {
         console.log('Initializing Daily Planner Application...');
         
         try {
+            // Initialize cache service for offline support
+            try {
+                await cacheService.init();
+                console.log('[PWA] Cache service initialized');
+            } catch (cacheError) {
+                console.warn('[PWA] Cache service failed to initialize:', cacheError);
+                // Continue without cache - app will work online only
+            }
+            
             // Check if Supabase is configured
             if (!isSupabaseConfigured()) {
                 this.showConfigurationMessage();

@@ -4,7 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stillmove Planner</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Your personal productivity companion for habits, goals, and time management">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Planner">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Icons -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
+    <link rel="apple-touch-icon" href="icons/AppImages/android/android-launchericon-192-192.png">
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -14,6 +28,27 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+    <!-- PWA Offline Indicator -->
+    <div id="offline-indicator" class="offline-indicator" aria-live="polite">
+        You are offline
+    </div>
+    
+    <!-- PWA Install Prompt -->
+    <div id="pwa-install-prompt" class="pwa-install-prompt">
+        <h4>📱 Install App</h4>
+        <p>Install Daily Planner for quick access and offline use.</p>
+        <div class="btn-group">
+            <button class="btn-dismiss" id="pwa-dismiss">Not now</button>
+            <button class="btn-install" id="pwa-install">Install</button>
+        </div>
+    </div>
+    
+    <!-- Sync Indicator -->
+    <div id="sync-indicator" class="sync-indicator">
+        <div class="sync-spinner"></div>
+        <span>Syncing...</span>
+    </div>
+    
     <!-- Skip to main content link for keyboard users -->
     <a href="#main-content" class="skip-to-main">Skip to main content</a>
     
@@ -148,5 +183,90 @@
     <script type="module" src="js/supabase-client.js"></script>
     <script type="module" src="js/error-handler.js"></script>
     <script type="module" src="js/app.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    const registration = await navigator.serviceWorker.register('/sw.js');
+                    console.log('[PWA] Service Worker registered:', registration.scope);
+                    
+                    // Check for updates
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                // New version available
+                                if (window.Toast) {
+                                    window.Toast.info('New version available! Refresh to update.');
+                                }
+                            }
+                        });
+                    });
+                } catch (error) {
+                    console.error('[PWA] Service Worker registration failed:', error);
+                }
+            });
+        }
+        
+        // Offline/Online indicator
+        const offlineIndicator = document.getElementById('offline-indicator');
+        
+        function updateOnlineStatus() {
+            if (navigator.onLine) {
+                offlineIndicator.classList.remove('visible');
+            } else {
+                offlineIndicator.classList.add('visible');
+            }
+        }
+        
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus();
+        
+        // PWA Install Prompt
+        let deferredPrompt;
+        const installPrompt = document.getElementById('pwa-install-prompt');
+        const installBtn = document.getElementById('pwa-install');
+        const dismissBtn = document.getElementById('pwa-dismiss');
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Check if user has dismissed before
+            if (!localStorage.getItem('pwa_install_dismissed')) {
+                setTimeout(() => {
+                    installPrompt.classList.add('visible');
+                }, 3000);
+            }
+        });
+        
+        if (installBtn) {
+            installBtn.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log('[PWA] Install prompt outcome:', outcome);
+                    deferredPrompt = null;
+                }
+                installPrompt.classList.remove('visible');
+            });
+        }
+        
+        if (dismissBtn) {
+            dismissBtn.addEventListener('click', () => {
+                installPrompt.classList.remove('visible');
+                localStorage.setItem('pwa_install_dismissed', 'true');
+            });
+        }
+        
+        window.addEventListener('appinstalled', () => {
+            console.log('[PWA] App installed');
+            installPrompt.classList.remove('visible');
+            deferredPrompt = null;
+        });
+    </script>
 </body>
 </html>
