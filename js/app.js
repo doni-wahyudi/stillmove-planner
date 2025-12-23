@@ -4,6 +4,7 @@ import { getSupabaseClient, isSupabaseConfigured } from './supabase-client.js';
 import authService from './auth-service.js';
 import { ErrorHandler } from './error-handler.js';
 import cacheService from './cache-service.js';
+import performanceMonitor from './performance-monitor.js';
 
 /**
  * Application State Manager
@@ -234,8 +235,23 @@ class Router {
     }
     
     renderView(view) {
-        // Show loading state
-        this.viewContainer.innerHTML = '<div class="loading-view">Loading...</div>';
+        // Start performance tracking
+        performanceMonitor.startViewLoad(view);
+        
+        // Show skeleton loading state
+        this.viewContainer.innerHTML = `
+            <div class="loading-skeleton" aria-busy="true" aria-label="Loading ${view} view">
+                <div class="skeleton skeleton-header"></div>
+                <div class="skeleton-grid">
+                    <div class="skeleton skeleton-card"></div>
+                    <div class="skeleton skeleton-card"></div>
+                    <div class="skeleton skeleton-card"></div>
+                </div>
+                <div class="skeleton skeleton-text long"></div>
+                <div class="skeleton skeleton-text medium"></div>
+                <div class="skeleton skeleton-text short"></div>
+            </div>
+        `;
         
         // Render view based on type
         switch(view) {
@@ -261,8 +277,25 @@ class Router {
                 this.renderSettingsView();
                 break;
             default:
-                this.viewContainer.innerHTML = '<div class="error-view">View not found</div>';
+                performanceMonitor.endViewLoad(view);
+                this.viewContainer.innerHTML = this.getErrorViewHTML('View Not Found', 'The requested view does not exist.', 'Check the URL or navigate using the menu.');
         }
+    }
+    
+    /**
+     * Generate error view HTML with retry button and hints
+     */
+    getErrorViewHTML(title, message, hint) {
+        return `
+            <div class="error-view" role="alert">
+                <h2>${title}</h2>
+                <p>${message}</p>
+                ${hint ? `<div class="error-hint">💡 ${hint}</div>` : ''}
+                <button class="btn-retry" onclick="location.reload()">
+                    ↻ Retry
+                </button>
+            </div>
+        `;
     }
     
     async renderAnnualView() {
@@ -271,14 +304,15 @@ class Router {
             const { default: AnnualView } = await import('../views/annual-view.js');
             const annualView = new AnnualView(this.stateManager);
             await annualView.init(this.viewContainer);
+            performanceMonitor.endViewLoad('annual');
         } catch (error) {
+            performanceMonitor.endViewLoad('annual');
             ErrorHandler.handle(error, 'Annual View Loading');
-            this.viewContainer.innerHTML = `
-                <div class="error-view">
-                    <h2>Failed to load Annual View</h2>
-                    <p>Please try refreshing the page.</p>
-                </div>
-            `;
+            this.viewContainer.innerHTML = this.getErrorViewHTML(
+                'Failed to load Annual View',
+                'There was a problem loading your annual goals.',
+                'Check your internet connection and try again.'
+            );
         }
     }
     
@@ -288,14 +322,15 @@ class Router {
             const { default: MonthlyView } = await import('../views/monthly-view.js');
             const monthlyView = new MonthlyView(this.stateManager);
             await monthlyView.init(this.viewContainer);
+            performanceMonitor.endViewLoad('monthly');
         } catch (error) {
+            performanceMonitor.endViewLoad('monthly');
             ErrorHandler.handle(error, 'Monthly View Loading');
-            this.viewContainer.innerHTML = `
-                <div class="error-view">
-                    <h2>Failed to load Monthly View</h2>
-                    <p>Please try refreshing the page.</p>
-                </div>
-            `;
+            this.viewContainer.innerHTML = this.getErrorViewHTML(
+                'Failed to load Monthly View',
+                'There was a problem loading your monthly calendar.',
+                'Check your internet connection and try again.'
+            );
         }
     }
     
@@ -305,14 +340,15 @@ class Router {
             const { default: WeeklyView } = await import('../views/weekly-view.js');
             const weeklyView = new WeeklyView(this.stateManager);
             await weeklyView.init(this.viewContainer);
+            performanceMonitor.endViewLoad('weekly');
         } catch (error) {
+            performanceMonitor.endViewLoad('weekly');
             ErrorHandler.handle(error, 'Weekly View Loading');
-            this.viewContainer.innerHTML = `
-                <div class="error-view">
-                    <h2>Failed to load Weekly View</h2>
-                    <p>Please try refreshing the page.</p>
-                </div>
-            `;
+            this.viewContainer.innerHTML = this.getErrorViewHTML(
+                'Failed to load Weekly View',
+                'There was a problem loading your weekly schedule.',
+                'Check your internet connection and try again.'
+            );
         }
     }
     
@@ -322,14 +358,15 @@ class Router {
             const { default: HabitsView } = await import('../views/habits-view.js');
             const habitsView = new HabitsView(this.stateManager);
             await habitsView.init(this.viewContainer);
+            performanceMonitor.endViewLoad('habits');
         } catch (error) {
+            performanceMonitor.endViewLoad('habits');
             ErrorHandler.handle(error, 'Habits View Loading');
-            this.viewContainer.innerHTML = `
-                <div class="error-view">
-                    <h2>Failed to load Habits View</h2>
-                    <p>Please try refreshing the page.</p>
-                </div>
-            `;
+            this.viewContainer.innerHTML = this.getErrorViewHTML(
+                'Failed to load Habits View',
+                'There was a problem loading your habit tracker.',
+                'Check your internet connection and try again.'
+            );
         }
     }
     
@@ -339,14 +376,15 @@ class Router {
             const { default: ActionPlanView } = await import('../views/action-plan-view.js');
             const actionPlanView = new ActionPlanView(this.stateManager);
             await actionPlanView.init(this.viewContainer);
+            performanceMonitor.endViewLoad('action-plan');
         } catch (error) {
+            performanceMonitor.endViewLoad('action-plan');
             ErrorHandler.handle(error, 'Action Plan View Loading');
-            this.viewContainer.innerHTML = `
-                <div class="error-view">
-                    <h2>Failed to load Action Plan View</h2>
-                    <p>Please try refreshing the page.</p>
-                </div>
-            `;
+            this.viewContainer.innerHTML = this.getErrorViewHTML(
+                'Failed to load Action Plan',
+                'There was a problem loading your action plans.',
+                'Check your internet connection and try again.'
+            );
         }
     }
     
@@ -356,14 +394,15 @@ class Router {
             const { default: PomodoroView } = await import('../views/pomodoro-view.js');
             const pomodoroView = new PomodoroView(this.stateManager);
             await pomodoroView.init(this.viewContainer);
+            performanceMonitor.endViewLoad('pomodoro');
         } catch (error) {
+            performanceMonitor.endViewLoad('pomodoro');
             ErrorHandler.handle(error, 'Pomodoro View Loading');
-            this.viewContainer.innerHTML = `
-                <div class="error-view">
-                    <h2>Failed to load Pomodoro Timer</h2>
-                    <p>Please try refreshing the page.</p>
-                </div>
-            `;
+            this.viewContainer.innerHTML = this.getErrorViewHTML(
+                'Failed to load Pomodoro Timer',
+                'There was a problem loading the focus timer.',
+                'Check your internet connection and try again.'
+            );
         }
     }
     
@@ -372,14 +411,15 @@ class Router {
         try {
             const { default: settingsView } = await import('../views/settings-view.js');
             await settingsView.init(this.viewContainer);
+            performanceMonitor.endViewLoad('settings');
         } catch (error) {
+            performanceMonitor.endViewLoad('settings');
             ErrorHandler.handle(error, 'Settings View Loading');
-            this.viewContainer.innerHTML = `
-                <div class="error-view">
-                    <h2>Failed to load Settings</h2>
-                    <p>Please try refreshing the page.</p>
-                </div>
-            `;
+            this.viewContainer.innerHTML = this.getErrorViewHTML(
+                'Failed to load Settings',
+                'There was a problem loading your settings.',
+                'Check your internet connection and try again.'
+            );
         }
     }
 }
@@ -398,6 +438,9 @@ class App {
         console.log('Initializing Daily Planner Application...');
         
         try {
+            // Initialize performance monitoring
+            performanceMonitor.init();
+            
             // Initialize cache service for offline support
             try {
                 await cacheService.init();
@@ -428,6 +471,9 @@ class App {
             // Load initial view
             const hash = window.location.hash.slice(1) || APP_CONFIG.defaultView;
             this.router.navigate(hash);
+            
+            // Check if user should be reminded to export data
+            this.checkExportReminder();
             
             console.log('Application initialized successfully');
         } catch (error) {
@@ -1507,6 +1553,45 @@ class App {
                 <p>${message}</p>
             </div>
         `;
+    }
+    
+    /**
+     * Check if user should be reminded to export their data
+     * Reminds every 7 days if they haven't exported
+     */
+    checkExportReminder() {
+        const EXPORT_REMINDER_KEY = 'lastExportReminder';
+        const EXPORT_REMINDER_DAYS = 7;
+        
+        try {
+            const lastReminder = localStorage.getItem(EXPORT_REMINDER_KEY);
+            const now = Date.now();
+            const reminderInterval = EXPORT_REMINDER_DAYS * 24 * 60 * 60 * 1000;
+            
+            // Check if we should show reminder
+            if (!lastReminder || (now - parseInt(lastReminder)) > reminderInterval) {
+                // Delay the reminder so it doesn't interrupt initial load
+                setTimeout(() => {
+                    this.showExportReminder();
+                    localStorage.setItem(EXPORT_REMINDER_KEY, now.toString());
+                }, 5000);
+            }
+        } catch (e) {
+            // localStorage might not be available
+            console.warn('Could not check export reminder:', e);
+        }
+    }
+    
+    /**
+     * Show export reminder toast
+     */
+    showExportReminder() {
+        if (window.Toast) {
+            window.Toast.info(
+                '💾 Remember to backup your data! Go to Settings → Export to save a copy.',
+                8000
+            );
+        }
     }
 }
 

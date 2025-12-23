@@ -3,40 +3,44 @@
  * Handles caching and offline functionality
  */
 
-const CACHE_NAME = 'daily-planner-v1';
+const CACHE_NAME = 'daily-planner-v3';
 const DATA_CACHE_NAME = 'daily-planner-data-v1';
 
-// Static assets to cache
+// Static assets to cache - using relative paths for subdirectory deployment
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/auth.html',
-  '/css/main.css',
-  '/css/theme.css',
-  '/js/app.js',
-  '/js/config.js',
-  '/js/data-service.js',
-  '/js/cache-service.js',
-  '/js/ai-service.js',
-  '/js/error-handler.js',
-  '/js/accessibility.js',
-  '/js/auto-save.js',
-  '/components/modal.js',
-  '/components/toast.js',
-  '/components/spinner.js',
-  '/components/calendar.js',
-  '/components/progress-bar.js',
-  '/views/weekly-view.html',
-  '/views/weekly-view.js',
-  '/views/monthly-view.html',
-  '/views/monthly-view.js',
-  '/views/habits-view.html',
-  '/views/habits-view.js',
-  '/views/annual-view.html',
-  '/views/annual-view.js',
-  '/views/settings-view.html',
-  '/views/settings-view.js',
-  '/manifest.json'
+  './',
+  './index.html',
+  './auth.html',
+  './css/main.css',
+  './css/theme.css',
+  './js/app.js',
+  './js/config.js',
+  './js/data-service.js',
+  './js/cache-service.js',
+  './js/ai-service.js',
+  './js/error-handler.js',
+  './js/accessibility.js',
+  './js/auto-save.js',
+  './components/modal.js',
+  './components/toast.js',
+  './components/spinner.js',
+  './components/calendar.js',
+  './components/progress-bar.js',
+  './views/weekly-view.html',
+  './views/weekly-view.js',
+  './views/monthly-view.html',
+  './views/monthly-view.js',
+  './views/habits-view.html',
+  './views/habits-view.js',
+  './views/annual-view.html',
+  './views/annual-view.js',
+  './views/settings-view.html',
+  './views/settings-view.js',
+  './views/action-plan-view.html',
+  './views/action-plan-view.js',
+  './views/pomodoro-view.html',
+  './views/pomodoro-view.js',
+  './manifest.json'
 ];
 
 // Install event - cache static assets
@@ -103,7 +107,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           return response;
         })
-        .catch(() => caches.match(request) || caches.match('/index.html'))
+        .catch(() => caches.match(request) || caches.match('./index.html'))
     );
     return;
   }

@@ -83,11 +83,35 @@
     <script src="https://cdn.jsdelivr.net/npm/fast-check@3.15.0/lib/bundle.js"></script>
     
     <script type="module">
-        import { calculateGoalProgress } from './js/utils.js';
+        import { 
+            calculateGoalProgress,
+            calculateHabitProgressForDays,
+            calculateMonthlyHabitProgress,
+            calculateDailyCompletionPercentage,
+            calculateSleepDuration,
+            calculateWaterIntakePercentage,
+            formatDate,
+            getDaysInMonth,
+            getTimeSlots,
+            validateTimeBlockTime
+        } from '../js/utils.js';
 
         // Make functions available globally for the test runner
         window.calculateGoalProgress = calculateGoalProgress;
+        window.calculateHabitProgressForDays = calculateHabitProgressForDays;
+        window.calculateMonthlyHabitProgress = calculateMonthlyHabitProgress;
+        window.calculateDailyCompletionPercentage = calculateDailyCompletionPercentage;
+        window.calculateSleepDuration = calculateSleepDuration;
+        window.calculateWaterIntakePercentage = calculateWaterIntakePercentage;
+        window.formatDate = formatDate;
+        window.getDaysInMonth = getDaysInMonth;
+        window.getTimeSlots = getTimeSlots;
+        window.validateTimeBlockTime = validateTimeBlockTime;
         window.fc = fc;
+        
+        // Signal that modules are loaded
+        window.modulesLoaded = true;
+        window.dispatchEvent(new Event('modulesLoaded'));
     </script>
 
     <script>
@@ -279,9 +303,18 @@
             resultsDiv.innerHTML = html;
         }
 
-        // Auto-run tests on load
-        window.addEventListener('load', () => {
-            setTimeout(runTests, 500);
+        // Auto-run tests when modules are loaded
+        function waitForModulesAndRun() {
+            if (window.modulesLoaded && window.fc) {
+                setTimeout(runTests, 100);
+            } else {
+                setTimeout(waitForModulesAndRun, 100);
+            }
+        }
+        
+        window.addEventListener('load', waitForModulesAndRun);
+        window.addEventListener('modulesLoaded', () => {
+            setTimeout(runTests, 100);
         });
     </script>
 </body>

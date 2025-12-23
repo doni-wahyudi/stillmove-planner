@@ -6,6 +6,28 @@
 const DB_NAME = 'DailyPlannerCache';
 const DB_VERSION = 2;
 const SYNC_KEY = 'stillmove_last_sync';
+const CACHE_METADATA_KEY = 'stillmove_cache_metadata';
+
+// Cache TTL (time-to-live) in milliseconds for different data types
+const CACHE_TTL = {
+  goals: 24 * 60 * 60 * 1000,           // 24 hours - goals change infrequently
+  habits: 12 * 60 * 60 * 1000,          // 12 hours - habits are fairly stable
+  habitLogs: 5 * 60 * 1000,             // 5 minutes - logs change frequently
+  timeBlocks: 5 * 60 * 1000,            // 5 minutes - time blocks change often
+  categories: 24 * 60 * 60 * 1000,      // 24 hours - categories rarely change
+  readingList: 12 * 60 * 60 * 1000,     // 12 hours
+  userProfile: 24 * 60 * 60 * 1000,     // 24 hours
+  weeklyGoals: 12 * 60 * 60 * 1000,     // 12 hours
+  weeklyHabits: 12 * 60 * 60 * 1000,    // 12 hours
+  weeklyHabitLogs: 5 * 60 * 1000,       // 5 minutes
+  monthlyData: 30 * 60 * 1000,          // 30 minutes
+  dailyEntries: 5 * 60 * 1000,          // 5 minutes
+  actionPlans: 30 * 60 * 1000,          // 30 minutes
+  moodEntries: 5 * 60 * 1000,           // 5 minutes
+  sleepEntries: 5 * 60 * 1000,          // 5 minutes
+  waterEntries: 5 * 60 * 1000,          // 5 minutes
+  default: 10 * 60 * 1000               // 10 minutes default
+};
 
 // Store names matching data-service tables
 const STORES = {
@@ -34,6 +56,7 @@ class CacheService {
     this.db = null;
     this.isOnline = navigator.onLine;
     this.syncInProgress = false;
+    this.cacheMetadata = this.loadCacheMetadata();
     
     // Listen for online/offline events
     window.addEventListener('online', () => this.handleOnline());
@@ -47,6 +70,105 @@ class CacheService {
         }
       });
     }
+  }
+
+  /**
+   * Load cache metadata from localStorage
+   */
+  loadCacheMetadata() {
+    try {
+      const stored = localStorage.getItem(CACHE_METADATA_KEY);
+      return stored ? JSON.parse(stored) : {};
+    } catch (e) {
+      console.warn('[Cache] Failed to load cache metadata:', e);
+      return {};
+    }
+  }
+
+  /**
+   * Save cache metadata to localStorage
+   */
+  saveCacheMetadata() {
+    try {
+      localStorage.setItem(CACHE_METADATA_KEY, JSON.stringify(this.cacheMetadata));
+    } catch (e) {
+      console.warn('[Cache] Failed to save cache metadata:', e);
+    }
+  }
+
+  /**
+   * Check if cache for a store is still fresh
+   * @param {string} storeName - Name of the store
+   * @returns {boolean} True if cache is fresh, false if stale
+   */
+  isCacheFresh(storeName) {
+    const lastUpdated = this.cacheMetadata[storeName];
+    if (!lastUpdated) return false;
+    
+    const ttl = CACHE_TTL[storeName] || CACHE_TTL.default;
+    const age = Date.now() - lastUpdated;
+    
+    return age < ttl;
+  }
+
+  /**
+   * Get cache age in human-readable format
+   * @param {string} storeName - Name of the store
+   * @returns {string} Human-readable age string
+   */
+  getCacheAge(storeName) {
+    const lastUpdated = this.cacheMetadata[storeName];
+    if (!lastUpdated) return 'never cached';
+    
+    const age = Date.now() - lastUpdated;
+    const minutes = Math.floor(age / 60000);
+    const hours = Math.floor(minutes / 60);
+    
+    if (hours > 0) return `${hours}h ${minutes % 60}m ago`;
+    if (minutes > 0) return `${minutes}m ago`;
+    return 'just now';
+  }
+
+  /**
+   * Mark cache as updated for a store
+   * @param {string} storeName - Name of the store
+   */
+  markCacheUpdated(storeName) {
+    this.cacheMetadata[storeName] = Date.now();
+    this.saveCacheMetadata();
+  }
+
+  /**
+   * Invalidate cache for a store
+   * @param {string} storeName - Name of the store
+   */
+  invalidateCache(storeName) {
+    delete this.cacheMetadata[storeName];
+    this.saveCacheMetadata();
+  }
+
+  /**
+   * Invalidate all caches
+   */
+  invalidateAllCaches() {
+    this.cacheMetadata = {};
+    this.saveCacheMetadata();
+  }
+
+  /**
+   * Force refresh data from server if online
+   * @param {string} storeName - Name of the store to refresh
+   * @returns {boolean} True if refresh was triggered
+   */
+  async forceRefresh(storeName) {
+    if (!this.isOnline) {
+      console.log('[Cache] Cannot force refresh while offline');
+      return false;
+    }
+    
+    this.invalidateCache(storeName);
+    console.log(`[Cache] Force refresh triggered for ${storeName}`);
+    return true;
   }
 
   /**
@@ -147,7 +269,10 @@ class CacheService {
         }
       });
 
-      transaction.oncomplete = () => resolve();
+      transaction.oncomplete = () => {
+        this.markCacheUpdated(storeName);
+        resolve();
+      };
       transaction.onerror = () => reject(transaction.error);
     });
   }
@@ -320,4 +445,4 @@ class CacheService {
 // Export singleton
 const cacheService = new CacheService();
 export default cacheService;
-export { STORES };
+export { STORES, CACHE_TTL };

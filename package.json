@@ -4,8 +4,8 @@
   "description": "Daily Planner Application with property-based testing",
   "type": "module",
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --run",
-    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch"
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
+    "test:watch": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --watch"
   },
   "devDependencies": {
     "jest": "^29.7.0",
@@ -17,6 +17,8 @@
     "extensionsToTreatAsEsm": [".js"],
     "moduleNameMapper": {
       "^(\\.{1,2}/.*)\\.js$": "$1"
-    }
+    },
+    "testMatch": ["**/tests/**/*.test.js"],
+    "verbose": true
   }
 }

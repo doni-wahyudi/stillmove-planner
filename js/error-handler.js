@@ -338,4 +338,23 @@ export { ErrorHandler, ErrorCategory };
 if (typeof window !== 'undefined') {
     window.ErrorHandler = ErrorHandler;
     window.ErrorCategory = ErrorCategory;
+    
+    // Global error boundary - catch unhandled errors
+    window.addEventListener('error', (event) => {
+        console.error('[Global Error Boundary]', event.error);
+        ErrorHandler.handle(event.error || new Error(event.message), 'Unhandled Error');
+        // Prevent default browser error handling
+        event.preventDefault();
+    });
+    
+    // Global promise rejection handler
+    window.addEventListener('unhandledrejection', (event) => {
+        console.error('[Global Error Boundary] Unhandled Promise Rejection:', event.reason);
+        const error = event.reason instanceof Error 
+            ? event.reason 
+            : new Error(String(event.reason));
+        ErrorHandler.handle(error, 'Unhandled Promise Rejection');
+        // Prevent default browser handling
+        event.preventDefault();
+    });
 }
