@@ -841,6 +841,263 @@ class DataService {
         }
     }
 
+    // ==================== CALENDAR EVENTS ====================
+    // For unscheduled events, full-day events, and events without specific times
+
+    /**
+     * Get calendar events for a specific date
+     * @param {string} date - Date in YYYY-MM-DD format
+     * @returns {Promise<Array>} Array of calendar events
+     */
+    async getCalendarEvents(date) {
+        try {
+            const { data, error } = await this.supabase
+                .from('calendar_events')
+                .select('*')
+                .eq('date', date)
+                .order('created_at', { ascending: true });
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getCalendarEvents');
+        }
+    }
+
+    /**
+     * Get calendar events for a date range
+     * @param {string} startDate - Start date in YYYY-MM-DD format
+     * @param {string} endDate - End date in YYYY-MM-DD format
+     * @returns {Promise<Array>} Array of calendar events
+     */
+    async getCalendarEventsRange(startDate, endDate) {
+        try {
+            const { data, error } = await this.supabase
+                .from('calendar_events')
+                .select('*')
+                .gte('date', startDate)
+                .lte('date', endDate)
+                .order('date', { ascending: true });
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getCalendarEventsRange');
+        }
+    }
+
+    /**
+     * Create a new calendar event
+     * @param {Object} event - Event object with date, title, description, category, is_all_day
+     * @returns {Promise<Object>} Created calendar event
+     */
+    async createCalendarEvent(event) {
+        try {
+            const { data: { user } } = await this.supabase.auth.getUser();
+            if (!user) throw new Error('User not authenticated');
+
+            const eventWithUser = { ...event, user_id: user.id };
+
+            const { data, error } = await this.supabase
+                .from('calendar_events')
+                .insert([eventWithUser])
+                .select();
+
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'createCalendarEvent');
+        }
+    }
+
+    /**
+     * Update a calendar event
+     * @param {string} id - Event ID
+     * @param {Object} updates - Fields to update
+     * @returns {Promise<Object>} Updated calendar event
+     */
+    async updateCalendarEvent(id, updates) {
+        try {
+            const { data, error } = await this.supabase
+                .from('calendar_events')
+                .update(updates)
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'updateCalendarEvent');
+        }
+    }
+
+    /**
+     * Delete a calendar event
+     * @param {string} id - Event ID
+     * @returns {Promise<void>}
+     */
+    async deleteCalendarEvent(id) {
+        try {
+            const { error } = await this.supabase
+                .from('calendar_events')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+        } catch (error) {
+            this.handleError(error, 'deleteCalendarEvent');
+        }
+    }
+
+    // ==================== POMODORO SESSIONS ====================
+
+    /**
+     * Get Pomodoro sessions for a specific date
+     * @param {string} date - Date in YYYY-MM-DD format
+     * @returns {Promise<Array>} Array of Pomodoro sessions
+     */
+    async getPomodoroSessions(date) {
+        try {
+            const { data, error } = await this.supabase
+                .from('pomodoro_sessions')
+                .select('*')
+                .eq('date', date)
+                .order('started_at', { ascending: true });
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getPomodoroSessions');
+        }
+    }
+
+    /**
+     * Get Pomodoro sessions for a date range
+     * @param {string} startDate - Start date in YYYY-MM-DD format
+     * @param {string} endDate - End date in YYYY-MM-DD format
+     * @returns {Promise<Array>} Array of Pomodoro sessions
+     */
+    async getPomodoroSessionsRange(startDate, endDate) {
+        try {
+            const { data, error } = await this.supabase
+                .from('pomodoro_sessions')
+                .select('*')
+                .gte('date', startDate)
+                .lte('date', endDate)
+                .order('started_at', { ascending: true });
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getPomodoroSessionsRange');
+        }
+    }
+
+    /**
+     * Get Pomodoro statistics for a user
+     * @param {string} startDate - Start date for stats
+     * @param {string} endDate - End date for stats
+     * @returns {Promise<Object>} Statistics object
+     */
+    async getPomodoroStats(startDate, endDate) {
+        try {
+            const sessions = await this.getPomodoroSessionsRange(startDate, endDate);
+            const focusSessions = sessions.filter(s => s.session_type === 'focus' && s.was_completed);
+            
+            return {
+                totalSessions: focusSessions.length,
+                totalMinutes: focusSessions.reduce((sum, s) => sum + s.duration_minutes, 0),
+                averagePerDay: focusSessions.length / Math.max(1, this.daysBetween(startDate, endDate)),
+                sessionsPerDay: this.groupByDate(focusSessions)
+            };
+        } catch (error) {
+            this.handleError(error, 'getPomodoroStats');
+        }
+    }
+
+    /**
+     * Helper: Calculate days between two dates
+     */
+    daysBetween(start, end) {
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        return Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+    }
+
+    /**
+     * Helper: Group sessions by date
+     */
+    groupByDate(sessions) {
+        return sessions.reduce((acc, session) => {
+            const date = session.date;
+            acc[date] = (acc[date] || 0) + 1;
+            return acc;
+        }, {});
+    }
+
+    /**
+     * Create a new Pomodoro session
+     * @param {Object} session - Session object
+     * @returns {Promise<Object>} Created session
+     */
+    async createPomodoroSession(session) {
+        try {
+            const { data: { user } } = await this.supabase.auth.getUser();
+            if (!user) throw new Error('User not authenticated');
+
+            const sessionWithUser = { ...session, user_id: user.id };
+
+            const { data, error } = await this.supabase
+                .from('pomodoro_sessions')
+                .insert([sessionWithUser])
+                .select();
+
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'createPomodoroSession');
+        }
+    }
+
+    /**
+     * Update a Pomodoro session
+     * @param {string} id - Session ID
+     * @param {Object} updates - Fields to update
+     * @returns {Promise<Object>} Updated session
+     */
+    async updatePomodoroSession(id, updates) {
+        try {
+            const { data, error } = await this.supabase
+                .from('pomodoro_sessions')
+                .update(updates)
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'updatePomodoroSession');
+        }
+    }
+
+    /**
+     * Delete a Pomodoro session
+     * @param {string} id - Session ID
+     * @returns {Promise<void>}
+     */
+    async deletePomodoroSession(id) {
+        try {
+            const { error } = await this.supabase
+                .from('pomodoro_sessions')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+        } catch (error) {
+            this.handleError(error, 'deletePomodoroSession');
+        }
+    }
+
     // ==================== DAILY ENTRIES ====================
 
     /**

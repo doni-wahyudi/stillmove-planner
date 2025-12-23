@@ -2604,7 +2604,32 @@ body .time-slot.has-block {
 
 .timer-controls .btn-primary,
 .timer-controls .btn-secondary {
+    border-radius: 8px !important;
+}
+
+/* Main action buttons - wider */
+.timer-controls .btn-primary {
     min-width: 120px;
+}
+
+.timer-controls .btn-secondary {
+    border: 1px solid var(--border-accent) !important;
+    background: var(--bg-surface) !important;
+    box-shadow: none !important;
+}
+
+/* Text buttons - medium width */
+#reset-btn,
+#skip-btn {
+    min-width: 100px;
+}
+
+/* Icon-only buttons - square */
+#pip-btn,
+#settings-btn {
+    min-width: 44px !important;
+    width: 44px;
+    padding: 0.7rem !important;
 }
 
 /* Session history empty state */
@@ -2628,6 +2653,22 @@ body .time-slot.has-block {
         background: var(--bg-surface) !important;
         color: var(--accent-primary) !important;
         border-color: var(--border-accent) !important;
+    }
+    
+    /* Task selection dark mode */
+    .task-selection {
+        background: var(--bg-surface) !important;
+    }
+    
+    .task-selection label {
+        color: var(--text-secondary) !important;
+    }
+    
+    .task-input-group select,
+    .task-input-group input {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-default) !important;
     }
 }
 
@@ -4455,10 +4496,17 @@ body .time-slot.has-block {
 .pomodoro-view {
     padding: 0 !important;
     width: 100% !important;
+    display: block !important;
+}
+
+.pomodoro-layout {
     display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: 320px 1fr !important;
     gap: 2rem;
     align-items: start;
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
 }
 
 .timer-section {
@@ -4513,7 +4561,7 @@ body .time-slot.has-block {
         grid-template-columns: 1fr 1.5fr 1fr !important;
     }
     
-    .pomodoro-view {
+    .pomodoro-layout {
         grid-template-columns: 1fr !important;
     }
     
@@ -7590,20 +7638,9 @@ select:focus-visible {
 
 /* ============================================================
    SCREEN READER ONLY UTILITY
-   Hide visually but keep accessible
+   Note: .sr-only is defined in main.css - this section kept for
+   aria-live-region only
    ============================================================ */
-
-.sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-}
 
 /* Live region for announcements */
 .aria-live-region {
@@ -8229,7 +8266,6 @@ html[data-theme="light"] .weekly-summary,
 html[data-theme="light"] .habit-item,
 html[data-theme="light"] .modal-content,
 html[data-theme="light"] .session-history,
-html[data-theme="light"] .timer-controls,
 html[data-theme="light"] .btn-today,
 html[data-theme="light"] .breadcrumb-nav,
 html[data-theme="light"] .best-day-analysis,
@@ -8248,6 +8284,11 @@ html[data-theme="light"] .challenge-card,
 html[data-theme="light"] .points-display {
     background: var(--bg-surface) !important;
     color: var(--text-primary) !important;
+}
+
+/* Timer controls should be transparent */
+html[data-theme="light"] .timer-controls {
+    background: transparent !important;
 }
 
 /* Time slot with block - DON'T override background, let inline category color show */
@@ -8895,4 +8936,161 @@ html.theme-transitioning *::after {
 
 @keyframes spin {
     to { transform: rotate(360deg); }
+}
+
+/* ============================================================
+   POMODORO LEFT PANEL - DARK MODE
+   ============================================================ */
+@media (prefers-color-scheme: dark) {
+    .weekly-progress-section,
+    .recent-history-section,
+    .linked-goals-section {
+        background: var(--bg-surface);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    .weekly-progress-section h3,
+    .recent-history-section h3,
+    .linked-goals-section h3 {
+        color: var(--text-primary);
+    }
+    
+    .chart-bar-wrapper .chart-bar:not(.has-sessions) {
+        background: var(--bg-elevated);
+    }
+    
+    .chart-bar-wrapper .chart-label {
+        color: var(--text-secondary);
+    }
+    
+    .chart-bar-wrapper .chart-value {
+        color: var(--text-primary);
+    }
+    
+    .recent-day-group,
+    .linked-goal-item {
+        background: var(--bg-elevated);
+    }
+    
+    .recent-day-label,
+    .linked-goal-item .goal-title {
+        color: var(--text-primary);
+    }
+    
+    .recent-day-stats,
+    .linked-goal-item .goal-sessions {
+        color: var(--text-secondary);
+    }
+}
+
+html[data-theme="dark"] .weekly-progress-section,
+html[data-theme="dark"] .recent-history-section,
+html[data-theme="dark"] .linked-goals-section {
+    background: var(--bg-surface) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+html[data-theme="dark"] .weekly-progress-section h3,
+html[data-theme="dark"] .recent-history-section h3,
+html[data-theme="dark"] .linked-goals-section h3 {
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .chart-bar-wrapper .chart-bar:not(.has-sessions) {
+    background: var(--bg-elevated) !important;
+}
+
+html[data-theme="dark"] .chart-bar-wrapper .chart-label {
+    color: var(--text-secondary) !important;
+}
+
+html[data-theme="dark"] .chart-bar-wrapper .chart-value {
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .recent-day-group,
+html[data-theme="dark"] .linked-goal-item {
+    background: var(--bg-elevated) !important;
+}
+
+html[data-theme="dark"] .recent-day-label,
+html[data-theme="dark"] .linked-goal-item .goal-title {
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .recent-day-stats,
+html[data-theme="dark"] .linked-goal-item .goal-sessions {
+    color: var(--text-secondary) !important;
+}
+
+/* Task selection dark mode - manual override */
+html[data-theme="dark"] .task-selection {
+    background: var(--bg-surface) !important;
+}
+
+html[data-theme="dark"] .task-selection label {
+    color: var(--text-secondary) !important;
+}
+
+html[data-theme="dark"] .task-input-group select,
+html[data-theme="dark"] .task-input-group input {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-default) !important;
+}
+
+
+/* Floating Pomodoro Mini-Player - Dark Mode */
+@media (prefers-color-scheme: dark) {
+    .pomodoro-float {
+        background: var(--bg-surface);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+    
+    .pomodoro-float-time {
+        color: var(--text-primary);
+    }
+    
+    .pomodoro-float-session {
+        color: var(--text-secondary);
+    }
+    
+    .pomodoro-float-control-btn {
+        background: var(--bg-elevated);
+        color: var(--text-primary);
+    }
+    
+    .pomodoro-float-control-btn:hover {
+        background: var(--bg-input);
+    }
+    
+    #pomodoro-float-mini-time {
+        color: var(--text-primary);
+    }
+}
+
+html[data-theme="dark"] .pomodoro-float {
+    background: var(--bg-surface) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+}
+
+html[data-theme="dark"] .pomodoro-float-time {
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .pomodoro-float-session {
+    color: var(--text-secondary) !important;
+}
+
+html[data-theme="dark"] .pomodoro-float-control-btn {
+    background: var(--bg-elevated) !important;
+    color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .pomodoro-float-control-btn:hover {
+    background: var(--bg-input) !important;
+}
+
+html[data-theme="dark"] #pomodoro-float-mini-time {
+    color: var(--text-primary) !important;
 }

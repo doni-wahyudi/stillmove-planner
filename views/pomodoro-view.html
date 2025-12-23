@@ -5,36 +5,191 @@
         <p>Stay focused with the Pomodoro technique</p>
     </div>
 
-    <div class="pomodoro-container">
-        <!-- Timer Display -->
-        <div class="timer-display" role="timer" aria-live="polite" aria-atomic="true">
-            <div class="timer-circle">
-                <svg class="timer-progress" viewBox="0 0 200 200" aria-hidden="true">
-                    <circle class="timer-progress-bg" cx="100" cy="100" r="90"></circle>
-                    <circle class="timer-progress-bar" cx="100" cy="100" r="90"></circle>
-                </svg>
-                <div class="timer-content">
-                    <div class="timer-mode" id="timer-mode" aria-label="Timer mode">Focus</div>
-                    <div class="timer-time" id="timer-time" aria-label="Time remaining">25:00</div>
-                    <div class="timer-session" id="timer-session" aria-label="Session count">Session 0/4</div>
+    <div class="pomodoro-layout">
+        <!-- Left Panel: Weekly Progress & History -->
+        <aside class="pomodoro-left-panel">
+            <!-- Weekly Progress Chart -->
+            <section class="weekly-progress-section" aria-labelledby="weekly-progress-heading">
+                <h3 id="weekly-progress-heading">📊 Weekly Progress</h3>
+                <div class="weekly-chart" id="weekly-chart" role="img" aria-label="Weekly sessions bar chart">
+                    <div class="chart-bars">
+                        <div class="chart-bar-wrapper" data-day="0">
+                            <div class="chart-bar" style="height: 0%"></div>
+                            <span class="chart-label">Sun</span>
+                            <span class="chart-value">0</span>
+                        </div>
+                        <div class="chart-bar-wrapper" data-day="1">
+                            <div class="chart-bar" style="height: 0%"></div>
+                            <span class="chart-label">Mon</span>
+                            <span class="chart-value">0</span>
+                        </div>
+                        <div class="chart-bar-wrapper" data-day="2">
+                            <div class="chart-bar" style="height: 0%"></div>
+                            <span class="chart-label">Tue</span>
+                            <span class="chart-value">0</span>
+                        </div>
+                        <div class="chart-bar-wrapper" data-day="3">
+                            <div class="chart-bar" style="height: 0%"></div>
+                            <span class="chart-label">Wed</span>
+                            <span class="chart-value">0</span>
+                        </div>
+                        <div class="chart-bar-wrapper" data-day="4">
+                            <div class="chart-bar" style="height: 0%"></div>
+                            <span class="chart-label">Thu</span>
+                            <span class="chart-value">0</span>
+                        </div>
+                        <div class="chart-bar-wrapper" data-day="5">
+                            <div class="chart-bar" style="height: 0%"></div>
+                            <span class="chart-label">Fri</span>
+                            <span class="chart-value">0</span>
+                        </div>
+                        <div class="chart-bar-wrapper" data-day="6">
+                            <div class="chart-bar" style="height: 0%"></div>
+                            <span class="chart-label">Sat</span>
+                            <span class="chart-value">0</span>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
+            </section>
 
-        <!-- Timer Controls -->
-        <div class="timer-controls" role="group" aria-label="Timer controls">
-            <button id="start-pause-btn" class="btn btn-primary btn-large" aria-label="Start timer">
-                <span id="start-pause-text">Start</span>
-            </button>
-            <button id="reset-btn" class="btn btn-secondary" aria-label="Reset timer">Reset</button>
-        </div>
+            <!-- Recent Sessions History -->
+            <section class="recent-history-section" aria-labelledby="recent-history-heading">
+                <h3 id="recent-history-heading">📅 Recent Sessions</h3>
+                <div id="recent-history-list" class="recent-history-list" role="list">
+                    <p class="empty-state">Loading recent sessions...</p>
+                </div>
+            </section>
 
-        <!-- Session History -->
-        <section class="session-history" aria-labelledby="session-history-heading">
-            <h3 id="session-history-heading">Today's Sessions</h3>
-            <div id="session-history-list" class="session-list" role="list" aria-label="Completed sessions">
-                <p class="empty-state" role="status">No completed sessions yet. Start your first Pomodoro!</p>
+            <!-- Linked Goals Progress -->
+            <section class="linked-goals-section" aria-labelledby="linked-goals-heading">
+                <h3 id="linked-goals-heading">🎯 Goal Progress</h3>
+                <div id="linked-goals-list" class="linked-goals-list">
+                    <p class="empty-state">No goals linked yet</p>
+                </div>
+            </section>
+        </aside>
+
+        <!-- Right Panel: Timer & Controls -->
+        <main class="pomodoro-right-panel">
+            <div class="pomodoro-container">
+                <!-- Statistics Dashboard -->
+                <section class="pomodoro-stats-dashboard" aria-labelledby="stats-heading">
+                    <h3 id="stats-heading" class="sr-only">Statistics</h3>
+                    <div class="stats-cards">
+                        <div class="stat-card">
+                            <span class="stat-value" id="stat-today">0</span>
+                            <span class="stat-label">Today</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value" id="stat-week">0</span>
+                            <span class="stat-label">This Week</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value" id="stat-total-hours">0h</span>
+                            <span class="stat-label">Focus Time</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-value" id="stat-streak">0</span>
+                            <span class="stat-label">Day Streak</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Timer Display -->
+                <div class="timer-display" role="timer" aria-live="polite" aria-atomic="true">
+                    <div class="timer-circle" id="timer-circle">
+                        <svg class="timer-progress" viewBox="0 0 200 200" aria-hidden="true">
+                            <circle class="timer-progress-bg" cx="100" cy="100" r="90"></circle>
+                            <circle class="timer-progress-bar" cx="100" cy="100" r="90"></circle>
+                        </svg>
+                        <div class="timer-content">
+                            <div class="timer-mode" id="timer-mode" aria-label="Timer mode">Focus</div>
+                            <div class="timer-time" id="timer-time" aria-label="Time remaining">25:00</div>
+                            <div class="timer-session" id="timer-session" aria-label="Session count">Session 0/4</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Break Suggestions (shown during breaks) -->
+                <div class="break-suggestions" id="break-suggestions" style="display: none;">
+                    <h4>💡 Break Suggestion</h4>
+                    <p id="break-suggestion-text"></p>
+                </div>
+
+                <!-- Task Selection -->
+                <div class="task-selection" id="task-selection">
+                    <label for="current-task">Working on:</label>
+                    <div class="task-input-group">
+                        <select id="task-source" aria-label="Task source">
+                            <option value="custom">Custom task</option>
+                            <option value="goal">Link to goal</option>
+                            <option value="timeblock">Link to time block</option>
+                        </select>
+                        <input type="text" id="current-task" placeholder="What are you focusing on?" aria-label="Current task" />
+                        <select id="linked-item" style="display: none;" aria-label="Select item to link">
+                            <option value="">Select...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Timer Controls -->
+                <div class="timer-controls" role="group" aria-label="Timer controls">
+                    <button id="start-pause-btn" class="btn btn-primary btn-large" aria-label="Start timer">
+                        <span id="start-pause-text">Start</span>
+                    </button>
+                    <button id="reset-btn" class="btn btn-secondary" aria-label="Reset timer">Reset</button>
+                    <button id="skip-btn" class="btn btn-secondary" aria-label="Skip to next phase">Skip</button>
+                    <button id="pip-btn" class="btn btn-secondary" aria-label="Picture-in-Picture mode" title="Open in floating window">📺</button>
+                    <button id="settings-btn" class="btn btn-secondary" aria-label="Timer settings">⚙️</button>
+                </div>
+
+                <!-- Timer Settings Panel -->
+                <div class="pomodoro-settings" id="pomodoro-settings" style="display: none;">
+                    <h4>⚙️ Timer Settings</h4>
+                    <div class="settings-grid">
+                        <div class="setting-item">
+                            <label for="focus-duration">Focus Duration</label>
+                            <div class="duration-input">
+                                <input type="number" id="focus-duration" min="1" max="60" value="25" />
+                                <span>min</span>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <label for="short-break-duration">Short Break</label>
+                            <div class="duration-input">
+                                <input type="number" id="short-break-duration" min="1" max="30" value="5" />
+                                <span>min</span>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <label for="long-break-duration">Long Break</label>
+                            <div class="duration-input">
+                                <input type="number" id="long-break-duration" min="1" max="60" value="15" />
+                                <span>min</span>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <label for="sessions-before-long">Sessions before long break</label>
+                            <div class="duration-input">
+                                <input type="number" id="sessions-before-long" min="2" max="10" value="4" />
+                                <span>sessions</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-actions">
+                        <button id="save-settings-btn" class="btn btn-primary">Save Settings</button>
+                        <button id="reset-settings-btn" class="btn btn-secondary">Reset to Default</button>
+                    </div>
+                </div>
+
+                <!-- Session History -->
+                <section class="session-history" aria-labelledby="session-history-heading">
+                    <h3 id="session-history-heading">Today's Sessions</h3>
+                    <div id="session-history-list" class="session-list" role="list" aria-label="Completed sessions">
+                        <p class="empty-state" role="status">No completed sessions yet. Start your first Pomodoro!</p>
+                    </div>
+                </section>
             </div>
-        </section>
+        </main>
     </div>
 </div>

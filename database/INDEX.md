@@ -16,6 +16,8 @@ Complete guide to the Daily Planner Application database.
 ### 🔧 SQL Files
 - **[schema.sql](schema.sql)** - Complete database schema with all tables and RLS policies
 - **[test-rls.sql](test-rls.sql)** - Verification queries for RLS policies and constraints
+- **[add-calendar-events-table.sql](add-calendar-events-table.sql)** - Migration for calendar events (unscheduled/all-day events)
+- **[add-pomodoro-sessions-table.sql](add-pomodoro-sessions-table.sql)** - Migration for Pomodoro session tracking
 
 ## 🎯 Quick Start
 
@@ -26,7 +28,7 @@ Complete guide to the Daily Planner Application database.
 
 ## 📊 Database Overview
 
-### Tables (15 total)
+### Tables (17 total)
 
 #### User Management
 - `profiles` - User profile information
@@ -38,9 +40,11 @@ Complete guide to the Daily Planner Application database.
 - `weekly_goals` - Weekly goals with priorities
 - `action_plans` - Action plans with progress
 
-#### Time Management (2 tables)
+#### Time Management (4 tables)
 - `time_blocks` - 30-minute scheduling blocks
 - `daily_entries` - Daily checklists, journal, gratitude
+- `calendar_events` - Unscheduled and all-day events
+- `pomodoro_sessions` - Pomodoro timer session tracking
 
 #### Habit Tracking (4 tables)
 - `daily_habits` - Daily habit definitions

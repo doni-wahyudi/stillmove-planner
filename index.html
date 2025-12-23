@@ -72,6 +72,12 @@
                 <li role="none"><a href="#pomodoro" data-view="pomodoro" role="menuitem" aria-label="Navigate to Pomodoro Timer view" data-tooltip="Press P">Pomodoro</a></li>
             </ul>
             <div class="nav-actions">
+                <!-- Mini Pomodoro Timer (visible when timer is running) -->
+                <div id="mini-timer" class="mini-timer" style="display: none;" aria-label="Pomodoro timer status">
+                    <span id="mini-timer-mode" class="mini-timer-mode">Focus</span>
+                    <span id="mini-timer-time" class="mini-timer-time">25:00</span>
+                    <button id="mini-timer-toggle" class="mini-timer-btn" aria-label="Pause timer">⏸</button>
+                </div>
                 <button id="theme-toggle-btn" class="nav-icon-btn" aria-label="Toggle dark/light mode" title="Toggle Theme">
                     <span class="theme-icon-light" aria-hidden="true">🌙</span>
                     <span class="theme-icon-dark" aria-hidden="true">☀️</span>
@@ -164,6 +170,31 @@
             <button id="fab-button" class="fab-button" aria-label="Quick add menu" aria-expanded="false" data-tooltip="Press N">
                 <span aria-hidden="true">+</span>
             </button>
+        </div>
+
+        <!-- Floating Pomodoro Mini-Player -->
+        <div id="pomodoro-float" class="pomodoro-float" style="display: none;" aria-label="Floating Pomodoro timer">
+            <div class="pomodoro-float-header">
+                <span class="pomodoro-float-title">🍅 Pomodoro</span>
+                <div class="pomodoro-float-actions">
+                    <button id="pomodoro-float-minimize" class="pomodoro-float-btn" aria-label="Minimize">−</button>
+                    <button id="pomodoro-float-close" class="pomodoro-float-btn" aria-label="Close">×</button>
+                </div>
+            </div>
+            <div class="pomodoro-float-body">
+                <div class="pomodoro-float-mode" id="pomodoro-float-mode">Focus</div>
+                <div class="pomodoro-float-time" id="pomodoro-float-time">25:00</div>
+                <div class="pomodoro-float-session" id="pomodoro-float-session">Session 0/4</div>
+                <div class="pomodoro-float-controls">
+                    <button id="pomodoro-float-toggle" class="pomodoro-float-control-btn primary" aria-label="Start timer">▶</button>
+                    <button id="pomodoro-float-reset" class="pomodoro-float-control-btn" aria-label="Reset timer">↺</button>
+                    <button id="pomodoro-float-skip" class="pomodoro-float-control-btn" aria-label="Skip phase">⏭</button>
+                </div>
+            </div>
+            <div class="pomodoro-float-minimized" style="display: none;">
+                <span id="pomodoro-float-mini-time">25:00</span>
+                <button id="pomodoro-float-expand" class="pomodoro-float-btn" aria-label="Expand">+</button>
+            </div>
         </div>
     </div>
 

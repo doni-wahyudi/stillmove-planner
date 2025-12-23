@@ -330,6 +330,21 @@ class MonthlyView {
                     }
                 }
             });
+            
+            // Load calendar events (unscheduled/all-day events)
+            this.calendarEventsData = {};
+            try {
+                const calendarEvents = await dataService.getCalendarEventsRange(startDate, endDate);
+                calendarEvents.forEach(event => {
+                    if (!this.calendarEventsData[event.date]) {
+                        this.calendarEventsData[event.date] = [];
+                    }
+                    this.calendarEventsData[event.date].push(event);
+                });
+            } catch (e) {
+                // Calendar events table might not exist yet
+                console.log('Calendar events not available:', e.message);
+            }
         } catch (error) {
             console.error('Error loading calendar data:', error);
         }
@@ -635,6 +650,28 @@ class MonthlyView {
                 }
             }
         }
+        
+        // Calendar events indicator (unscheduled/all-day events)
+        const calendarEvents = this.calendarEventsData?.[dateStr] || [];
+        if (calendarEvents.length > 0) {
+            // Add calendar events to the day-events container
+            const eventsContainer = cell.querySelector('.day-events');
+            if (eventsContainer) {
+                calendarEvents.slice(0, 2).forEach(event => {
+                    const eventEl = document.createElement('div');
+                    eventEl.className = 'day-event-item unscheduled';
+                    eventEl.textContent = event.title;
+                    eventEl.title = event.title + (event.description ? `: ${event.description}` : '');
+                    eventsContainer.appendChild(eventEl);
+                });
+                if (calendarEvents.length > 2) {
+                    const moreEl = document.createElement('div');
+                    moreEl.className = 'day-event-more';
+                    moreEl.textContent = `+${calendarEvents.length - 2} more`;
+                    eventsContainer.appendChild(moreEl);
+                }
+            }
+        }
     }
     
     /**
@@ -683,7 +720,32 @@ class MonthlyView {
                         <label for="event-title">Event Title *</label>
                         <input type="text" id="event-title" placeholder="What's happening?" autofocus />
                     </div>
-                    <div class="form-row">
+                    <div class="form-group">
+                        <label>Event Type</label>
+                        <div class="event-type-selector">
+                            <label class="event-type-option">
+                                <input type="radio" name="event-type" value="time-block" checked />
+                                <span class="event-type-label">
+                                    <span class="event-type-icon">⏰</span>
+                                    <span class="event-type-text">
+                                        <strong>Scheduled</strong>
+                                        <small>Add to weekly time blocks</small>
+                                    </span>
+                                </span>
+                            </label>
+                            <label class="event-type-option">
+                                <input type="radio" name="event-type" value="calendar-event" />
+                                <span class="event-type-label">
+                                    <span class="event-type-icon">📅</span>
+                                    <span class="event-type-text">
+                                        <strong>Unscheduled / All-day</strong>
+                                        <small>No specific time yet</small>
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                    <div id="time-fields" class="form-row">
                         <div class="form-group">
                             <label for="event-start-time">Start Time</label>
                             <input type="time" id="event-start-time" value="09:00" />
@@ -703,9 +765,6 @@ class MonthlyView {
                         <label for="event-notes">Notes (optional)</label>
                         <textarea id="event-notes" rows="2" placeholder="Additional details..."></textarea>
                     </div>
-                    <div class="form-actions-hint">
-                        <span class="hint-text">💡 This will create a time block in your weekly schedule</span>
-                    </div>
                 `,
                 buttons: [
                     { text: 'Cancel', className: 'btn-secondary', action: 'cancel' },
@@ -720,9 +779,23 @@ class MonthlyView {
                 ]
             });
             
-            // Focus title input after modal opens
+            // Setup event type toggle
             setTimeout(() => {
                 document.getElementById('event-title')?.focus();
+                
+                // Toggle time fields based on event type
+                const eventTypeRadios = document.querySelectorAll('input[name="event-type"]');
+                const timeFields = document.getElementById('time-fields');
+                
+                eventTypeRadios.forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        if (e.target.value === 'calendar-event') {
+                            timeFields.style.display = 'none';
+                        } else {
+                            timeFields.style.display = 'flex';
+                        }
+                    });
+                });
             }, 100);
         } else {
             // Fallback to simple prompt
@@ -738,6 +811,7 @@ class MonthlyView {
      */
     async createEventFromModal(dateStr) {
         const title = document.getElementById('event-title')?.value?.trim();
+        const eventType = document.querySelector('input[name="event-type"]:checked')?.value || 'time-block';
         const startTime = document.getElementById('event-start-time')?.value;
         const endTime = document.getElementById('event-end-time')?.value;
         const category = document.getElementById('event-category')?.value;
@@ -750,8 +824,8 @@ class MonthlyView {
             return;
         }
         
-        // Validate times
-        if (startTime >= endTime) {
+        // Validate times only for scheduled events
+        if (eventType === 'time-block' && startTime >= endTime) {
             if (window.showToast) {
                 window.showToast('End time must be after start time', 'error');
             }
@@ -759,32 +833,64 @@ class MonthlyView {
         }
         
         try {
-            // Create time block
-            await dataService.createTimeBlock({
-                date: dateStr,
-                start_time: startTime,
-                end_time: endTime,
-                activity: title,
-                category: category,
-                notes: notes || null
-            });
+            if (eventType === 'calendar-event') {
+                // Create unscheduled/all-day calendar event
+                await dataService.createCalendarEvent({
+                    date: dateStr,
+                    title: title,
+                    description: notes || null,
+                    category: category,
+                    is_all_day: true
+                });
+                
+                // Update local data
+                if (!this.calendarEventsData) {
+                    this.calendarEventsData = {};
+                }
+                if (!this.calendarEventsData[dateStr]) {
+                    this.calendarEventsData[dateStr] = [];
+                }
+                this.calendarEventsData[dateStr].push({
+                    date: dateStr,
+                    title: title,
+                    category: category
+                });
+                
+                if (window.showToast) {
+                    window.showToast(`"${title}" added as unscheduled event`, 'success');
+                }
+            } else {
+                // Create time block (scheduled event)
+                await dataService.createTimeBlock({
+                    date: dateStr,
+                    start_time: startTime,
+                    end_time: endTime,
+                    activity: title,
+                    category: category,
+                    notes: notes || null
+                });
+                
+                // Update local data
+                if (!this.timeBlocksData[dateStr]) {
+                    this.timeBlocksData[dateStr] = [];
+                }
+                this.timeBlocksData[dateStr].push({
+                    date: dateStr,
+                    start_time: startTime,
+                    end_time: endTime,
+                    activity: title,
+                    category: category
+                });
+                
+                if (window.showToast) {
+                    window.showToast(`"${title}" added to weekly schedule`, 'success');
+                }
+            }
             
             // Close modal
             if (window.Modal) {
                 window.Modal.close();
             }
-            
-            // Update local data
-            if (!this.timeBlocksData[dateStr]) {
-                this.timeBlocksData[dateStr] = [];
-            }
-            this.timeBlocksData[dateStr].push({
-                date: dateStr,
-                start_time: startTime,
-                end_time: endTime,
-                activity: title,
-                category: category
-            });
             
             // Re-render calendar to show updated indicators
             this.renderCalendar();
@@ -792,9 +898,6 @@ class MonthlyView {
             // Update summary
             await this.updateSummaryDashboard();
             
-            if (window.showToast) {
-                window.showToast(`Event "${title}" added to ${dateStr}`, 'success');
-            }
         } catch (error) {
             console.error('Failed to create event:', error);
             if (window.showToast) {

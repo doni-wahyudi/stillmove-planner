@@ -26,6 +26,12 @@ CREATE TABLE IF NOT EXISTS custom_categories (
 -- Enable Row Level Security
 ALTER TABLE custom_categories ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (safe to re-run)
+DROP POLICY IF EXISTS "Users can view their own categories" ON custom_categories;
+DROP POLICY IF EXISTS "Users can insert their own categories" ON custom_categories;
+DROP POLICY IF EXISTS "Users can update their own categories" ON custom_categories;
+DROP POLICY IF EXISTS "Users can delete their own non-default categories" ON custom_categories;
+
 -- RLS Policy: Users can view their own categories
 CREATE POLICY "Users can view their own categories"
   ON custom_categories FOR SELECT
@@ -50,6 +56,8 @@ CREATE POLICY "Users can delete their own non-default categories"
 CREATE INDEX IF NOT EXISTS idx_custom_categories_user ON custom_categories(user_id);
 
 -- Create trigger to automatically update the updated_at timestamp
+-- Drop first if exists to avoid errors
+DROP TRIGGER IF EXISTS update_custom_categories_updated_at ON custom_categories;
 CREATE TRIGGER update_custom_categories_updated_at 
   BEFORE UPDATE ON custom_categories
   FOR EACH ROW 

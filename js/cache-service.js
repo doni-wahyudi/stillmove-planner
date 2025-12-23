@@ -26,6 +26,7 @@ const CACHE_TTL = {
   moodEntries: 5 * 60 * 1000,           // 5 minutes
   sleepEntries: 5 * 60 * 1000,          // 5 minutes
   waterEntries: 5 * 60 * 1000,          // 5 minutes
+  calendarEvents: 5 * 60 * 1000,        // 5 minutes - calendar events
   default: 10 * 60 * 1000               // 10 minutes default
 };
 
@@ -48,7 +49,8 @@ const STORES = {
   actionPlans: 'action_plans',
   moodEntries: 'mood_entries',
   sleepEntries: 'sleep_entries',
-  waterEntries: 'water_entries'
+  waterEntries: 'water_entries',
+  calendarEvents: 'calendar_events'
 };
 
 class CacheService {

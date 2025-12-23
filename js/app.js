@@ -113,8 +113,12 @@ class Router {
         document.querySelectorAll('[data-view]').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                const view = e.target.getAttribute('data-view');
-                this.navigate(view);
+                // Use closest to handle clicks on child elements (icons, labels)
+                const viewElement = e.target.closest('[data-view]');
+                const view = viewElement?.getAttribute('data-view');
+                if (view) {
+                    this.navigate(view);
+                }
             });
         });
         
@@ -557,6 +561,9 @@ class App {
         
         // Global Search
         this.setupSearch();
+        
+        // Floating Pomodoro Player
+        this.setupFloatingPomodoroPlayer();
         
         // Keyboard help button
         const keyboardHelpBtn = document.getElementById('keyboard-help-btn');
@@ -1193,6 +1200,277 @@ class App {
         }
     }
     
+    /**
+     * Setup Floating Pomodoro Player
+     */
+    setupFloatingPomodoroPlayer() {
+        const floatPlayer = document.getElementById('pomodoro-float');
+        if (!floatPlayer) return;
+
+        // Control buttons
+        document.getElementById('pomodoro-float-toggle')?.addEventListener('click', () => {
+            this.togglePomodoroTimer();
+        });
+        document.getElementById('pomodoro-float-reset')?.addEventListener('click', () => {
+            this.resetPomodoroTimer();
+        });
+        document.getElementById('pomodoro-float-skip')?.addEventListener('click', () => {
+            this.skipPomodoroPhase();
+        });
+        
+        // Minimize/expand
+        document.getElementById('pomodoro-float-minimize')?.addEventListener('click', () => {
+            this.minimizeFloatingPlayer();
+        });
+        document.getElementById('pomodoro-float-expand')?.addEventListener('click', () => {
+            this.expandFloatingPlayer();
+        });
+        
+        // Close button
+        document.getElementById('pomodoro-float-close')?.addEventListener('click', () => {
+            this.hideFloatingPlayer();
+        });
+        
+        // Make draggable
+        this.setupFloatingPlayerDrag(floatPlayer);
+        
+        // Load saved position
+        this.loadFloatingPlayerPosition();
+        
+        // Subscribe to pomodoro state changes
+        this.stateManager.subscribe('pomodoro', () => {
+            this.updateFloatingPlayer();
+        });
+    }
+    
+    setupFloatingPlayerDrag(element) {
+        let isDragging = false;
+        let startX, startY, initialX, initialY;
+        
+        const header = element.querySelector('.pomodoro-float-header');
+        if (!header) return;
+        
+        header.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.pomodoro-float-btn')) return;
+            isDragging = true;
+            element.classList.add('dragging');
+            startX = e.clientX;
+            startY = e.clientY;
+            const rect = element.getBoundingClientRect();
+            initialX = rect.left;
+            initialY = rect.top;
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            const newX = Math.max(0, Math.min(window.innerWidth - element.offsetWidth, initialX + dx));
+            const newY = Math.max(0, Math.min(window.innerHeight - element.offsetHeight, initialY + dy));
+            element.style.left = `${newX}px`;
+            element.style.top = `${newY}px`;
+            element.style.right = 'auto';
+            element.style.bottom = 'auto';
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                element.classList.remove('dragging');
+                this.saveFloatingPlayerPosition();
+            }
+        });
+        
+        // Touch support
+        header.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.pomodoro-float-btn')) return;
+            isDragging = true;
+            const touch = e.touches[0];
+            startX = touch.clientX;
+            startY = touch.clientY;
+            const rect = element.getBoundingClientRect();
+            initialX = rect.left;
+            initialY = rect.top;
+        });
+        
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            const touch = e.touches[0];
+            const dx = touch.clientX - startX;
+            const dy = touch.clientY - startY;
+            const newX = Math.max(0, Math.min(window.innerWidth - element.offsetWidth, initialX + dx));
+            const newY = Math.max(0, Math.min(window.innerHeight - element.offsetHeight, initialY + dy));
+            element.style.left = `${newX}px`;
+            element.style.top = `${newY}px`;
+            element.style.right = 'auto';
+            element.style.bottom = 'auto';
+        });
+        
+        document.addEventListener('touchend', () => {
+            if (isDragging) {
+                isDragging = false;
+                this.saveFloatingPlayerPosition();
+            }
+        });
+    }
+    
+    saveFloatingPlayerPosition() {
+        const floatPlayer = document.getElementById('pomodoro-float');
+        if (!floatPlayer) return;
+        const rect = floatPlayer.getBoundingClientRect();
+        localStorage.setItem('pomodoroFloatPosition', JSON.stringify({
+            left: rect.left,
+            top: rect.top
+        }));
+    }
+    
+    loadFloatingPlayerPosition() {
+        const floatPlayer = document.getElementById('pomodoro-float');
+        if (!floatPlayer) return;
+        try {
+            const saved = localStorage.getItem('pomodoroFloatPosition');
+            if (saved) {
+                const pos = JSON.parse(saved);
+                floatPlayer.style.left = `${pos.left}px`;
+                floatPlayer.style.top = `${pos.top}px`;
+                floatPlayer.style.right = 'auto';
+                floatPlayer.style.bottom = 'auto';
+            }
+        } catch (e) {
+            // Use default position
+        }
+    }
+    
+    showFloatingPlayer() {
+        const floatPlayer = document.getElementById('pomodoro-float');
+        if (floatPlayer) {
+            floatPlayer.style.display = 'block';
+            this.updateFloatingPlayer();
+        }
+    }
+    
+    hideFloatingPlayer() {
+        const floatPlayer = document.getElementById('pomodoro-float');
+        if (floatPlayer) {
+            floatPlayer.style.display = 'none';
+        }
+    }
+    
+    minimizeFloatingPlayer() {
+        const floatPlayer = document.getElementById('pomodoro-float');
+        const body = floatPlayer?.querySelector('.pomodoro-float-body');
+        const minimized = floatPlayer?.querySelector('.pomodoro-float-minimized');
+        if (floatPlayer && body && minimized) {
+            floatPlayer.classList.add('minimized');
+            body.style.display = 'none';
+            minimized.style.display = 'flex';
+        }
+    }
+    
+    expandFloatingPlayer() {
+        const floatPlayer = document.getElementById('pomodoro-float');
+        const body = floatPlayer?.querySelector('.pomodoro-float-body');
+        const minimized = floatPlayer?.querySelector('.pomodoro-float-minimized');
+        if (floatPlayer && body && minimized) {
+            floatPlayer.classList.remove('minimized');
+            body.style.display = 'block';
+            minimized.style.display = 'none';
+        }
+    }
+    
+    updateFloatingPlayer() {
+        const pomodoroState = this.stateManager.getState('pomodoro');
+        
+        const floatMode = document.getElementById('pomodoro-float-mode');
+        const floatTime = document.getElementById('pomodoro-float-time');
+        const floatSession = document.getElementById('pomodoro-float-session');
+        const floatToggle = document.getElementById('pomodoro-float-toggle');
+        const floatMiniTime = document.getElementById('pomodoro-float-mini-time');
+        
+        // Format time helper
+        const formatTime = (seconds) => {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        };
+        
+        // Get mode text helper
+        const getModeText = (mode) => {
+            switch (mode) {
+                case 'focus': return 'Focus';
+                case 'shortBreak': return 'Short Break';
+                case 'longBreak': return 'Long Break';
+                default: return 'Focus';
+            }
+        };
+        
+        if (floatMode) {
+            floatMode.textContent = getModeText(pomodoroState.mode);
+            floatMode.className = `pomodoro-float-mode ${pomodoroState.mode}`;
+        }
+        if (floatTime) {
+            floatTime.textContent = formatTime(pomodoroState.timeRemaining);
+        }
+        if (floatSession) {
+            floatSession.textContent = `Session ${pomodoroState.sessionCount}/4`;
+        }
+        if (floatToggle) {
+            if (!pomodoroState.isRunning) {
+                floatToggle.textContent = '▶';
+                floatToggle.classList.remove('running');
+            } else if (pomodoroState.isPaused) {
+                floatToggle.textContent = '▶';
+                floatToggle.classList.remove('running');
+            } else {
+                floatToggle.textContent = '⏸';
+                floatToggle.classList.add('running');
+            }
+        }
+        if (floatMiniTime) {
+            floatMiniTime.textContent = formatTime(pomodoroState.timeRemaining);
+        }
+        
+        // Show floating player when timer is running and not on pomodoro view
+        const currentView = this.stateManager.getState('navigation').currentView;
+        const floatPlayer = document.getElementById('pomodoro-float');
+        if (floatPlayer) {
+            if (pomodoroState.isRunning && currentView !== 'pomodoro') {
+                floatPlayer.style.display = 'block';
+            } else if (currentView === 'pomodoro') {
+                floatPlayer.style.display = 'none';
+            }
+        }
+    }
+    
+    togglePomodoroTimer() {
+        // This will be handled by the pomodoro view when it's loaded
+        // For now, just navigate to pomodoro view
+        const currentView = this.stateManager.getState('navigation').currentView;
+        if (currentView !== 'pomodoro') {
+            this.router.navigate('pomodoro');
+        }
+    }
+    
+    resetPomodoroTimer() {
+        const pomodoroState = this.stateManager.getState('pomodoro');
+        this.stateManager.setState('pomodoro', {
+            ...pomodoroState,
+            isRunning: false,
+            isPaused: false,
+            mode: 'focus',
+            timeRemaining: 25 * 60
+        });
+    }
+    
+    skipPomodoroPhase() {
+        // Navigate to pomodoro view to handle skip
+        const currentView = this.stateManager.getState('navigation').currentView;
+        if (currentView !== 'pomodoro') {
+            this.router.navigate('pomodoro');
+        }
+    }
+
     /**
      * Show a toast notification
      * @param {string} message - Toast message
