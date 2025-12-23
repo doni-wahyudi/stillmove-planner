@@ -103,9 +103,9 @@ log('\n3. Checking Service Files...', 'blue');
 checkFile('js/auth-service.js', 'Authentication service exists');
 checkFile('js/auth-ui.js', 'Authentication UI exists');
 checkFile('js/data-service.js', 'Data service exists');
-checkFile('js/sync-manager.js', 'Sync manager exists');
-checkFile('js/offline-manager.js', 'Offline manager exists');
+checkFile('js/cache-service.js', 'Cache service exists');
 checkFile('js/error-handler.js', 'Error handler exists');
+checkFile('js/performance-monitor.js', 'Performance monitor exists');
 
 // 4. Component Files
 log('\n4. Checking Component Files...', 'blue');
@@ -119,9 +119,7 @@ checkFile('components/spinner.js', 'Spinner component exists');
 log('\n5. Checking Utility Files...', 'blue');
 checkFile('js/utils.js', 'Utility functions exist');
 checkFile('js/accessibility.js', 'Accessibility module exists');
-checkFile('js/performance.js', 'Performance module exists');
-checkFile('js/input-handlers.js', 'Input handlers exist');
-checkFile('js/cached-data-service.js', 'Cached data service exists');
+checkFile('js/ai-service.js', 'AI service exists');
 
 // 6. Database Files
 log('\n6. Checking Database Files...', 'blue');
@@ -141,9 +139,9 @@ checkFile('.gitignore', 'Git ignore file exists');
 
 // 8. Test Files
 log('\n8. Checking Test Files...', 'blue');
-checkFile('test-runner.html', 'Test runner exists');
-checkFile('js/utils.test.js', 'Unit tests exist');
-checkFile('run-tests.js', 'Test runner script exists');
+checkFile('tests/test-runner.html', 'Test runner exists');
+checkFile('tests/utils.test.js', 'Unit tests exist');
+checkFile('tests/run-tests.js', 'Test runner script exists');
 
 // 9. Configuration Checks
 log('\n9. Checking Configuration...', 'blue');

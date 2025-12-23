@@ -37,7 +37,8 @@ stillmove-planner/
 │   ├── error-handler.js    # Error handling
 │   ├── accessibility.js    # A11y & theme management
 │   ├── performance-monitor.js # Web Vitals tracking
-│   └── auto-save.js        # Auto-save functionality
+│   ├── ai-service.js       # AI integration
+│   └── utils.js            # Utility functions
 │
 ├── views/                  # View modules (HTML + JS)
 │   ├── weekly-view.*       # Weekly planner

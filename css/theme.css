@@ -7533,40 +7533,6 @@ select:focus-visible {
 }
 
 /* ============================================================
-   AUTO-SAVE INDICATOR STYLES
-   Visual feedback for auto-save status
-   ============================================================ */
-
-.auto-save-indicator {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 16px;
-    height: 16px;
-    font-size: 0.75rem;
-    transition: opacity 0.2s ease, color 0.2s ease;
-}
-
-.auto-save-indicator.saving {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    from { transform: translateY(-50%) rotate(0deg); }
-    to { transform: translateY(-50%) rotate(360deg); }
-}
-
-/* Input wrapper for auto-save */
-.input-with-autosave {
-    position: relative;
-}
-
-.input-with-autosave input,
-.input-with-autosave textarea {
-    padding-right: 28px;
-}
-
-/* ============================================================
    LOADING SKELETON IMPROVEMENTS
    Better skeleton loading animations
    ============================================================ */

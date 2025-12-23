@@ -20,7 +20,6 @@ const STATIC_ASSETS = [
   './js/ai-service.js',
   './js/error-handler.js',
   './js/accessibility.js',
-  './js/auto-save.js',
   './components/modal.js',
   './components/toast.js',
   './components/spinner.js',
