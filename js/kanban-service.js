@@ -99,6 +99,31 @@ class KanbanService {
     }
 
     /**
+     * Get all cards linked to a specific habit
+     * @param {string} habitId - Habit ID
+     * @returns {Promise<Array>} List of cards
+     */
+    async getCardsByHabit(habitId) {
+        try {
+            const boards = await this.getBoards();
+            const results = [];
+            for (const board of boards) {
+                const cards = await this.dataService.getKanbanCards(board.id);
+                const linkedCards = cards.filter(c => c.linked_habit_id === habitId);
+                results.push(...linkedCards.map(c => ({
+                    ...c,
+                    boardId: board.id,
+                    boardTitle: board.title
+                })));
+            }
+            return results;
+        } catch (error) {
+            console.error('Error fetching cards by habit:', error);
+            return [];
+        }
+    }
+
+    /**
      * Get a single board with its columns and cards
      * @param {string} boardId - Board ID
      * @returns {Promise<Object|null>} Board object with columns and cards, or null
@@ -646,7 +671,7 @@ class KanbanService {
         // Get current item to determine current state
         const items = await this._getAllChecklistItems();
         const item = items.find(i => i.id === itemId);
-        
+
         if (!item) {
             throw new Error('Checklist item not found');
         }
@@ -658,8 +683,8 @@ class KanbanService {
         });
 
         // Log activity based on new status (will also be queued if offline)
-        const activityType = newCompletedStatus 
-            ? ACTIVITY_TYPES.CHECKLIST_ITEM_COMPLETED 
+        const activityType = newCompletedStatus
+            ? ACTIVITY_TYPES.CHECKLIST_ITEM_COMPLETED
             : ACTIVITY_TYPES.CHECKLIST_ITEM_UNCOMPLETED;
 
         try {
@@ -690,7 +715,7 @@ class KanbanService {
         // Get item before deletion for activity logging
         const items = await this._getAllChecklistItems();
         const item = items.find(i => i.id === itemId);
-        
+
         if (!item) {
             throw new Error('Checklist item not found');
         }
@@ -736,7 +761,7 @@ class KanbanService {
         for (let i = 0; i < itemOrder.length; i++) {
             const itemId = itemOrder[i];
             const item = items.find(it => it.id === itemId);
-            
+
             if (item && item.order_index !== i) {
                 const updated = await this.dataService.updateChecklistItem(itemId, {
                     order_index: i
@@ -1082,7 +1107,7 @@ class KanbanService {
     async _getCommentById(commentId) {
         // Get all comments across all cards to find the specific one
         const boards = await this.dataService.getKanbanBoards();
-        
+
         for (const board of boards) {
             const cards = await this.dataService.getKanbanCards(board.id);
             for (const card of cards) {
@@ -1093,7 +1118,7 @@ class KanbanService {
                 }
             }
         }
-        
+
         return null;
     }
 
@@ -1279,7 +1304,7 @@ class KanbanService {
                     return false;
                 }
                 // Check if card has any of the filter labels
-                return filters.labels.some(filterLabel => 
+                return filters.labels.some(filterLabel =>
                     card.labels.some(cardLabel => {
                         // Handle both string labels and object labels with name property
                         const cardLabelName = typeof cardLabel === 'string' ? cardLabel : cardLabel.name;
@@ -1318,13 +1343,13 @@ class KanbanService {
 
         return cards.filter(card => {
             // Check title (case-insensitive)
-            const titleMatch = card.title && 
-                typeof card.title === 'string' && 
+            const titleMatch = card.title &&
+                typeof card.title === 'string' &&
                 card.title.toLowerCase().includes(lowerQuery);
 
             // Check description (case-insensitive)
-            const descriptionMatch = card.description && 
-                typeof card.description === 'string' && 
+            const descriptionMatch = card.description &&
+                typeof card.description === 'string' &&
                 card.description.toLowerCase().includes(lowerQuery);
 
             return titleMatch || descriptionMatch;
@@ -1471,7 +1496,7 @@ class KanbanService {
         // Get all boards to find all cards
         const boards = await this.dataService.getKanbanBoards();
         const allItems = [];
-        
+
         for (const board of boards) {
             const cards = await this.dataService.getKanbanCards(board.id);
             for (const card of cards) {
@@ -1479,7 +1504,7 @@ class KanbanService {
                 allItems.push(...items);
             }
         }
-        
+
         return allItems;
     }
 
@@ -1492,7 +1517,7 @@ class KanbanService {
         // Get all boards to find all cards
         const boards = await this.dataService.getKanbanBoards();
         const allAttachments = [];
-        
+
         for (const board of boards) {
             const cards = await this.dataService.getKanbanCards(board.id);
             for (const card of cards) {
@@ -1500,7 +1525,7 @@ class KanbanService {
                 allAttachments.push(...attachments);
             }
         }
-        
+
         return allAttachments;
     }
 
@@ -1540,7 +1565,7 @@ class KanbanService {
     async checkWipLimit(columnId, boardId) {
         const columns = await this.dataService.getKanbanColumns(boardId);
         const column = columns.find(c => c.id === columnId);
-        
+
         if (!column || !column.wip_limit) {
             return { isOverLimit: false, currentCount: 0, wipLimit: null };
         }

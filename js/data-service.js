@@ -3278,7 +3278,7 @@ class DataService {
 
     /**
      * Create a new Kanban card
-     * @param {Object} card - Card object with board_id, column_id, title, description, order_index, priority, due_date, labels, is_backlog, linked_goal_id
+     * @param {Object} card - Card object with board_id, column_id, title, description, order_index, priority, due_date, labels, is_backlog, linked_goal_id, linked_habit_id
      * @returns {Promise<Object>} Created card
      */
     async createKanbanCard(card) {
@@ -3403,6 +3403,48 @@ class DataService {
             if (error) throw error;
         } catch (error) {
             this.handleError(error, 'deleteKanbanCard');
+        }
+    }
+
+    /**
+     * Get cards linked to a specific habit
+     * @param {string} habitId - Habit ID
+     * @returns {Promise<Array>} Array of cards
+     */
+    async getKanbanCardsByHabit(habitId) {
+        try {
+            // Try cache first
+            if (this.cacheEnabled) {
+                const cached = await cacheService.getAll(STORES.kanbanCards);
+                const habitCards = cached.filter(c => c.linked_habit_id === habitId);
+                // Even if we find cached items, sync in background
+                if (cacheService.online) {
+                    this.syncInBackground(STORES.kanbanCards, async () => {
+                        const { data } = await this.supabase
+                            .from('kanban_cards')
+                            .select('*')
+                            .eq('linked_habit_id', habitId);
+                        return data;
+                    });
+                }
+                if (habitCards.length > 0) return habitCards;
+            }
+
+            const { data, error } = await this.supabase
+                .from('kanban_cards')
+                .select('*')
+                .eq('linked_habit_id', habitId);
+
+            if (error) throw error;
+
+            // Update cache with these cards
+            if (this.cacheEnabled && data) {
+                await cacheService.putAll(STORES.kanbanCards, data);
+            }
+
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getKanbanCardsByHabit');
         }
     }
 

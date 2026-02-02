@@ -8,6 +8,7 @@
 import dataService from '../js/data-service.js';
 import kanbanService from '../js/kanban-service.js';
 import analyticsPanel from '../js/analytics-panel.js';
+import integrationService from '../js/integration-service.js';
 
 // LocalStorage key for persisting last viewed board
 const LAST_VIEWED_BOARD_KEY = 'kanban_last_viewed_board';
@@ -889,6 +890,48 @@ class KanbanView {
         if (this.deepLinkParams.cardId && this.currentBoardId) {
             await this.handleDeepLinkCard(this.deepLinkParams.cardId);
         }
+
+        // Subscribe to integration events
+        this.setupIntegrationEvents();
+    }
+
+    /**
+     * Setup subscriptions to integration service events
+     */
+    setupIntegrationEvents() {
+        // Handle navigation requests (e.g., from Calendar or Monthly view)
+        integrationService.on('navigate', (data) => {
+            if (data.view === 'kanban') {
+                if (data.params?.boardId && data.params.boardId !== this.currentBoardId) {
+                    this.loadBoard(data.params.boardId).then(() => {
+                        if (data.params.cardId) {
+                            this.handleDeepLinkCard(data.params.cardId);
+                        }
+                    });
+                } else if (data.params?.cardId) {
+                    this.handleDeepLinkCard(data.params.cardId);
+                }
+            }
+        });
+
+        // Handle card creation/opening requests
+        integrationService.on('openCardModal', (data) => {
+            if (data.mode === 'create') {
+                // Ensure we have a board loaded if none is active
+                if (!this.currentBoardId && this.boards.length > 0) {
+                    this.loadBoard(this.boards[0].id).then(() => {
+                        this.openCardModal(null, false, null, data.preFill);
+                    });
+                } else {
+                    this.openCardModal(null, false, null, data.preFill);
+                }
+            } else if (data.cardId) {
+                // Fetch card first if not in memory
+                dataService.getKanbanCard(data.cardId).then(card => {
+                    if (card) this.openCardModal(card);
+                });
+            }
+        });
     }
 
     /**
@@ -1137,9 +1180,16 @@ class KanbanView {
                 boardSelector.value = boardId;
             }
 
-            // Load annual goals for card linking
+            // Load annual goals and habits for card linking
             const currentYear = new Date().getFullYear();
-            this.annualGoals = await dataService.getAnnualGoals(currentYear);
+            const [goals, dailyHabits, weeklyHabits] = await Promise.all([
+                dataService.getAnnualGoals(currentYear),
+                dataService.getDailyHabits(),
+                dataService.getWeeklyHabits()
+            ]);
+
+            this.annualGoals = goals;
+            this.allHabits = [...dailyHabits, ...weeklyHabits];
 
             // Show board action buttons
             this.showBoardActions(true);
@@ -1955,8 +2005,9 @@ class KanbanView {
      * @param {Object|null} card - Card to edit, or null for new card
      * @param {boolean} isBacklog - Whether to add to backlog
      * @param {string|null} columnId - Target column ID for new cards
+     * @param {Object} [preFill] - Optional pre-filled data for new cards
      */
-    openCardModal(card = null, isBacklog = false, columnId = null) {
+    openCardModal(card = null, isBacklog = false, columnId = null, preFill = {}) {
         const modal = document.getElementById('card-modal');
         const titleEl = document.getElementById('card-modal-title');
         const titleInput = document.getElementById('card-title');
@@ -1964,6 +2015,7 @@ class KanbanView {
         const prioritySelect = document.getElementById('card-priority');
         const dueDateInput = document.getElementById('card-due-date');
         const goalSelect = document.getElementById('card-goal');
+        const habitSelect = document.getElementById('card-habit');
         const deleteBtn = document.getElementById('delete-card-btn');
         const pomodoroStats = document.getElementById('card-pomodoro-stats');
         const pomodoroTotal = document.getElementById('card-pomodoro-total');
@@ -2002,6 +2054,17 @@ class KanbanView {
             });
         }
 
+        // Populate habit select (Requirement 4.2: Link card to habit)
+        if (habitSelect) {
+            habitSelect.innerHTML = '<option value="">-- No Habit Linked --</option>';
+            (this.allHabits || []).forEach(habit => {
+                const option = document.createElement('option');
+                option.value = habit.id;
+                option.textContent = habit.habit_name || 'Unnamed Habit';
+                habitSelect.appendChild(option);
+            });
+        }
+
         // Populate labels container
         if (labelsContainer) {
             this._populateLabelsContainer(labelsContainer, card?.labels || []);
@@ -2011,8 +2074,9 @@ class KanbanView {
         if (titleInput) titleInput.value = card?.title || '';
         if (descInput) descInput.value = card?.description || '';
         if (prioritySelect) prioritySelect.value = card?.priority || '';
-        if (dueDateInput) dueDateInput.value = card?.due_date || '';
-        if (goalSelect) goalSelect.value = card?.linked_goal_id || '';
+        if (dueDateInput) dueDateInput.value = card?.due_date || preFill?.due_date || '';
+        if (goalSelect) goalSelect.value = card?.linked_goal_id || preFill?.linked_goal_id || '';
+        if (habitSelect) habitSelect.value = card?.linked_habit_id || preFill?.linked_habit_id || '';
 
         // Show/hide delete button
         if (deleteBtn) {
@@ -2483,6 +2547,7 @@ class KanbanView {
         const prioritySelect = document.getElementById('card-priority');
         const dueDateInput = document.getElementById('card-due-date');
         const goalSelect = document.getElementById('card-goal');
+        const habitSelect = document.getElementById('card-habit');
 
         const title = titleInput?.value?.trim();
         if (!title) {
@@ -2499,35 +2564,47 @@ class KanbanView {
             priority: prioritySelect?.value || null,
             due_date: dueDateInput?.value || null,
             linked_goal_id: goalSelect?.value || null,
+            linked_habit_id: habitSelect?.value || null,
             labels: labels
         };
 
         try {
+            let savedCardId = this._editingCard?.id;
+
             if (this._editingCard) {
                 // Update existing card
                 await kanbanService.updateCard(this._editingCard.id, cardData);
                 this.showSuccess('Card updated successfully');
             } else {
                 // Create new card
+                let newCard;
                 if (this._newCardIsBacklog) {
                     // Add to backlog - need to create card then move to backlog
                     const firstColumn = this.currentBoard.columns?.[0];
                     if (firstColumn) {
-                        const newCard = await kanbanService.createCard(firstColumn.id, cardData);
+                        newCard = await kanbanService.createCard(firstColumn.id, cardData);
                         await kanbanService.moveCardToBacklog(newCard.id);
                     }
                 } else {
                     // Add to specific column or first column
                     const targetColumnId = this._newCardColumnId || this.currentBoard.columns?.[0]?.id;
                     if (targetColumnId) {
-                        await kanbanService.createCard(targetColumnId, cardData);
+                        newCard = await kanbanService.createCard(targetColumnId, cardData);
                     }
                 }
+                savedCardId = newCard?.id;
                 this.showSuccess('Card created successfully');
             }
 
             // Reload board to reflect changes
             await this.loadBoard(this.currentBoardId);
+
+            // Notify other components (Calendar, etc.) that a card has changed
+            integrationService.emit('cardUpdated', {
+                cardId: savedCardId,
+                boardId: this.currentBoardId
+            });
+
             this.closeCardModal();
         } catch (error) {
             console.error('Failed to save card:', error);
@@ -2770,6 +2847,13 @@ class KanbanView {
                 await kanbanService.deleteCard(this._editingCard.id);
                 this.showSuccess('Card deleted successfully');
                 await this.loadBoard(this.currentBoardId);
+
+                // Notify other components that a card has been deleted
+                integrationService.emit('cardDeleted', {
+                    cardId: this._editingCard.id,
+                    boardId: this.currentBoardId
+                });
+
                 this.closeCardModal();
             } catch (error) {
                 console.error('Failed to delete card:', error);
@@ -3528,6 +3612,17 @@ class KanbanView {
     }
 
     // ==================== CLEANUP ====================
+
+    /**
+     * Update card indicators on the board
+     * @param {string} cardId - Card ID
+     */
+    async updateCardIndicators(cardId) {
+        const cardEl = this.container.querySelector(`[data-card-id="${cardId}"]`);
+        if (cardEl) {
+            await this.loadCardPreviewIndicators(cardEl, cardId);
+        }
+    }
 
     /**
      * Destroy the view and cleanup resources
