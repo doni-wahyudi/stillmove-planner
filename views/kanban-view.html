@@ -10,16 +10,23 @@
             <button id="new-board-btn" class="btn-icon" aria-label="Create new board" title="Create new board">
                 <span aria-hidden="true">+</span>
             </button>
-            <button id="edit-board-btn" class="btn-icon" aria-label="Edit board settings" title="Edit board" style="display: none;">
+            <button id="edit-board-btn" class="btn-icon" aria-label="Edit board settings" title="Edit board"
+                style="display: none;">
                 <span aria-hidden="true">⚙️</span>
             </button>
-            <button id="delete-board-btn" class="btn-icon btn-danger-icon" aria-label="Delete board" title="Delete board" style="display: none;">
+            <button id="delete-board-btn" class="btn-icon btn-danger-icon" aria-label="Delete board"
+                title="Delete board" style="display: none;">
                 <span aria-hidden="true">🗑️</span>
             </button>
         </div>
-        
+
         <div class="kanban-actions" role="group" aria-label="Board actions">
-            <button id="filter-toggle-btn" class="btn-icon" aria-label="Toggle filters" title="Filter cards" aria-expanded="false" aria-controls="filter-panel">
+            <button id="analytics-toggle-btn" class="btn-icon" aria-label="Open analytics" title="Board Analytics"
+                style="display: none;">
+                <span aria-hidden="true">📊</span>
+            </button>
+            <button id="filter-toggle-btn" class="btn-icon" aria-label="Toggle filters" title="Filter cards"
+                aria-expanded="false" aria-controls="filter-panel">
                 <span aria-hidden="true">🔍</span>
                 <span class="filter-active-indicator" style="display: none;" aria-label="Filters active"></span>
             </button>
@@ -37,9 +44,10 @@
         <div class="filter-panel-content">
             <div class="filter-group">
                 <label for="search-input">Search</label>
-                <input type="text" id="search-input" class="filter-input" placeholder="Search cards..." aria-label="Search cards by title or description">
+                <input type="text" id="search-input" class="filter-input" placeholder="Search cards..."
+                    aria-label="Search cards by title or description">
             </div>
-            
+
             <div class="filter-group">
                 <label for="priority-filter">Priority</label>
                 <select id="priority-filter" class="filter-select" aria-label="Filter by priority">
@@ -49,7 +57,7 @@
                     <option value="low">Low</option>
                 </select>
             </div>
-            
+
             <div class="filter-group">
                 <label for="label-filter">Label</label>
                 <select id="label-filter" class="filter-select" aria-label="Filter by label">
@@ -57,7 +65,7 @@
                     <!-- Labels will be dynamically populated -->
                 </select>
             </div>
-            
+
             <div class="filter-group">
                 <label for="due-date-filter">Due Date</label>
                 <select id="due-date-filter" class="filter-select" aria-label="Filter by due date">
@@ -68,7 +76,7 @@
                     <option value="none">No Due Date</option>
                 </select>
             </div>
-            
+
             <button id="clear-filters-btn" class="btn-secondary btn-small" aria-label="Clear all filters">
                 Clear Filters
             </button>
@@ -84,11 +92,12 @@
                     BACKLOG
                     <span id="backlog-count" class="backlog-count" aria-label="Backlog item count">(0)</span>
                 </h3>
-                <button id="toggle-backlog-btn" class="btn-icon backlog-toggle" aria-label="Collapse backlog" aria-expanded="true" aria-controls="backlog-cards">
+                <button id="toggle-backlog-btn" class="btn-icon backlog-toggle" aria-label="Collapse backlog"
+                    aria-expanded="true" aria-controls="backlog-cards">
                     <span aria-hidden="true">◀</span>
                 </button>
             </div>
-            
+
             <div id="backlog-cards" class="backlog-cards" role="list" aria-label="Backlog cards">
                 <!-- Backlog cards will be dynamically populated -->
                 <div class="backlog-empty-state" style="display: none;">
@@ -96,9 +105,10 @@
                     <p class="hint">Drag cards here to save for later</p>
                 </div>
             </div>
-            
+
             <div class="backlog-footer">
-                <button id="add-backlog-card-btn" class="btn-secondary btn-small btn-full-width" aria-label="Add card to backlog">
+                <button id="add-backlog-card-btn" class="btn-secondary btn-small btn-full-width"
+                    aria-label="Add card to backlog">
                     + Add to Backlog
                 </button>
             </div>
@@ -113,7 +123,7 @@
                 <p>Select a board from the dropdown above or create a new one to get started.</p>
                 <button id="create-first-board-btn" class="btn-primary">Create Your First Board</button>
             </div>
-            
+
             <!-- Columns will be dynamically populated here -->
             <!-- Each column follows this structure:
             <div class="kanban-column" data-column-id="" role="region" aria-label="Column name">
@@ -129,7 +139,7 @@
                 <button class="add-card-to-column-btn">+ Add Card</button>
             </div>
             -->
-            
+
             <!-- Add Column Placeholder (shown when board is loaded) -->
             <div id="add-column-placeholder" class="add-column-placeholder" style="display: none;">
                 <button id="add-column-inline-btn" class="btn-add-column" aria-label="Add new column">
@@ -142,7 +152,7 @@
 
     <!-- Drag and Drop Ghost Element -->
     <div id="drag-ghost" class="drag-ghost" aria-hidden="true" style="display: none;"></div>
-    
+
     <!-- Drop Placeholder -->
     <div id="drop-placeholder" class="drop-placeholder" aria-hidden="true" style="display: none;"></div>
 </div>
@@ -164,7 +174,8 @@
             <span class="card-comment-count" aria-label="Comments" style="display: none;"></span>
         </div>
         <div class="card-actions">
-            <button class="card-pomodoro-btn btn-icon-small" aria-label="Start Pomodoro" title="Start Pomodoro">🍅</button>
+            <button class="card-pomodoro-btn btn-icon-small" aria-label="Start Pomodoro"
+                title="Start Pomodoro">🍅</button>
             <button class="card-edit-btn btn-icon-small" aria-label="Edit card" title="Edit card">✏️</button>
         </div>
     </div>
@@ -180,7 +191,8 @@
             </div>
             <div class="column-header-right">
                 <span class="wip-limit-badge" style="display: none;" aria-label="Work in progress limit"></span>
-                <button class="column-menu-btn btn-icon-small" aria-label="Column options" aria-haspopup="true">⋮</button>
+                <button class="column-menu-btn btn-icon-small" aria-label="Column options"
+                    aria-haspopup="true">⋮</button>
             </div>
         </div>
         <div class="column-cards" role="list" aria-label="Cards in column">
@@ -193,7 +205,8 @@
 </template>
 
 <!-- Board Modal -->
-<div id="board-modal" class="modal" role="dialog" aria-labelledby="board-modal-title" aria-modal="true" style="display: none;">
+<div id="board-modal" class="modal" role="dialog" aria-labelledby="board-modal-title" aria-modal="true"
+    style="display: none;">
     <div class="modal-content">
         <div class="modal-header">
             <h3 id="board-modal-title">Create New Board</h3>
@@ -202,11 +215,13 @@
         <div class="modal-body">
             <div class="form-group">
                 <label for="board-title">Board Title <span class="required">*</span></label>
-                <input type="text" id="board-title" class="form-input" placeholder="Enter board title" required maxlength="100">
+                <input type="text" id="board-title" class="form-input" placeholder="Enter board title" required
+                    maxlength="100">
             </div>
             <div class="form-group">
                 <label for="board-description">Description</label>
-                <textarea id="board-description" class="form-textarea" placeholder="Optional description" rows="3" maxlength="500"></textarea>
+                <textarea id="board-description" class="form-textarea" placeholder="Optional description" rows="3"
+                    maxlength="500"></textarea>
             </div>
             <div class="form-group">
                 <label for="board-category">Category</label>
@@ -234,44 +249,54 @@
 </div>
 
 <!-- Card Modal -->
-<div id="card-modal" class="modal" role="dialog" aria-labelledby="card-modal-title" aria-modal="true" style="display: none;">
+<div id="card-modal" class="modal" role="dialog" aria-labelledby="card-modal-title" aria-modal="true"
+    style="display: none;">
     <div class="modal-content modal-large card-modal-enhanced">
         <div class="modal-header">
             <h3 id="card-modal-title">Add New Card</h3>
             <button class="modal-close" aria-label="Close modal">&times;</button>
         </div>
-        
+
         <!-- Tab Navigation - Requirement 12.2 -->
-        <div id="card-modal-tabs" class="card-modal-tabs tabs" role="tablist" aria-label="Card sections" style="display: none;">
-            <button class="tab-btn card-modal-tab active" data-tab="details" role="tab" aria-selected="true" aria-controls="card-tab-details" id="tab-details">
+        <div id="card-modal-tabs" class="card-modal-tabs tabs" role="tablist" aria-label="Card sections"
+            style="display: none;">
+            <button class="tab-btn card-modal-tab active" data-tab="details" role="tab" aria-selected="true"
+                aria-controls="card-tab-details" id="tab-details">
                 Details
             </button>
-            <button class="tab-btn card-modal-tab" data-tab="checklist" role="tab" aria-selected="false" aria-controls="card-tab-checklist" id="tab-checklist">
+            <button class="tab-btn card-modal-tab" data-tab="checklist" role="tab" aria-selected="false"
+                aria-controls="card-tab-checklist" id="tab-checklist">
                 Checklist <span class="tab-count" id="checklist-tab-count"></span>
             </button>
-            <button class="tab-btn card-modal-tab" data-tab="attachments" role="tab" aria-selected="false" aria-controls="card-tab-attachments" id="tab-attachments">
+            <button class="tab-btn card-modal-tab" data-tab="attachments" role="tab" aria-selected="false"
+                aria-controls="card-tab-attachments" id="tab-attachments">
                 Attachments <span class="tab-count" id="attachments-tab-count"></span>
             </button>
-            <button class="tab-btn card-modal-tab" data-tab="comments" role="tab" aria-selected="false" aria-controls="card-tab-comments" id="tab-comments">
+            <button class="tab-btn card-modal-tab" data-tab="comments" role="tab" aria-selected="false"
+                aria-controls="card-tab-comments" id="tab-comments">
                 Comments <span class="tab-count" id="comments-tab-count"></span>
             </button>
-            <button class="tab-btn card-modal-tab" data-tab="activity" role="tab" aria-selected="false" aria-controls="card-tab-activity" id="tab-activity">
+            <button class="tab-btn card-modal-tab" data-tab="activity" role="tab" aria-selected="false"
+                aria-controls="card-tab-activity" id="tab-activity">
                 Activity
             </button>
         </div>
-        
+
         <div class="modal-body card-modal-body">
             <!-- Details Tab Content -->
-            <div id="card-tab-details" class="card-tab-content tab-content active" role="tabpanel" aria-labelledby="tab-details">
+            <div id="card-tab-details" class="card-tab-content tab-content active" role="tabpanel"
+                aria-labelledby="tab-details">
                 <div class="form-row">
                     <div class="form-group form-group-large">
                         <label for="card-title">Title <span class="required">*</span></label>
-                        <input type="text" id="card-title" class="form-input" placeholder="Enter card title" required maxlength="200">
+                        <input type="text" id="card-title" class="form-input" placeholder="Enter card title" required
+                            maxlength="200">
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="card-description">Description</label>
-                    <textarea id="card-description" class="form-textarea" placeholder="Add a more detailed description..." rows="4" maxlength="2000"></textarea>
+                    <textarea id="card-description" class="form-textarea"
+                        placeholder="Add a more detailed description..." rows="4" maxlength="2000"></textarea>
                 </div>
                 <div class="form-row form-row-2col">
                     <div class="form-group">
@@ -310,24 +335,28 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Checklist Tab Content -->
-            <div id="card-tab-checklist" class="card-tab-content tab-content" role="tabpanel" aria-labelledby="tab-checklist">
+            <div id="card-tab-checklist" class="card-tab-content tab-content" role="tabpanel"
+                aria-labelledby="tab-checklist">
                 <!-- ChecklistComponent will render here -->
             </div>
-            
+
             <!-- Attachments Tab Content -->
-            <div id="card-tab-attachments" class="card-tab-content tab-content" role="tabpanel" aria-labelledby="tab-attachments">
+            <div id="card-tab-attachments" class="card-tab-content tab-content" role="tabpanel"
+                aria-labelledby="tab-attachments">
                 <!-- AttachmentsComponent will render here -->
             </div>
-            
+
             <!-- Comments Tab Content -->
-            <div id="card-tab-comments" class="card-tab-content tab-content" role="tabpanel" aria-labelledby="tab-comments">
+            <div id="card-tab-comments" class="card-tab-content tab-content" role="tabpanel"
+                aria-labelledby="tab-comments">
                 <!-- CommentsComponent will render here -->
             </div>
-            
+
             <!-- Activity Tab Content -->
-            <div id="card-tab-activity" class="card-tab-content tab-content" role="tabpanel" aria-labelledby="tab-activity">
+            <div id="card-tab-activity" class="card-tab-content tab-content" role="tabpanel"
+                aria-labelledby="tab-activity">
                 <!-- ActivityLogComponent will render here -->
             </div>
         </div>
@@ -342,7 +371,8 @@
 </div>
 
 <!-- Column Modal -->
-<div id="column-modal" class="modal" role="dialog" aria-labelledby="column-modal-title" aria-modal="true" style="display: none;">
+<div id="column-modal" class="modal" role="dialog" aria-labelledby="column-modal-title" aria-modal="true"
+    style="display: none;">
     <div class="modal-content modal-small">
         <div class="modal-header">
             <h3 id="column-modal-title">Column Settings</h3>
@@ -351,7 +381,8 @@
         <div class="modal-body">
             <div class="form-group">
                 <label for="column-title">Column Title <span class="required">*</span></label>
-                <input type="text" id="column-title" class="form-input" placeholder="Enter column title" required maxlength="50">
+                <input type="text" id="column-title" class="form-input" placeholder="Enter column title" required
+                    maxlength="50">
             </div>
             <div class="form-group">
                 <label for="column-wip-limit">WIP Limit</label>
@@ -374,7 +405,8 @@
 </div>
 
 <!-- Delete Confirmation Modal -->
-<div id="delete-confirm-modal" class="modal" role="alertdialog" aria-labelledby="delete-confirm-title" aria-describedby="delete-confirm-message" aria-modal="true" style="display: none;">
+<div id="delete-confirm-modal" class="modal" role="alertdialog" aria-labelledby="delete-confirm-title"
+    aria-describedby="delete-confirm-message" aria-modal="true" style="display: none;">
     <div class="modal-content modal-small">
         <div class="modal-header">
             <h3 id="delete-confirm-title">Confirm Delete</h3>
@@ -422,7 +454,8 @@
 </div>
 
 <!-- Add Label Modal -->
-<div id="add-label-modal" class="modal" role="dialog" aria-labelledby="add-label-modal-title" aria-modal="true" style="display: none;">
+<div id="add-label-modal" class="modal" role="dialog" aria-labelledby="add-label-modal-title" aria-modal="true"
+    style="display: none;">
     <div class="modal-content modal-small">
         <div class="modal-header">
             <h3 id="add-label-modal-title">Add New Label</h3>
@@ -431,7 +464,8 @@
         <div class="modal-body">
             <div class="form-group">
                 <label for="new-label-name">Label Name <span class="required">*</span></label>
-                <input type="text" id="new-label-name" class="form-input" placeholder="Enter label name" required maxlength="30">
+                <input type="text" id="new-label-name" class="form-input" placeholder="Enter label name" required
+                    maxlength="30">
             </div>
             <div class="form-group">
                 <label for="new-label-color">Label Color</label>
@@ -447,14 +481,16 @@
 
 <!-- Goal Progress Prompt Modal -->
 <!-- Requirement 4.4: Optionally prompt to update goal's progress when card moved to Done -->
-<div id="goal-progress-modal" class="modal" role="dialog" aria-labelledby="goal-progress-modal-title" aria-modal="true" style="display: none;">
+<div id="goal-progress-modal" class="modal" role="dialog" aria-labelledby="goal-progress-modal-title" aria-modal="true"
+    style="display: none;">
     <div class="modal-content modal-small">
         <div class="modal-header">
             <h3 id="goal-progress-modal-title">Update Goal Progress?</h3>
             <button class="modal-close" aria-label="Close modal">&times;</button>
         </div>
         <div class="modal-body">
-            <p id="goal-progress-message">You've completed a task linked to a goal. Would you like to update the goal's progress?</p>
+            <p id="goal-progress-message">You've completed a task linked to a goal. Would you like to update the goal's
+                progress?</p>
             <div class="goal-progress-info">
                 <div class="goal-title-display">
                     <strong>Goal:</strong> <span id="goal-progress-goal-title"></span>

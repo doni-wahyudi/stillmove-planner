@@ -10,32 +10,32 @@
     --bg-surface: #ffffff;
     --bg-elevated: #ffffff;
     --bg-input: #ffffff;
-    
+
     --text-primary: #1a1a1a;
     --text-secondary: #4a4a4a;
     --text-muted: #777777;
     --text-on-accent: #ffffff;
-    
+
     --accent-primary: #8b6642;
     --accent-secondary: #a67c52;
     --accent-tertiary: #d4a574;
     --accent-bg: rgba(166, 124, 82, 0.08);
     --accent-bg-hover: rgba(166, 124, 82, 0.12);
-    
+
     --border-default: rgba(0, 0, 0, 0.08);
     --border-strong: rgba(0, 0, 0, 0.15);
     --border-accent: rgba(166, 124, 82, 0.3);
-    
+
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
     --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
-    
+
     --radius-sm: 6px;
     --radius-md: 10px;
     --radius-lg: 14px;
     --radius-xl: 20px;
     --radius-full: 9999px;
-    
+
     --transition: 0.2s ease;
 }
 
@@ -46,22 +46,22 @@
         --bg-surface: #1a1a1a;
         --bg-elevated: #242424;
         --bg-input: #2a2a2a;
-        
+
         --text-primary: #f0f0f0;
         --text-secondary: #b8b8b8;
         --text-muted: #808080;
         --text-on-accent: #ffffff;
-        
+
         --accent-primary: #d4a574;
         --accent-secondary: #c9956a;
         --accent-tertiary: #a67c52;
         --accent-bg: rgba(212, 165, 116, 0.12);
         --accent-bg-hover: rgba(212, 165, 116, 0.18);
-        
+
         --border-default: rgba(255, 255, 255, 0.08);
         --border-strong: rgba(255, 255, 255, 0.15);
         --border-accent: rgba(212, 165, 116, 0.4);
-        
+
         --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
         --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
         --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
@@ -1482,6 +1482,7 @@ select:focus {
         transform: translateX(100%);
         opacity: 0;
     }
+
     to {
         transform: translateX(0);
         opacity: 1;
@@ -1548,7 +1549,7 @@ select:focus {
     .weekly-view .sidebar-section {
         grid-template-columns: 1fr;
     }
-    
+
     .annual-content {
         grid-template-columns: 1fr;
     }
@@ -1558,11 +1559,11 @@ select:focus {
     .monthly-content-top {
         grid-template-columns: 1fr;
     }
-    
+
     .monthly-content-bottom {
         grid-template-columns: 1fr;
     }
-    
+
     .habits-container {
         grid-template-columns: 1fr;
     }
@@ -1572,15 +1573,15 @@ select:focus {
     .main-nav {
         padding: 0.75rem 1rem;
     }
-    
+
     .nav-brand h1 {
         font-size: 1.2rem;
     }
-    
+
     .main-content {
         padding: 1rem;
     }
-    
+
     .view-header,
     .weekly-view .view-header,
     .monthly-view .view-header,
@@ -1591,13 +1592,13 @@ select:focus {
         padding: 1.25rem;
         border-radius: var(--radius-md);
     }
-    
+
     .week-selector h2,
     .month-selector h2,
     .year-selector h2 {
         font-size: 1.1rem;
     }
-    
+
     .weekly-goals,
     .category-legend,
     .schedule-section,
@@ -1611,7 +1612,7 @@ select:focus {
         padding: 1rem;
         border-radius: var(--radius-md);
     }
-    
+
     .daily-sections-container {
         grid-template-columns: 1fr;
     }
@@ -1623,18 +1624,20 @@ select:focus {
         opacity: 0;
         transform: translateY(10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
     }
 }
 
-#view-container > * {
+#view-container>* {
     animation: fadeIn 0.25s ease-out;
 }
 
 /* ===== REDUCED MOTION ===== */
 @media (prefers-reduced-motion: reduce) {
+
     *,
     *::before,
     *::after {
@@ -1650,7 +1653,7 @@ select:focus {
         --border-default: rgba(0, 0, 0, 0.5);
         --border-strong: rgba(0, 0, 0, 0.8);
     }
-    
+
     @media (prefers-color-scheme: dark) {
         :root {
             --border-default: rgba(255, 255, 255, 0.5);
@@ -1665,7 +1668,7 @@ select:focus {
         background: white !important;
         color: black !important;
     }
-    
+
     .main-nav,
     .user-menu,
     .mobile-menu-toggle,
@@ -1675,7 +1678,7 @@ select:focus {
     button {
         display: none !important;
     }
-    
+
     .weekly-goals,
     .category-legend,
     .schedule-section,
@@ -1698,6 +1701,7 @@ select:focus {
    ============================================================ */
 
 @media (prefers-color-scheme: dark) {
+
     /* === ACTION PLAN TABLE INPUTS === */
     .action-plan-table input[type="text"],
     .action-plan-table textarea,
@@ -1706,44 +1710,44 @@ select:focus {
         color: var(--text-primary) !important;
         border-color: var(--border-strong) !important;
     }
-    
+
     .action-plan-table td {
         background: transparent !important;
     }
-    
+
     .action-plan-table tbody tr {
         background: var(--bg-elevated) !important;
     }
-    
+
     .action-plan-table tbody tr:hover {
         background: var(--accent-bg) !important;
     }
-    
+
     /* === HABITS GRID === */
     .habits-grid-row.header {
         background: var(--bg-elevated) !important;
     }
-    
+
     .habits-grid-row.header .grid-cell {
         background: var(--accent-bg) !important;
         color: var(--text-primary) !important;
     }
-    
+
     .grid-cell {
         background: var(--bg-elevated) !important;
         color: var(--text-primary) !important;
         border-color: var(--border-default) !important;
     }
-    
+
     .habit-name-cell {
         background: var(--bg-surface) !important;
         color: var(--text-primary) !important;
     }
-    
+
     .checkbox-cell {
         background: var(--bg-elevated) !important;
     }
-    
+
     /* === ANNUAL VIEW TEXTAREAS === */
     .reflection-section textarea,
     .vision-board textarea,
@@ -1752,7 +1756,7 @@ select:focus {
         color: var(--text-primary) !important;
         border-color: var(--border-strong) !important;
     }
-    
+
     /* === GOAL CARD INPUTS === */
     .goal-card input[type="text"],
     .goal-card select,
@@ -1761,136 +1765,137 @@ select:focus {
         color: var(--text-primary) !important;
         border-color: var(--border-strong) !important;
     }
-    
+
     .goal-title {
         background: var(--bg-input) !important;
         color: var(--text-primary) !important;
     }
-    
+
     .goal-category {
         background: var(--bg-input) !important;
         color: var(--text-primary) !important;
     }
-    
+
     /* Sub-goals */
     .sub-goal-item {
         background: var(--bg-elevated) !important;
     }
-    
+
     .sub-goal-text {
         background: var(--bg-input) !important;
         color: var(--text-primary) !important;
     }
-    
+
     .sub-goal-checkbox {
         accent-color: var(--accent-primary);
     }
-    
+
     /* === ACTION PLAN SECTION (Monthly view) === */
     .action-plan-section {
         background: var(--bg-surface) !important;
         border-color: var(--border-default) !important;
     }
-    
+
     .action-plan-section h3 {
         color: var(--text-primary) !important;
     }
-    
+
     /* === SCHEDULE GRID TIME SLOTS === */
     /* Only apply to time slots WITHOUT blocks when NOT in manual light mode */
     html:not([data-theme="light"]) .time-slot:not(.has-block) {
         background: var(--bg-elevated) !important;
         border-color: var(--border-default) !important;
     }
-    
+
     html:not([data-theme="light"]) .time-slot:not(.has-block):hover {
         background: var(--accent-bg) !important;
     }
-    
+
     .time-slots-grid {
         background: transparent !important;
     }
-    
+
     /* === DAY HEADERS === */
     html:not([data-theme="light"]) .day-header {
         background: var(--bg-elevated) !important;
         border-color: var(--border-default) !important;
     }
-    
+
     html:not([data-theme="light"]) .day-header:hover {
         background: var(--accent-bg) !important;
     }
 }
 
 @media (prefers-color-scheme: dark) {
+
     /* === HABIT ITEMS IN SIDEBAR === */
     .habit-item {
         background: var(--bg-elevated) !important;
         border-color: var(--border-default) !important;
     }
-    
+
     .habit-item:hover {
         background: var(--accent-bg) !important;
     }
-    
+
     .habit-name {
         background: var(--bg-input) !important;
         color: var(--text-primary) !important;
         border-color: var(--border-strong) !important;
     }
-    
+
     .habit-target {
         background: var(--bg-input) !important;
         color: var(--text-primary) !important;
         border-color: var(--border-strong) !important;
     }
-    
+
     /* === WEEKLY GOAL ITEMS === */
     .weekly-goal-item {
         background: var(--bg-elevated) !important;
         border-color: var(--border-default) !important;
     }
-    
+
     .weekly-goal-item:hover {
         background: var(--accent-bg) !important;
     }
-    
+
     .goal-text {
         background: var(--bg-input) !important;
         color: var(--text-primary) !important;
         border-color: var(--border-strong) !important;
     }
-    
+
     .goal-priority {
         background: var(--bg-input) !important;
         color: var(--text-primary) !important;
         border-color: var(--border-strong) !important;
     }
-    
+
     /* === CATEGORY ITEMS === */
     .category-item {
         background: var(--bg-elevated) !important;
     }
-    
+
     .category-item:hover {
         background: var(--accent-bg) !important;
     }
-    
+
     .category-name {
         color: var(--text-primary) !important;
     }
-    
+
     /* === CHECKLIST ITEMS === */
     .checklist-item {
         background: var(--bg-elevated) !important;
         border-color: var(--border-default) !important;
     }
-    
+
     .checklist-text {
         background: var(--bg-input) !important;
         color: var(--text-primary) !important;
     }
-    
+
     /* === JOURNAL & GRATITUDE === */
     .journal-text,
     .gratitude-text {
@@ -1898,94 +1903,94 @@ select:focus {
         color: var(--text-primary) !important;
         border-color: var(--border-strong) !important;
     }
-    
+
     /* === BOOK ENTRIES === */
     .book-entry {
         background: var(--bg-elevated) !important;
         border-color: var(--border-default) !important;
     }
-    
+
     .book-title,
     .book-author {
         background: var(--bg-input) !important;
         color: var(--text-primary) !important;
         border-color: var(--border-strong) !important;
     }
-    
+
     /* === SLEEP & WATER ITEMS === */
     .sleep-item,
     .water-item {
         background: var(--bg-elevated) !important;
         color: var(--text-primary) !important;
     }
-    
+
     .sleep-duration,
     .water-percentage {
         background: var(--accent-bg) !important;
         color: var(--text-primary) !important;
     }
-    
+
     /* === MOOD CELLS === */
     .mood-cell {
         background: var(--bg-elevated) !important;
         border-color: var(--border-default) !important;
     }
-    
+
     .mood-cell:hover {
         background: var(--accent-bg) !important;
     }
-    
+
     .mood-cell.selected {
         background: var(--accent-bg-hover) !important;
         border-color: var(--accent-primary) !important;
     }
-    
+
     /* === CALENDAR DAYS === */
     .calendar-day {
         background: var(--bg-elevated) !important;
         border-color: var(--border-default) !important;
     }
-    
+
     .calendar-day:hover {
         background: var(--accent-bg) !important;
     }
-    
+
     .calendar-day.empty {
         background: var(--bg-base) !important;
     }
-    
+
     .day-number {
         color: var(--text-primary) !important;
     }
-    
+
     /* === DAILY SECTIONS === */
     .daily-section {
         background: var(--bg-surface) !important;
         border-color: var(--border-default) !important;
     }
-    
+
     .daily-section-content {
         background: var(--bg-surface) !important;
     }
-    
+
     /* === SESSION ITEMS === */
     .session-item {
         background: var(--bg-elevated) !important;
         color: var(--text-primary) !important;
     }
-    
+
     /* === PROGRESS ITEMS === */
     .progress-item {
         color: var(--text-primary) !important;
         border-bottom-color: var(--border-default) !important;
     }
-    
+
     /* === CATEGORY MANAGER === */
     .category-manager-item {
         background: var(--bg-elevated) !important;
         border-color: var(--border-default) !important;
     }
-    
+
     .category-manager-name {
         background: var(--bg-input) !important;
         color: var(--text-primary) !important;
@@ -1994,6 +1999,7 @@ select:focus {
 }
 
 @media (prefers-color-scheme: dark) {
+
     /* === MODAL INPUTS === */
     .modal-content input[type="text"],
     .modal-content input[type="date"],
@@ -2005,13 +2011,13 @@ select:focus {
         color: var(--text-primary) !important;
         border-color: var(--border-strong) !important;
     }
-    
+
     .form-input {
         background: var(--bg-input) !important;
         color: var(--text-primary) !important;
         border-color: var(--border-strong) !important;
     }
-    
+
     /* === SETTINGS INPUTS === */
     .settings-section input[type="text"],
     .settings-section input[type="email"],
@@ -2021,76 +2027,76 @@ select:focus {
         color: var(--text-primary) !important;
         border-color: var(--border-strong) !important;
     }
-    
+
     .import-mode {
         background: var(--bg-elevated) !important;
         color: var(--text-primary) !important;
     }
-    
+
     /* === VISION BOARD & BUCKET LIST === */
     .vision-board,
     .bucket-list {
         background: var(--bg-surface) !important;
         border-color: var(--border-default) !important;
     }
-    
+
     .vision-board textarea,
     .bucket-list textarea {
         background: var(--bg-input) !important;
         color: var(--text-primary) !important;
         border-color: var(--border-strong) !important;
     }
-    
+
     /* === READING SECTION === */
     .reading-list {
         background: transparent !important;
     }
-    
+
     /* === TABS CONTENT AREA === */
     .tab-content {
         background: transparent !important;
     }
-    
+
     /* === WELLNESS CONTAINER === */
     .wellness-container {
         background: transparent !important;
     }
-    
+
     /* === HABITS CONTAINER === */
     .habits-container {
         background: transparent !important;
     }
-    
+
     /* === ANNUAL CONTENT === */
     .annual-content {
         background: transparent !important;
     }
-    
+
     /* === MONTHLY CONTENT === */
     .monthly-content-top,
     .monthly-content-bottom {
         background: transparent !important;
     }
-    
+
     /* === WEEKLY CONTENT === */
     .weekly-content {
         background: transparent !important;
     }
-    
+
     .sidebar-section {
         background: transparent !important;
     }
-    
+
     /* === POMODORO === */
     .pomodoro-container {
         background: transparent !important;
     }
-    
+
     .timer-circle {
         background: var(--bg-surface) !important;
         border-color: var(--border-default) !important;
     }
-    
+
     /* === ENSURE ALL CARD SECTIONS HAVE DARK BG === */
     .reflection-section,
     .goals-section,
@@ -2099,88 +2105,88 @@ select:focus {
         background: var(--bg-surface) !important;
         border-color: var(--border-default) !important;
     }
-    
+
     /* === FIX ANY REMAINING WHITE BACKGROUNDS === */
     .goals-container {
         background: transparent !important;
     }
-    
+
     .sub-goals-container {
         background: transparent !important;
     }
-    
+
     .sub-goals-list {
         background: transparent !important;
     }
-    
+
     .reading-controls {
         background: transparent !important;
     }
-    
+
     .checklist-container {
         background: transparent !important;
     }
-    
+
     .checklist-items {
         background: transparent !important;
     }
-    
+
     .habits-list {
         background: transparent !important;
     }
-    
+
     .progress-list {
         background: transparent !important;
     }
-    
+
     .sleep-list,
     .water-list {
         background: transparent !important;
     }
-    
+
     .mood-grid {
         background: transparent !important;
     }
-    
+
     .mood-distribution {
         background: transparent !important;
     }
-    
+
     .mood-selector {
         background: transparent !important;
     }
-    
+
     .water-counter {
         background: transparent !important;
     }
-    
+
     .sleep-input-container,
     .water-input-container {
         background: transparent !important;
     }
-    
+
     .daily-checklist,
     .daily-journal,
     .daily-gratitude {
         background: transparent !important;
     }
-    
+
     .weekly-goals-container {
         background: transparent !important;
     }
-    
+
     .category-list {
         background: transparent !important;
     }
-    
+
     .action-plan-container {
         background: transparent !important;
     }
-    
+
     .session-list {
         background: transparent !important;
     }
-    
+
     .category-manager-list {
         background: transparent !important;
     }
@@ -2192,6 +2198,7 @@ select:focus {
    ============================================================ */
 
 @media (prefers-color-scheme: dark) {
+
     /* === FORCE ALL CARD BACKGROUNDS === */
     .reflection-section,
     .goals-section,
@@ -2219,7 +2226,7 @@ select:focus {
     .session-history {
         background: var(--bg-surface) !important;
     }
-    
+
     /* === FORCE ALL INPUT BACKGROUNDS === */
     .reflection-section textarea,
     .vision-board textarea,
@@ -2242,63 +2249,63 @@ select:focus {
         color: var(--text-primary) !important;
         border-color: var(--border-strong) !important;
     }
-    
+
     /* === FORCE TABS === */
     .tabs {
         background: var(--bg-surface) !important;
     }
-    
+
     .tab-content,
     .tab-content.active {
         background: transparent !important;
     }
-    
+
     /* === FORCE GRID CELLS === */
     .grid-cell {
         background: var(--bg-elevated) !important;
         color: var(--text-primary) !important;
     }
-    
+
     /* === FORCE SCHEDULE HEADER === */
     .schedule-header {
         background: transparent !important;
     }
-    
+
     /* === FORCE TIME BLOCKS === */
     .time-block {
         background: var(--bg-elevated) !important;
     }
-    
+
     /* === FORCE BOOK ENTRY HOVER === */
     .book-entry:hover {
         background: var(--accent-bg) !important;
     }
-    
+
     /* === FORCE BTN SECONDARY === */
     .btn-secondary {
         background: var(--bg-surface) !important;
         color: var(--accent-primary) !important;
     }
-    
+
     /* === FORCE STATUS MESSAGE === */
     .status-message.warning {
         background: rgba(251, 191, 36, 0.15) !important;
         color: #fbbf24 !important;
         border-color: rgba(251, 191, 36, 0.3) !important;
     }
-    
+
     .status-message.success {
         background: rgba(34, 197, 94, 0.15) !important;
         color: #22c55e !important;
         border-color: rgba(34, 197, 94, 0.3) !important;
     }
-    
+
     .status-message.error {
         background: rgba(239, 68, 68, 0.15) !important;
         color: #ef4444 !important;
         border-color: rgba(239, 68, 68, 0.3) !important;
     }
-    
+
     .status-message.info {
         background: rgba(59, 130, 246, 0.15) !important;
         color: #3b82f6 !important;
@@ -2308,6 +2315,7 @@ select:focus {
 
 /* === ADDITIONAL SPECIFICITY OVERRIDES === */
 @media (prefers-color-scheme: dark) {
+
     /* Target specific nested elements */
     body .reflection-section,
     body .goals-section,
@@ -2329,7 +2337,7 @@ select:focus {
         background: var(--bg-surface) !important;
         border-color: var(--border-default) !important;
     }
-    
+
     /* Force all text inputs */
     body input[type="text"],
     body input[type="date"],
@@ -2342,71 +2350,71 @@ select:focus {
         color: var(--text-primary) !important;
         border-color: var(--border-strong) !important;
     }
-    
+
     /* Force placeholder color */
     body input::placeholder,
     body textarea::placeholder {
         color: var(--text-muted) !important;
         opacity: 1 !important;
     }
-    
+
     /* Force all table cells */
     body .action-plan-table td {
         background: transparent !important;
         color: var(--text-primary) !important;
     }
-    
+
     body .action-plan-table tbody tr {
         background: var(--bg-elevated) !important;
     }
-    
+
     /* Force habits grid */
     body .habits-grid .grid-cell {
         background: var(--bg-elevated) !important;
         color: var(--text-primary) !important;
         border-color: var(--border-default) !important;
     }
-    
+
     body .habits-grid-row.header .grid-cell {
         background: var(--accent-bg) !important;
         color: var(--text-primary) !important;
     }
-    
+
     body .habit-name-cell {
         background: var(--bg-surface) !important;
         color: var(--text-primary) !important;
     }
-    
+
     /* Force time slots - only those WITHOUT blocks */
     html:not([data-theme="light"]) body .time-slot:not(.has-block) {
         background: var(--bg-elevated) !important;
         border-color: var(--border-default) !important;
     }
-    
+
     /* Force day headers */
     html:not([data-theme="light"]) body .day-header {
         background: var(--bg-elevated) !important;
         border-color: var(--border-default) !important;
     }
-    
+
     html:not([data-theme="light"]) body .day-header.today {
         background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%) !important;
     }
-    
+
     /* Force calendar days */
     html:not([data-theme="light"]) body .calendar-day {
         background: var(--bg-elevated) !important;
         border-color: var(--border-default) !important;
     }
-    
+
     html:not([data-theme="light"]) body .calendar-day.today {
         background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%) !important;
     }
-    
+
     html:not([data-theme="light"]) body .calendar-day.empty {
         background: var(--bg-base) !important;
     }
-    
+
     /* Force all item containers */
     body .weekly-goal-item,
     body .habit-item,
@@ -2422,7 +2430,7 @@ select:focus {
         background: var(--bg-elevated) !important;
         border-color: var(--border-default) !important;
     }
-    
+
     /* Force hover states - exclude time-slot.has-block */
     body .weekly-goal-item:hover,
     body .habit-item:hover,
@@ -2435,21 +2443,21 @@ select:focus {
     html:not([data-theme="light"]) body .calendar-day:hover {
         background: var(--accent-bg) !important;
     }
-    
+
     /* Force daily section content */
     body .daily-section-content {
         background: var(--bg-surface) !important;
     }
-    
+
     /* Force modal content */
     body .modal-content {
         background: var(--bg-surface) !important;
     }
-    
+
     body .modal-footer {
         background: var(--bg-elevated) !important;
     }
-    
+
     /* Force toast */
     body .toast {
         background: var(--bg-surface) !important;
@@ -2461,33 +2469,34 @@ select:focus {
    ============================================================ */
 
 @media (prefers-color-scheme: dark) {
+
     /* Session history card */
     body .session-history {
         background: var(--bg-surface) !important;
         border-color: var(--border-default) !important;
     }
-    
+
     body .session-history h3 {
         color: var(--text-primary) !important;
     }
-    
+
     /* Empty state text */
     body .session-history .empty-state,
     body .empty-state {
         color: var(--text-muted) !important;
     }
-    
+
     /* Timer circle */
     body .timer-circle {
         background: var(--bg-surface) !important;
         border: 2px solid var(--border-default) !important;
     }
-    
+
     /* Timer display */
     body .timer-display {
         background: transparent !important;
     }
-    
+
     /* Pomodoro container */
     body .pomodoro-container {
         background: transparent !important;
@@ -2502,6 +2511,7 @@ select:focus {
 /* Base time block styling for dark mode */
 /* Only apply when browser prefers dark AND no manual light theme override */
 @media (prefers-color-scheme: dark) {
+
     /* Time slots with blocks - override inline styles */
     html:not([data-theme="light"]) body .time-slot.has-block {
         background: var(--bg-elevated) !important;
@@ -2509,12 +2519,12 @@ select:focus {
         border-left-style: solid !important;
         /* The border-left-color will be set by JS based on category */
     }
-    
+
     /* Time block content text */
     html:not([data-theme="light"]) body .time-slot.has-block .time-block-content {
         color: var(--text-primary) !important;
     }
-    
+
     /* Add subtle category tint via pseudo-element */
     html:not([data-theme="light"]) body .time-slot.has-block::before {
         content: '';
@@ -2561,15 +2571,16 @@ body .time-slot.has-block {
 
 /* Dark mode specific adjustments - only when NOT manually set to light */
 @media (prefers-color-scheme: dark) {
+
     /* Ensure time block text is visible */
     html:not([data-theme="light"]) body .time-slot.has-block {
         color: var(--text-primary) !important;
     }
-    
+
     html:not([data-theme="light"]) body .time-slot.has-block .time-block-content {
         color: var(--text-primary) !important;
     }
-    
+
     /* Slightly stronger tint in dark mode for visibility */
     html:not([data-theme="light"]) body .time-slot.has-block {
         border-color: var(--border-default) !important;
@@ -2581,7 +2592,7 @@ body .time-slot.has-block {
     .time-slot.has-block {
         color: var(--text-primary);
     }
-    
+
     .time-slot.has-block .time-block-content {
         color: var(--text-primary);
     }
@@ -2642,28 +2653,28 @@ body .time-slot.has-block {
     body .timer-controls {
         background: transparent !important;
     }
-    
+
     /* Ensure buttons in timer controls are styled correctly */
     body .timer-controls .btn-primary {
         background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%) !important;
         color: var(--text-on-accent) !important;
     }
-    
+
     body .timer-controls .btn-secondary {
         background: var(--bg-surface) !important;
         color: var(--accent-primary) !important;
         border-color: var(--border-accent) !important;
     }
-    
+
     /* Task selection dark mode */
     .task-selection {
         background: var(--bg-surface) !important;
     }
-    
+
     .task-selection label {
         color: var(--text-secondary) !important;
     }
-    
+
     .task-input-group select,
     .task-input-group input {
         background: var(--bg-input) !important;
@@ -2711,7 +2722,7 @@ body .time-slot.has-block {
         color: var(--text-on-accent);
         box-shadow: 0 2px 8px rgba(212, 165, 116, 0.3);
     }
-    
+
     .btn-today:hover {
         box-shadow: 0 4px 12px rgba(212, 165, 116, 0.4);
     }
@@ -2723,12 +2734,10 @@ body .time-slot.has-block {
    ============================================================ */
 
 .skeleton {
-    background: linear-gradient(
-        90deg,
-        var(--bg-elevated) 25%,
-        var(--accent-bg) 50%,
-        var(--bg-elevated) 75%
-    );
+    background: linear-gradient(90deg,
+            var(--bg-elevated) 25%,
+            var(--accent-bg) 50%,
+            var(--bg-elevated) 75%);
     background-size: 200% 100%;
     animation: skeleton-loading 1.5s ease-in-out infinite;
     border-radius: var(--radius-sm);
@@ -2738,6 +2747,7 @@ body .time-slot.has-block {
     0% {
         background-position: 200% 0;
     }
+
     100% {
         background-position: -200% 0;
     }
@@ -2898,9 +2908,11 @@ body .time-slot.has-block {
     0% {
         transform: scale(1);
     }
+
     50% {
         transform: scale(1.2);
     }
+
     100% {
         transform: scale(1);
     }
@@ -2911,6 +2923,7 @@ body .time-slot.has-block {
         opacity: 1;
         transform: translateY(0) rotate(0deg);
     }
+
     100% {
         opacity: 0;
         transform: translateY(-20px) rotate(180deg);
@@ -2940,6 +2953,7 @@ body .time-slot.has-block {
    ============================================================ */
 
 @media (max-width: 768px) {
+
     /* Larger touch targets */
     .nav-btn,
     .btn-today {
@@ -2947,12 +2961,12 @@ body .time-slot.has-block {
         min-height: 44px;
         padding: 0.75rem;
     }
-    
+
     .btn-today {
         padding: 0.6rem 1rem;
         font-size: 0.8rem;
     }
-    
+
     /* Stack navigation on mobile */
     .week-selector,
     .month-selector,
@@ -2962,7 +2976,7 @@ body .time-slot.has-block {
         gap: 0.5rem;
         justify-content: center;
     }
-    
+
     .week-selector h2,
     .month-selector h2,
     .month-year-selector h2,
@@ -2972,20 +2986,20 @@ body .time-slot.has-block {
         order: -1;
         margin-bottom: 0.5rem;
     }
-    
+
     /* Better button spacing */
     .btn-primary,
     .btn-secondary {
         padding: 0.8rem 1.2rem;
         min-height: 44px;
     }
-    
+
     /* Improve grid cell touch targets */
     .grid-cell,
     .checkbox-cell {
         min-height: 44px;
     }
-    
+
     /* Streak badges on mobile */
     .streak-badge {
         font-size: 0.7rem;
@@ -3185,6 +3199,7 @@ body .time-slot.has-block {
         opacity: 0;
         transform: translateY(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -3336,7 +3351,7 @@ body .time-slot.has-block {
         bottom: 1.5rem;
         right: 1.5rem;
     }
-    
+
     .fab-button {
         width: 50px;
         height: 50px;
@@ -3440,7 +3455,7 @@ body .time-slot.has-block {
         background: var(--bg-surface);
         border-color: var(--border-default);
     }
-    
+
     .summary-stat {
         background: var(--accent-bg);
     }
@@ -3452,11 +3467,11 @@ body .time-slot.has-block {
         grid-template-columns: repeat(3, 1fr);
         gap: 0.5rem;
     }
-    
+
     .summary-stat-value {
         font-size: 1rem;
     }
-    
+
     .summary-stat-label {
         font-size: 0.65rem;
     }
@@ -3546,6 +3561,7 @@ body .time-slot.has-block {
 .productivity-score.score-low .circle {
     stroke: #ef4444;
 }
+
 .productivity-score.score-low .score-text {
     fill: #ef4444;
 }
@@ -3553,6 +3569,7 @@ body .time-slot.has-block {
 .productivity-score.score-medium .circle {
     stroke: #f59e0b;
 }
+
 .productivity-score.score-medium .score-text {
     fill: #f59e0b;
 }
@@ -3560,6 +3577,7 @@ body .time-slot.has-block {
 .productivity-score.score-high .circle {
     stroke: #22c55e;
 }
+
 .productivity-score.score-high .score-text {
     fill: #22c55e;
 }
@@ -3883,15 +3901,15 @@ body .time-slot.has-block {
     box-shadow: var(--shadow-sm);
 }
 
-.toggle-switch input:checked + .toggle-slider {
+.toggle-switch input:checked+.toggle-slider {
     background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
 }
 
-.toggle-switch input:checked + .toggle-slider:before {
+.toggle-switch input:checked+.toggle-slider:before {
     transform: translateX(22px);
 }
 
-.toggle-switch input:focus + .toggle-slider {
+.toggle-switch input:focus+.toggle-slider {
     box-shadow: 0 0 0 3px var(--accent-bg);
 }
 
@@ -4548,31 +4566,31 @@ body .time-slot.has-block {
     .main-content {
         padding: 1rem 1.5rem !important;
     }
-    
+
     .weekly-view .sidebar-section {
         grid-template-columns: 1fr 1fr !important;
     }
-    
+
     .weekly-view .category-legend {
         grid-column: span 2;
     }
-    
+
     .annual-content {
         grid-template-columns: 1fr 1.5fr 1fr !important;
     }
-    
+
     .pomodoro-layout {
         grid-template-columns: 1fr !important;
     }
-    
+
     .settings-content {
         grid-template-columns: 1fr !important;
     }
-    
+
     .annual-content {
         grid-template-columns: 1fr 1.5fr 1fr !important;
     }
-    
+
     .wellness-container {
         grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)) !important;
     }
@@ -4582,35 +4600,35 @@ body .time-slot.has-block {
     .main-content {
         padding: 1rem !important;
     }
-    
+
     #view-container {
         padding: 1.25rem !important;
     }
-    
+
     .weekly-view .sidebar-section {
         grid-template-columns: 1fr 1fr !important;
     }
-    
+
     .weekly-view .category-legend {
         grid-column: span 2;
     }
-    
+
     .monthly-content-top {
         grid-template-columns: 1fr !important;
     }
-    
+
     .annual-content {
         grid-template-columns: 1fr 1fr !important;
     }
-    
+
     .vision-section {
         grid-column: span 2;
     }
-    
+
     .habits-container {
         grid-template-columns: 1fr 1.5fr 1fr !important;
     }
-    
+
     .wellness-container {
         grid-template-columns: repeat(2, 1fr) !important;
     }
@@ -4620,76 +4638,76 @@ body .time-slot.has-block {
     .main-content {
         padding: 1rem !important;
     }
-    
+
     #view-container {
         padding: 1.25rem !important;
     }
-    
+
     .habits-container {
         grid-template-columns: 1fr !important;
         gap: 1.5rem;
     }
-    
+
     .habits-sidebar,
     .habits-progress {
         max-width: 100%;
         min-width: 100%;
     }
-    
+
     .progress-item-name {
         max-width: none;
     }
-    
+
     .habits-progress .progress-list {
         max-height: none;
     }
-    
+
     .chain-circle {
         width: 22px;
         height: 22px;
     }
-    
+
     .chain-link {
         width: 12px;
     }
-    
+
     .weekly-view .sidebar-section {
         grid-template-columns: 1fr !important;
     }
-    
+
     .weekly-view .category-legend {
         grid-column: auto;
     }
-    
+
     .monthly-content-bottom {
         grid-template-columns: 1fr !important;
     }
-    
+
     .annual-content {
         grid-template-columns: 1fr !important;
     }
-    
+
     .vision-section {
         grid-column: auto;
     }
-    
+
     .daily-sections-container {
         grid-template-columns: 1fr !important;
     }
-    
+
     .wellness-container {
         grid-template-columns: 1fr !important;
     }
-    
+
     .wellness-section {
         min-width: 100%;
     }
-    
+
     .book-entry {
         grid-template-columns: 35px 1.5fr 1fr 160px 35px 100px 35px !important;
         gap: 0.5rem;
     }
-    
+
     .book-current-page,
     .book-total-pages {
         width: 55px;
@@ -4702,35 +4720,35 @@ body .time-slot.has-block {
     .main-content {
         padding: 0.75rem !important;
     }
-    
+
     #view-container {
         padding: 1rem !important;
     }
-    
+
     .schedule-header,
     .time-slots-grid {
         grid-template-columns: 50px repeat(7, minmax(60px, 1fr)) !important;
     }
-    
+
     .habits-grid-row {
         grid-template-columns: 120px repeat(31, minmax(28px, 1fr)) !important;
     }
-    
+
     .habit-name-cell {
         min-width: 120px;
         font-size: 0.8rem;
     }
-    
+
     .grid-cell {
         min-width: 28px;
         min-height: 28px;
     }
-    
+
     .book-entry {
         grid-template-columns: 1fr !important;
         gap: 0.5rem;
     }
-    
+
     .book-entry .book-number {
         display: none;
     }
@@ -4770,11 +4788,11 @@ body .time-slot.has-block {
         background: var(--bg-surface);
         border-bottom-color: var(--border-default);
     }
-    
+
     .breadcrumb-view {
         color: var(--accent-primary);
     }
-    
+
     .breadcrumb-context {
         color: var(--text-primary);
     }
@@ -4826,7 +4844,7 @@ body .time-slot.has-block {
     .time-block-resize-handle {
         background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.15));
     }
-    
+
     .time-block-resize-handle::after {
         background: rgba(255, 255, 255, 0.5);
     }
@@ -4870,7 +4888,7 @@ body .time-slot.has-block {
     .best-day-analysis {
         background: var(--accent-bg);
     }
-    
+
     .best-day-text strong {
         color: var(--accent-primary);
     }
@@ -4943,9 +4961,11 @@ body .time-slot.has-block {
         transform: scale(0.8);
         opacity: 0;
     }
+
     50% {
         transform: scale(1.1);
     }
+
     100% {
         transform: scale(1);
         opacity: 1;
@@ -5049,7 +5069,7 @@ body .time-slot.has-block {
         background: var(--bg-elevated);
         border-color: var(--border-strong);
     }
-    
+
     .category-icon-btn {
         background: var(--bg-input);
         border-color: var(--border-default);
@@ -5089,6 +5109,7 @@ body .time-slot.has-block {
         transform: translate(-50%, -50%) scale(0.5);
         opacity: 0;
     }
+
     100% {
         transform: translate(-50%, -50%) scale(1);
         opacity: 1;
@@ -5100,6 +5121,7 @@ body .time-slot.has-block {
         transform: translate(-50%, -50%) scale(1);
         opacity: 1;
     }
+
     100% {
         transform: translate(-50%, -50%) scale(0.8);
         opacity: 0;
@@ -5313,18 +5335,19 @@ body .time-slot.has-block {
 
 /* Dark mode adjustments */
 @media (prefers-color-scheme: dark) {
+
     .reading-filter,
     .reading-sort {
         background: var(--bg-input);
         border-color: var(--border-strong);
     }
-    
+
     .book-current-page,
     .book-total-pages {
         background: var(--bg-input);
         border-color: var(--border-default);
     }
-    
+
     .book-progress-bar {
         background: rgba(255, 255, 255, 0.1);
     }
@@ -5336,29 +5359,29 @@ body .time-slot.has-block {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .reading-controls-left {
         flex-direction: row;
         flex-wrap: wrap;
         gap: 0.5rem;
     }
-    
+
     .reading-filter,
     .reading-sort {
         flex: 1;
         min-width: 120px;
     }
-    
+
     .book-progress {
         flex-direction: row;
         align-items: center;
         gap: 0.5rem;
     }
-    
+
     .book-progress-inputs {
         flex-shrink: 0;
     }
-    
+
     .book-progress-bar {
         flex: 1;
         max-width: 80px;
@@ -5443,7 +5466,9 @@ body .time-slot.has-block {
 }
 
 @keyframes ai-spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .ai-loading p {
@@ -5785,7 +5810,7 @@ body .time-slot.has-block {
     background: var(--accent-primary);
     cursor: pointer;
     border: 2px solid var(--bg-surface);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .temperature-input-wrapper input[type="range"]::-moz-range-thumb {
@@ -5795,7 +5820,7 @@ body .time-slot.has-block {
     background: var(--accent-primary);
     cursor: pointer;
     border: 2px solid var(--bg-surface);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .temperature-input-wrapper span {
@@ -5813,7 +5838,7 @@ body .time-slot.has-block {
     .ai-config-fields {
         background: var(--bg-surface);
     }
-    
+
     .btn-icon-only {
         background: var(--bg-elevated);
     }
@@ -5824,15 +5849,15 @@ body .time-slot.has-block {
     .ai-settings-actions {
         flex-direction: column;
     }
-    
+
     .ai-settings-actions .btn {
         width: 100%;
     }
-    
+
     .api-key-input-wrapper {
         flex-direction: column;
     }
-    
+
     .btn-icon-only {
         align-self: flex-end;
     }
@@ -5931,7 +5956,7 @@ body .time-slot.has-block {
         align-items: stretch;
         text-align: center;
     }
-    
+
     .danger-item .btn {
         width: 100%;
     }
@@ -6029,7 +6054,7 @@ body .time-slot.has-block {
     .goal-templates-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .goals-actions {
         flex-direction: column;
     }
@@ -6137,7 +6162,7 @@ body #fab-container {
         right: 0.5rem;
         padding: 0.4rem 0.6rem;
     }
-    
+
     .focus-mode-indicator .focus-text {
         display: none;
     }
@@ -6148,6 +6173,7 @@ body #fab-container {
    ============================================================ */
 
 @media (max-width: 768px) {
+
     /* Ensure all interactive elements meet 44x44px minimum */
     .nav-btn,
     .btn-today,
@@ -6169,7 +6195,7 @@ body #fab-container {
         min-height: 44px;
         padding: 0.75rem;
     }
-    
+
     /* Larger checkboxes on mobile */
     input[type="checkbox"],
     input[type="radio"] {
@@ -6178,14 +6204,14 @@ body #fab-container {
         width: 24px;
         height: 24px;
     }
-    
+
     /* Habit grid cells - larger touch targets */
     .grid-cell,
     .checkbox-cell {
         min-width: 36px;
         min-height: 36px;
     }
-    
+
     /* Star ratings - larger touch area */
     .star {
         font-size: 1.5rem;
@@ -6196,13 +6222,13 @@ body #fab-container {
         align-items: center;
         justify-content: center;
     }
-    
+
     /* Category items - larger touch area */
     .category-item {
         min-height: 44px;
         padding: 0.75rem 1rem;
     }
-    
+
     /* Goal and habit items */
     .weekly-goal-item,
     .habit-item,
@@ -6211,30 +6237,30 @@ body #fab-container {
         min-height: 48px;
         padding: 0.75rem;
     }
-    
+
     /* Book entries */
     .book-entry {
         min-height: 60px;
         padding: 1rem;
     }
-    
+
     /* Time slots */
     .time-slot {
         min-height: 48px;
     }
-    
+
     /* Mood cells */
     .mood-cell {
         min-width: 48px;
         min-height: 48px;
     }
-    
+
     /* Navigation menu items */
     .nav-menu a {
         min-height: 44px;
         padding: 0.75rem 1rem;
     }
-    
+
     /* Form inputs */
     input[type="text"],
     input[type="date"],
@@ -6246,15 +6272,16 @@ body #fab-container {
     select {
         min-height: 44px;
         padding: 0.75rem;
-        font-size: 16px; /* Prevents zoom on iOS */
+        font-size: 16px;
+        /* Prevents zoom on iOS */
     }
-    
+
     /* Quick jump buttons in date picker */
     .date-quick-btn {
         min-height: 40px;
         padding: 0.5rem 0.75rem;
     }
-    
+
     /* Filter and sort dropdowns */
     .reading-filter,
     .reading-sort,
@@ -6266,22 +6293,23 @@ body #fab-container {
 
 /* Extra small screens - even larger targets */
 @media (max-width: 480px) {
+
     .grid-cell,
     .checkbox-cell {
         min-width: 32px;
         min-height: 32px;
     }
-    
+
     .nav-menu a {
         padding: 1rem;
     }
-    
+
     .fab-button {
         width: 60px;
         height: 60px;
         font-size: 1.5rem;
     }
-    
+
     .fab-menu-item {
         min-height: 48px;
         padding: 0.875rem 1rem;
@@ -6629,7 +6657,7 @@ body #fab-container {
     .monthly-summary-dashboard {
         background: var(--bg-elevated);
     }
-    
+
     .summary-card {
         background: var(--bg-surface);
     }
@@ -6640,19 +6668,19 @@ body #fab-container {
     .summary-cards {
         grid-template-columns: repeat(2, 1fr);
     }
-    
+
     .summary-card {
         padding: 0.75rem;
     }
-    
+
     .summary-icon {
         font-size: 1.5rem;
     }
-    
+
     .summary-value {
         font-size: 1.25rem;
     }
-    
+
     .weekly-trend-chart {
         height: 60px;
     }
@@ -6663,13 +6691,13 @@ body #fab-container {
         grid-template-columns: repeat(2, 1fr);
         gap: 0.5rem;
     }
-    
+
     .summary-card {
         flex-direction: column;
         text-align: center;
         gap: 0.5rem;
     }
-    
+
     .summary-label {
         font-size: 0.65rem;
     }
@@ -6712,7 +6740,7 @@ body #fab-container {
         align-items: center;
         justify-content: center;
     }
-    
+
     /* Collapsible sidebar styles */
     .categories-sidebar {
         position: fixed;
@@ -6730,12 +6758,12 @@ body #fab-container {
         padding: 1rem;
         padding-top: 4rem;
     }
-    
+
     .categories-sidebar.open {
         transform: translateX(0);
         box-shadow: var(--shadow-xl);
     }
-    
+
     /* Overlay when sidebar is open */
     .sidebar-overlay {
         display: none;
@@ -6749,12 +6777,12 @@ body #fab-container {
         opacity: 0;
         transition: opacity 0.3s ease;
     }
-    
+
     .sidebar-overlay.visible {
         display: block;
         opacity: 1;
     }
-    
+
     /* Close button inside sidebar */
     .sidebar-close {
         position: absolute;
@@ -6772,13 +6800,13 @@ body #fab-container {
         justify-content: center;
         color: var(--text-muted);
     }
-    
+
     .sidebar-close:hover {
         background: var(--accent-primary);
         color: white;
         border-color: var(--accent-primary);
     }
-    
+
     /* Adjust main content when sidebar is hidden */
     .monthly-content-top {
         grid-template-columns: 1fr !important;
@@ -6882,7 +6910,7 @@ body #fab-container {
     .habit-goal-select {
         background: var(--bg-input);
     }
-    
+
     .goal-habits-progress {
         background: var(--bg-surface);
     }
@@ -6894,7 +6922,7 @@ body #fab-container {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .linked-goal-badge {
         max-width: 100%;
     }
@@ -6955,7 +6983,7 @@ body #fab-container {
     .habit-item-main {
         flex-wrap: wrap;
     }
-    
+
     .link-goal-btn {
         min-width: 36px;
         min-height: 36px;
@@ -7033,27 +7061,27 @@ body #fab-container {
     .bottom-nav {
         display: flex;
     }
-    
+
     /* Hide top nav menu items on mobile (keep brand and user menu) */
     .nav-menu {
         display: none !important;
     }
-    
+
     /* Adjust main content to account for bottom nav */
     .main-content {
         padding-bottom: 80px !important;
     }
-    
+
     /* Move FAB above bottom nav */
     .fab-container {
         bottom: 90px !important;
     }
-    
+
     /* Move sidebar toggle above bottom nav */
     .sidebar-toggle {
         bottom: 100px !important;
     }
-    
+
     /* Hide mobile menu toggle since we have bottom nav */
     .mobile-menu-toggle {
         display: none !important;
@@ -7066,11 +7094,11 @@ body #fab-container {
         min-width: 50px;
         padding: 0.4rem 0.5rem;
     }
-    
+
     .bottom-nav-icon {
         font-size: 1.1rem;
     }
-    
+
     .bottom-nav-label {
         font-size: 0.6rem;
     }
@@ -7173,8 +7201,15 @@ body.focus-mode .bottom-nav {
 }
 
 @keyframes badgePulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
 }
 
 /* Dark mode */
@@ -7182,7 +7217,7 @@ body.focus-mode .bottom-nav {
     .achievement-badge {
         background: var(--bg-surface);
     }
-    
+
     .achievement-badge.earned {
         background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.2) 0%, var(--bg-elevated) 100%);
     }
@@ -7193,15 +7228,15 @@ body.focus-mode .bottom-nav {
     .achievements-grid {
         grid-template-columns: repeat(4, 1fr);
     }
-    
+
     .achievement-badge {
         padding: 0.5rem 0.25rem;
     }
-    
+
     .achievement-badge .badge-icon {
         font-size: 1.25rem;
     }
-    
+
     .achievement-badge .badge-name {
         font-size: 0.6rem;
     }
@@ -7313,7 +7348,7 @@ body.focus-mode .bottom-nav {
     .challenge-card {
         background: var(--bg-surface);
     }
-    
+
     .challenge-card.complete {
         background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, var(--bg-surface) 100%);
     }
@@ -7324,7 +7359,7 @@ body.focus-mode .bottom-nav {
     .challenge-card {
         padding: 0.75rem;
     }
-    
+
     .challenge-text {
         font-size: 0.8rem;
     }
@@ -7361,8 +7396,15 @@ body.focus-mode .bottom-nav {
 }
 
 @keyframes pointsBounce {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.2); }
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
 }
 
 .points-label {
@@ -7386,11 +7428,11 @@ body.focus-mode .bottom-nav {
     .points-display {
         background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
     }
-    
+
     .points-value {
         color: #fef3c7;
     }
-    
+
     .points-label {
         color: #fde68a;
     }
@@ -7401,7 +7443,7 @@ body.focus-mode .bottom-nav {
     .points-display {
         padding: 0.4rem 0.75rem;
     }
-    
+
     .points-value {
         font-size: 1rem;
     }
@@ -7446,6 +7488,7 @@ textarea::placeholder {
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
+
     *,
     *::before,
     *::after {
@@ -7538,20 +7581,23 @@ select:focus-visible {
    ============================================================ */
 
 .skeleton {
-    background: linear-gradient(
-        90deg,
-        var(--bg-elevated) 25%,
-        var(--bg-surface) 50%,
-        var(--bg-elevated) 75%
-    );
+    background: linear-gradient(90deg,
+            var(--bg-elevated) 25%,
+            var(--bg-surface) 50%,
+            var(--bg-elevated) 75%);
     background-size: 200% 100%;
     animation: skeleton-loading 1.5s ease-in-out infinite;
     border-radius: var(--radius-sm);
 }
 
 @keyframes skeleton-loading {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
 }
 
 .skeleton-text {
@@ -7713,8 +7759,15 @@ select:focus-visible {
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
 }
 
 /* Activity indicators */
@@ -7815,8 +7868,15 @@ select:focus-visible {
 }
 
 @keyframes tooltipFadeIn {
-    from { opacity: 0; transform: translateY(-4px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .preview-header {
@@ -7972,7 +8032,7 @@ select:focus-visible {
     .indicator-dot {
         background: var(--border-strong);
     }
-    
+
     .day-preview-tooltip {
         background: var(--bg-elevated);
     }
@@ -7983,58 +8043,59 @@ select:focus-visible {
     .monthly-view .calendar-header {
         grid-template-columns: 30px repeat(7, 1fr) !important;
     }
-    
+
     .monthly-view .calendar-week-row {
         grid-template-columns: 30px repeat(7, 1fr) !important;
     }
-    
+
     .week-number-label,
     .week-number-cell {
         font-size: 0.6rem;
     }
-    
+
     .monthly-view .calendar-day {
         min-height: 60px !important;
         padding: 0.25rem !important;
     }
-    
+
     .monthly-view .calendar-day .day-number {
         font-size: 0.8rem;
     }
-    
+
     .day-indicators {
         gap: 2px;
     }
-    
+
     .indicator-dot {
         width: 6px;
         height: 6px;
     }
-    
+
     .calendar-legend {
         flex-wrap: wrap;
         gap: 0.75rem;
     }
-    
+
     .day-preview-tooltip {
         width: 200px;
     }
 }
 
 @media (max-width: 480px) {
+
     .week-number-label,
     .week-number-cell {
         display: none;
     }
-    
+
     .monthly-view .calendar-header {
         grid-template-columns: repeat(7, 1fr) !important;
     }
-    
+
     .monthly-view .calendar-week-row {
         grid-template-columns: repeat(7, 1fr) !important;
     }
-    
+
     .calendar-legend {
         display: none;
     }
@@ -8086,7 +8147,7 @@ select:focus-visible {
         opacity: 0;
         transform: rotate(90deg);
     }
-    
+
     .theme-icon-dark {
         opacity: 1;
         transform: rotate(0deg);
@@ -8120,22 +8181,22 @@ html[data-theme="dark"] {
     --bg-surface: #1a1a1a;
     --bg-elevated: #242424;
     --bg-input: #2a2a2a;
-    
+
     --text-primary: #f0f0f0;
     --text-secondary: #b8b8b8;
     --text-muted: #808080;
     --text-on-accent: #ffffff;
-    
+
     --accent-primary: #d4a574;
     --accent-secondary: #c9956a;
     --accent-tertiary: #a67c52;
     --accent-bg: rgba(212, 165, 116, 0.12);
     --accent-bg-hover: rgba(212, 165, 116, 0.18);
-    
+
     --border-default: rgba(255, 255, 255, 0.08);
     --border-strong: rgba(255, 255, 255, 0.15);
     --border-accent: rgba(212, 165, 116, 0.4);
-    
+
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
@@ -8153,26 +8214,26 @@ html[data-theme="light"]:root {
     --bg-surface: #ffffff !important;
     --bg-elevated: #ffffff !important;
     --bg-input: #ffffff !important;
-    
+
     --text-primary: #1a1a1a !important;
     --text-secondary: #4a4a4a !important;
     --text-muted: #666666 !important;
     --text-on-accent: #ffffff !important;
-    
+
     --accent-primary: #8b6642 !important;
     --accent-secondary: #a67c52 !important;
     --accent-tertiary: #d4a574 !important;
     --accent-bg: rgba(166, 124, 82, 0.08) !important;
     --accent-bg-hover: rgba(166, 124, 82, 0.12) !important;
-    
+
     --border-default: rgba(0, 0, 0, 0.08) !important;
     --border-strong: rgba(0, 0, 0, 0.15) !important;
     --border-accent: rgba(166, 124, 82, 0.3) !important;
-    
+
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
     --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
-    
+
     /* Override main.css dark mode variables */
     --primary-color: #a67c52 !important;
     --secondary-color: #d4a574 !important;
@@ -8735,10 +8796,10 @@ html.theme-transitioning,
 html.theme-transitioning *,
 html.theme-transitioning *::before,
 html.theme-transitioning *::after {
-    transition: background-color 0.3s ease, 
-                border-color 0.3s ease, 
-                color 0.3s ease,
-                box-shadow 0.3s ease !important;
+    transition: background-color 0.3s ease,
+        border-color 0.3s ease,
+        color 0.3s ease,
+        box-shadow 0.3s ease !important;
 }
 
 /* ============================================================
@@ -8805,6 +8866,7 @@ html.theme-transitioning *::after {
         opacity: 0;
         transform: translateX(-50%) translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateX(-50%) translateY(0);
@@ -8901,48 +8963,51 @@ html.theme-transitioning *::after {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* ============================================================
    POMODORO LEFT PANEL - DARK MODE
    ============================================================ */
 @media (prefers-color-scheme: dark) {
+
     .weekly-progress-section,
     .recent-history-section,
     .linked-goals-section {
         background: var(--bg-surface);
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
-    
+
     .weekly-progress-section h3,
     .recent-history-section h3,
     .linked-goals-section h3 {
         color: var(--text-primary);
     }
-    
+
     .chart-bar-wrapper .chart-bar:not(.has-sessions) {
         background: var(--bg-elevated);
     }
-    
+
     .chart-bar-wrapper .chart-label {
         color: var(--text-secondary);
     }
-    
+
     .chart-bar-wrapper .chart-value {
         color: var(--text-primary);
     }
-    
+
     .recent-day-group,
     .linked-goal-item {
         background: var(--bg-elevated);
     }
-    
+
     .recent-day-label,
     .linked-goal-item .goal-title {
         color: var(--text-primary);
     }
-    
+
     .recent-day-stats,
     .linked-goal-item .goal-sessions {
         color: var(--text-secondary);
@@ -9012,24 +9077,24 @@ html[data-theme="dark"] .task-input-group input {
         background: var(--bg-surface);
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     }
-    
+
     .pomodoro-float-time {
         color: var(--text-primary);
     }
-    
+
     .pomodoro-float-session {
         color: var(--text-secondary);
     }
-    
+
     .pomodoro-float-control-btn {
         background: var(--bg-elevated);
         color: var(--text-primary);
     }
-    
+
     .pomodoro-float-control-btn:hover {
         background: var(--bg-input);
     }
-    
+
     #pomodoro-float-mini-time {
         color: var(--text-primary);
     }
@@ -9069,6 +9134,7 @@ html[data-theme="dark"] #pomodoro-float-mini-time {
    ============================================================ */
 
 @media (prefers-color-scheme: dark) {
+
     /* Kanban View Container */
     .kanban-view {
         background: transparent !important;
@@ -9406,7 +9472,9 @@ html[data-theme="dark"] #pomodoro-float-mini-time {
 
     .card-tab-content .error-message {
         color: #f87171 !important;
-    }    /* Form inputs in modals */
+    }
+
+    /* Form inputs in modals */
     .kanban-view .modal-content input[type="text"],
     .kanban-view .modal-content input[type="date"],
     .kanban-view .modal-content input[type="number"],
@@ -9930,4 +9998,133 @@ html[data-theme="dark"] #pomodoro-float-mini-time {
     }
 
     /* ==================== END KANBAN ACTIVITY LOG COMPONENT - DARK MODE ==================== */
+
+    /* ==================== ANALYTICS PANEL - DARK MODE ==================== */
+    .analytics-panel {
+        background: #111827 !important;
+        box-shadow: -10px 0 30px rgba(0, 0, 0, 0.4) !important;
+        border-left: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .analytics-panel-header {
+        background: #111827 !important;
+        border-bottom: 1px solid #1f2937 !important;
+    }
+
+    .analytics-panel-title h3 {
+        color: #f8fafc !important;
+    }
+
+    .analytics-panel-content {
+        background: #0f172a !important;
+    }
+
+    .analytics-section h4 {
+        color: #94a3b8 !important;
+    }
+
+    .date-range-picker,
+    .chart-container {
+        background: #1e293b !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+    }
+
+    .btn-preset {
+        background: #1e293b !important;
+        border-color: #334155 !important;
+        color: #94a3b8 !important;
+    }
+
+    .btn-preset:hover {
+        border-color: #6366f1 !important;
+        color: #6366f1 !important;
+    }
+
+    .btn-preset.active {
+        background: #6366f1 !important;
+        color: #fff !important;
+    }
+
+    .custom-date-range {
+        border-top-color: #334155 !important;
+    }
+
+    .stat-item {
+        color: #94a3b8 !important;
+    }
+
+    .stat-item strong {
+        color: #f8fafc !important;
+    }
+
+    .health-card.danger {
+        background: rgba(239, 68, 68, 0.1) !important;
+        border-color: rgba(239, 68, 68, 0.2) !important;
+    }
+
+    .health-card.warning {
+        background: rgba(245, 158, 11, 0.1) !important;
+        border-color: rgba(245, 158, 11, 0.2) !important;
+    }
+
+    .health-card.info {
+        background: rgba(59, 130, 246, 0.1) !important;
+        border-color: rgba(59, 130, 246, 0.2) !important;
+    }
+
+    .health-card.success {
+        background: rgba(16, 185, 129, 0.1) !important;
+        border-color: rgba(16, 185, 129, 0.2) !important;
+    }
+}
+
+/* Explicit data-theme support for Analytics Panel */
+html[data-theme="dark"] .analytics-panel {
+    background: #111827;
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.4);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+html[data-theme="dark"] .analytics-panel-header {
+    background: #111827;
+    border-bottom: 1px solid #1f2937;
+}
+
+html[data-theme="dark"] .analytics-panel-title h3 {
+    color: #f8fafc;
+}
+
+html[data-theme="dark"] .analytics-panel-content {
+    background: #0f172a;
+}
+
+html[data-theme="dark"] .analytics-section h4 {
+    color: #94a3b8;
+}
+
+html[data-theme="dark"] .date-range-picker,
+html[data-theme="dark"] .chart-container {
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+html[data-theme="dark"] .btn-preset {
+    background: #1e293b;
+    border-color: #334155;
+    color: #94a3b8;
+}
+
+html[data-theme="dark"] .btn-preset.active {
+    background: #6366f1;
+    color: #fff;
+}
+
+html[data-theme="dark"] .stat-item {
+    color: #94a3b8;
+}
+
+html[data-theme="dark"] .stat-item strong {
+    color: #f8fafc;
 }

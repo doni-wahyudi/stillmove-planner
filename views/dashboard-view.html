@@ -1,0 +1,187 @@
+<div class="dashboard-view" role="region" aria-label="Dashboard home view">
+    <!-- Header with Greeting and Date -->
+    <div class="dashboard-header">
+        <div class="dashboard-greeting">
+            <h2 id="dashboard-greeting-text">Good morning!</h2>
+            <p id="dashboard-date" class="dashboard-date"></p>
+        </div>
+        <div class="dashboard-actions">
+            <button id="dashboard-refresh-btn" class="btn-icon" aria-label="Refresh dashboard" title="Refresh">
+                <span aria-hidden="true">↻</span>
+            </button>
+            <button id="dashboard-settings-btn" class="btn-icon" aria-label="Dashboard settings" title="Settings">
+                <span aria-hidden="true">⚙️</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Widget Grid -->
+    <div class="dashboard-grid" id="dashboard-grid">
+        <!-- Today's Overview Widget -->
+        <section class="dashboard-widget widget-today" id="widget-today" role="region" aria-label="Today's overview">
+            <div class="widget-header">
+                <h3><span aria-hidden="true">📋</span> Today's Overview</h3>
+            </div>
+            <div class="widget-content" id="widget-today-content">
+                <div class="widget-loading">
+                    <div class="skeleton skeleton-text long"></div>
+                    <div class="skeleton skeleton-text medium"></div>
+                    <div class="skeleton skeleton-text short"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Goals Progress Widget -->
+        <section class="dashboard-widget widget-goals" id="widget-goals" role="region" aria-label="Goals progress">
+            <div class="widget-header">
+                <h3><span aria-hidden="true">🎯</span> Goals Progress</h3>
+            </div>
+            <div class="widget-content" id="widget-goals-content">
+                <div class="widget-loading">
+                    <div class="skeleton skeleton-text long"></div>
+                    <div class="skeleton skeleton-text medium"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Kanban Summary Widget -->
+        <section class="dashboard-widget widget-kanban" id="widget-kanban" role="region" aria-label="Kanban summary">
+            <div class="widget-header">
+                <h3><span aria-hidden="true">📌</span> Tasks</h3>
+            </div>
+            <div class="widget-content" id="widget-kanban-content">
+                <div class="widget-loading">
+                    <div class="skeleton skeleton-text long"></div>
+                    <div class="skeleton skeleton-text medium"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Actions Widget -->
+        <section class="dashboard-widget widget-quick-actions" id="widget-quick-actions" role="region"
+            aria-label="Quick actions">
+            <div class="widget-header">
+                <h3><span aria-hidden="true">⚡</span> Quick Actions</h3>
+            </div>
+            <div class="widget-content" id="widget-quick-actions-content">
+                <div class="quick-actions-grid">
+                    <button class="quick-action-btn" id="quick-action-pomodoro" aria-label="Start Pomodoro">
+                        <span class="quick-action-icon">🍅</span>
+                        <span class="quick-action-label">Pomodoro</span>
+                    </button>
+                    <button class="quick-action-btn" id="quick-action-habit" aria-label="Log habit">
+                        <span class="quick-action-icon">✨</span>
+                        <span class="quick-action-label">Log Habit</span>
+                    </button>
+                    <button class="quick-action-btn" id="quick-action-card" aria-label="New card">
+                        <span class="quick-action-icon">📝</span>
+                        <span class="quick-action-label">New Card</span>
+                    </button>
+                    <button class="quick-action-btn" id="quick-action-note" aria-label="Quick note">
+                        <span class="quick-action-icon">📓</span>
+                        <span class="quick-action-label">Quick Note</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Calendar Widget -->
+        <section class="dashboard-widget widget-calendar" id="widget-calendar" role="region" aria-label="Mini calendar">
+            <div class="widget-header">
+                <h3><span aria-hidden="true">📅</span> Calendar</h3>
+                <div class="calendar-nav">
+                    <button id="calendar-prev-btn" class="btn-icon-small" aria-label="Previous month">←</button>
+                    <span id="calendar-month-year"></span>
+                    <button id="calendar-next-btn" class="btn-icon-small" aria-label="Next month">→</button>
+                </div>
+            </div>
+            <div class="widget-content" id="widget-calendar-content">
+                <div class="mini-calendar-grid" id="mini-calendar-grid">
+                    <!-- Calendar days will be generated dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Statistics Widget -->
+        <section class="dashboard-widget widget-stats" id="widget-stats" role="region" aria-label="Statistics summary">
+            <div class="widget-header">
+                <h3><span aria-hidden="true">📊</span> Statistics</h3>
+            </div>
+            <div class="widget-content" id="widget-stats-content">
+                <div class="stats-grid">
+                    <div class="stat-item" id="stat-streak">
+                        <span class="stat-value">0</span>
+                        <span class="stat-label">Day Streak</span>
+                    </div>
+                    <div class="stat-item" id="stat-pomodoro">
+                        <span class="stat-value">0</span>
+                        <span class="stat-label">Pomodoros</span>
+                    </div>
+                    <div class="stat-item" id="stat-cards">
+                        <span class="stat-value">0</span>
+                        <span class="stat-label">Cards Done</span>
+                    </div>
+                    <div class="stat-item" id="stat-reading">
+                        <span class="stat-value">0/0</span>
+                        <span class="stat-label">Books</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<!-- Dashboard Settings Modal -->
+<div id="dashboard-settings-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Dashboard Settings</h3>
+            <button class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <h4>Widget Visibility</h4>
+            <div class="widget-toggles" id="widget-toggles">
+                <!-- Widget toggles will be generated dynamically -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary modal-close">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Habit Log Modal -->
+<div id="habit-log-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Log Habit</h3>
+            <button class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="habit-log-list" class="habit-log-list">
+                <!-- Habits will be loaded here -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary modal-close">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Note Modal -->
+<div id="quick-note-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Quick Note</h3>
+            <button class="modal-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <textarea id="quick-note-text" class="quick-note-textarea" placeholder="Write your note here..."
+                rows="5"></textarea>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary modal-close">Cancel</button>
+            <button class="btn-primary" id="save-quick-note-btn">Save Note</button>
+        </div>
+    </div>
+</div>

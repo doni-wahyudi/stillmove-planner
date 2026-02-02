@@ -9,11 +9,15 @@
             <button id="next-week-btn" class="nav-btn" aria-label="Go to next week">
                 <span aria-hidden="true">→</span>
             </button>
-            <button id="today-week-btn" class="btn-today" aria-label="Go to current week" data-tooltip="Press T">Today</button>
-            <button id="add-recurring-btn" class="btn-icon" aria-label="Add recurring time block" title="Add recurring blocks">🔄</button>
-            <button id="save-template-btn" class="btn-icon" aria-label="Save as template" title="Save week as template">💾</button>
+            <button id="today-week-btn" class="btn-today" aria-label="Go to current week"
+                data-tooltip="Press T">Today</button>
+            <button id="add-recurring-btn" class="btn-icon" aria-label="Add recurring time block"
+                title="Add recurring blocks">🔄</button>
+            <button id="save-template-btn" class="btn-icon" aria-label="Save as template"
+                title="Save week as template">💾</button>
             <button id="load-template-btn" class="btn-icon" aria-label="Load template" title="Load template">📂</button>
-            <button id="export-ical-btn" class="btn-icon btn-export" aria-label="Export to calendar" title="Export to iCal">📤</button>
+            <button id="export-ical-btn" class="btn-icon btn-export" aria-label="Export to calendar"
+                title="Export to iCal">📤</button>
         </div>
     </div>
 
@@ -43,8 +47,10 @@
                 <div id="productivity-score" class="productivity-score" style="display: none;">
                     <div class="score-ring">
                         <svg viewBox="0 0 36 36" class="circular-chart">
-                            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                            <path class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            <path class="circle-bg"
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path class="circle" stroke-dasharray="0, 100"
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                             <text x="18" y="20.35" class="score-text">0%</text>
                         </svg>
                     </div>
@@ -59,7 +65,7 @@
                     ✨ AI Insights
                 </button>
             </div>
-            
+
             <!-- Weekly Goals -->
             <div class="weekly-goals">
                 <h3>Weekly Goals</h3>
@@ -74,8 +80,10 @@
                 <div class="category-legend-header">
                     <h3>Categories</h3>
                     <div class="category-legend-actions">
-                        <button id="clear-filter-btn" class="btn-icon btn-clear-filter" aria-label="Clear filter" title="Clear filter" style="display: none;">✕</button>
-                        <button id="manage-categories-btn" class="btn-icon" aria-label="Manage categories" title="Manage categories">⚙️</button>
+                        <button id="clear-filter-btn" class="btn-icon btn-clear-filter" aria-label="Clear filter"
+                            title="Clear filter" style="display: none;">✕</button>
+                        <button id="manage-categories-btn" class="btn-icon" aria-label="Manage categories"
+                            title="Manage categories">⚙️</button>
                     </div>
                 </div>
                 <p class="category-hint">Click a category to filter</p>
@@ -218,16 +226,29 @@
             <div class="form-group">
                 <label for="block-start-time">Start Time</label>
                 <input type="time" id="block-start-time" step="1800" required />
+                <div class="minute-shortcuts" data-target="block-start-time">
+                    <button type="button" class="btn-minute" data-minute="00">:00</button>
+                    <button type="button" class="btn-minute" data-minute="15">:15</button>
+                    <button type="button" class="btn-minute" data-minute="30">:30</button>
+                    <button type="button" class="btn-minute" data-minute="45">:45</button>
+                </div>
             </div>
             <div class="form-group">
                 <label for="block-end-time">End Time</label>
                 <input type="time" id="block-end-time" step="1800" />
+                <div class="minute-shortcuts" data-target="block-end-time">
+                    <button type="button" class="btn-minute" data-minute="00">:00</button>
+                    <button type="button" class="btn-minute" data-minute="15">:15</button>
+                    <button type="button" class="btn-minute" data-minute="30">:30</button>
+                    <button type="button" class="btn-minute" data-minute="45">:45</button>
+                </div>
             </div>
             <div class="form-group">
                 <label for="block-activity">Activity</label>
                 <div class="activity-input-group">
                     <input type="text" id="block-activity" placeholder="Activity description" required />
-                    <button type="button" id="ai-categorize-btn" class="btn-icon ai-categorize-btn" title="Auto-categorize with AI">✨</button>
+                    <button type="button" id="ai-categorize-btn" class="btn-icon ai-categorize-btn"
+                        title="Auto-categorize with AI">✨</button>
                 </div>
             </div>
             <div class="form-group">
@@ -379,9 +400,13 @@
                 </div>
             </div>
             <div class="recurring-quick-select">
-                <button type="button" class="btn-small" onclick="document.querySelectorAll('.recurring-day-checkbox').forEach((cb,i) => cb.checked = i < 5)">Weekdays</button>
-                <button type="button" class="btn-small" onclick="document.querySelectorAll('.recurring-day-checkbox').forEach((cb,i) => cb.checked = i >= 5)">Weekend</button>
-                <button type="button" class="btn-small" onclick="document.querySelectorAll('.recurring-day-checkbox').forEach(cb => cb.checked = true)">All Days</button>
+                <button type="button" class="btn-small"
+                    onclick="document.querySelectorAll('.recurring-day-checkbox').forEach((cb,i) => cb.checked = i < 5)">Weekdays</button>
+                <button type="button" class="btn-small"
+                    onclick="document.querySelectorAll('.recurring-day-checkbox').forEach((cb,i) => cb.checked = i >= 5)">Weekend</button>
+                <button type="button" class="btn-small"
+                    onclick="document.querySelectorAll('.recurring-day-checkbox').forEach(cb => cb.checked = true)">All
+                    Days</button>
             </div>
         </div>
         <div class="modal-footer">
