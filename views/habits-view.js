@@ -4,6 +4,8 @@
  */
 
 import dataService from '../js/data-service.js';
+import integrationService from '../js/integration-service.js';
+import kanbanService from '../js/kanban-service.js';
 import { formatDate, getDaysInMonth, calculateSleepDuration, calculateWaterIntakePercentage } from '../js/utils.js';
 
 class HabitsView {
@@ -309,6 +311,13 @@ class HabitsView {
             }
         });
 
+        const createCardBtn = item.querySelector('.create-card-btn');
+        if (createCardBtn) {
+            createCardBtn.addEventListener('click', () => {
+                integrationService.createCardFromHabit(habit.id, habit.habit_name);
+            });
+        }
+
         // Goal linking (only for daily habits)
         if (type === 'daily') {
             this.setupGoalLinking(item, habit);
@@ -373,9 +382,49 @@ class HabitsView {
                     await this.reorderHabits(this.draggedHabitId, habit.id, position);
                 }
             });
+
+            // Linked Kanban Cards
+            this.renderHabitLinkedCards(item, habit.id);
         }
 
         return item;
+    }
+
+    /**
+     * Render Kanban cards linked to a habit
+     */
+    async renderHabitLinkedCards(item, habitId) {
+        const container = item.querySelector('.linked-cards-display');
+        const list = item.querySelector('.linked-cards-list');
+        if (!container || !list) return;
+
+        try {
+            const linkedCards = await kanbanService.getCardsByHabit(habitId);
+
+            if (linkedCards.length > 0) {
+                container.style.display = 'block';
+                list.innerHTML = '';
+
+                linkedCards.forEach(card => {
+                    const cardEl = document.createElement('div');
+                    cardEl.className = 'linked-card-badge';
+                    cardEl.innerHTML = `
+                        <span class="card-icon">📋</span>
+                        <span class="card-title">${card.title}</span>
+                    `;
+                    cardEl.title = `View in Board: ${card.boardTitle}`;
+
+                    cardEl.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        integrationService.navigateToCard(card.boardId, card.id);
+                    });
+
+                    list.appendChild(cardEl);
+                });
+            }
+        } catch (error) {
+            console.error('Failed to render linked cards for habit:', error);
+        }
     }
 
     /**

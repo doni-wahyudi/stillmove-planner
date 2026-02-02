@@ -9,7 +9,8 @@
             <button id="next-month-btn" class="nav-btn" aria-label="Go to next month">
                 <span aria-hidden="true">→</span>
             </button>
-            <button id="today-month-btn" class="btn-today" aria-label="Go to current month" data-tooltip="Press T">Today</button>
+            <button id="today-month-btn" class="btn-today" aria-label="Go to current month"
+                data-tooltip="Press T">Today</button>
         </div>
     </div>
 
@@ -17,6 +18,13 @@
     <section class="monthly-summary-dashboard" aria-labelledby="summary-heading">
         <h3 id="summary-heading" class="sr-only">Monthly Summary</h3>
         <div class="summary-cards">
+            <div class="summary-card">
+                <div class="summary-icon">📋</div>
+                <div class="summary-content">
+                    <span class="summary-value" id="summary-kanban">0</span>
+                    <span class="summary-label">Kanban Tasks</span>
+                </div>
+            </div>
             <div class="summary-card">
                 <div class="summary-icon">📅</div>
                 <div class="summary-content">
@@ -101,7 +109,8 @@
             <section class="category-legend" aria-labelledby="categories-heading">
                 <div class="category-legend-header">
                     <h3 id="categories-heading">Categories</h3>
-                    <button id="manage-categories-btn" class="btn-icon" aria-label="Manage categories" title="Manage categories">⚙️</button>
+                    <button id="manage-categories-btn" class="btn-icon" aria-label="Manage categories"
+                        title="Manage categories">⚙️</button>
                 </div>
                 <div class="category-list" id="category-list" role="list" aria-label="Activity categories">
                     <!-- Categories will be dynamically loaded here -->
@@ -118,18 +127,15 @@
             <div id="checklist-container" class="checklist-container" role="list" aria-label="Monthly checklist items">
                 <!-- Checklist items will be dynamically added here -->
             </div>
-            <button id="add-checklist-item-btn" class="btn-secondary" aria-label="Add new checklist item">+ Add Item</button>
+            <button id="add-checklist-item-btn" class="btn-secondary" aria-label="Add new checklist item">+ Add
+                Item</button>
         </section>
 
         <!-- Notes -->
         <section class="monthly-notes" aria-labelledby="notes-heading">
             <h3 id="notes-heading">Notes</h3>
-            <textarea 
-                id="monthly-notes-text" 
-                placeholder="Add notes for this month..."
-                rows="6"
-                aria-label="Monthly notes"
-            ></textarea>
+            <textarea id="monthly-notes-text" placeholder="Add notes for this month..." rows="6"
+                aria-label="Monthly notes"></textarea>
         </section>
     </div>
 
@@ -221,7 +227,10 @@
                 <textarea class="action-evaluation" placeholder="Evaluation notes" rows="2"></textarea>
             </div>
         </div>
-        <button class="delete-action-plan-btn" aria-label="Delete action plan">×</button>
+        <div class="action-plan-footer">
+            <button class="create-action-card-btn" title="Create Kanban card from this goal">📋 Create Task</button>
+            <button class="delete-action-plan-btn" aria-label="Delete action plan">×</button>
+        </div>
     </div>
 </template>
 

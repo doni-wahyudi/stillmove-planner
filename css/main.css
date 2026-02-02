@@ -4629,6 +4629,7 @@ select:focus-visible,
 }
 
 .daily-checklist h5,
+.daily-kanban h5,
 .daily-journal h5,
 .daily-gratitude h5 {
     font-size: 0.85rem;
@@ -4637,6 +4638,56 @@ select:focus-visible,
     margin-bottom: 0.5rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+.kanban-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.weekly-kanban-item {
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+}
+
+.weekly-kanban-item:hover {
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+}
+
+.weekly-kanban-item.completed {
+    opacity: 0.6;
+    background: #f8fafc;
+}
+
+.weekly-kanban-item.completed .kanban-item-title {
+    text-decoration: line-through;
+}
+
+.kanban-item-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.kanban-item-board {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: var(--background-color);
+    padding: 2px 6px;
+    border-radius: 4px;
+    align-self: flex-start;
 }
 
 .checklist-items {
@@ -4674,6 +4725,69 @@ select:focus-visible,
     transition: all 0.2s ease;
     background: white;
     color: #2d3748;
+}
+
+.action-plan-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.create-action-card-btn {
+    padding: 0.5rem 1rem;
+    background: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.create-action-card-btn:hover {
+    background: var(--primary-color-light);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.linked-cards-display {
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+}
+
+.linked-cards-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.linked-card-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 2px 8px;
+    background: white;
+    border: 1px solid #cbd5e1;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.linked-card-badge:hover {
+    border-color: var(--primary-color);
+    background: var(--primary-color-light);
+    color: white;
+}
+
+.card-icon {
+    font-size: 0.8rem;
 }
 
 .journal-text:focus,

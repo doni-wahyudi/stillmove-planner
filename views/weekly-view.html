@@ -187,6 +187,12 @@
                 <button class="add-checklist-item-btn">+ Add Item</button>
             </div>
 
+            <!-- Kanban Tasks -->
+            <div class="daily-kanban">
+                <h5>Kanban Tasks</h5>
+                <div class="kanban-items"></div>
+            </div>
+
             <!-- Mini Journal -->
             <div class="daily-journal">
                 <h5>Journal</h5>
@@ -222,6 +228,31 @@
             <div class="form-group">
                 <label for="block-date">Date</label>
                 <input type="date" id="block-date" required />
+            </div>
+            <div class="form-group">
+                <label>Event Type</label>
+                <div class="event-type-selector">
+                    <label class="event-type-option">
+                        <input type="radio" name="weekly-event-type" value="time-block" checked />
+                        <span class="event-type-label">
+                            <span class="event-type-icon">⏰</span>
+                            <span class="event-type-text">
+                                <strong>Time Block</strong>
+                                <small>Scheduled activity</small>
+                            </span>
+                        </span>
+                    </label>
+                    <label class="event-type-option">
+                        <input type="radio" name="weekly-event-type" value="kanban-card" />
+                        <span class="event-type-label">
+                            <span class="event-type-icon">📋</span>
+                            <span class="event-type-text">
+                                <strong>Kanban Card</strong>
+                                <small>Add to board</small>
+                            </span>
+                        </span>
+                    </label>
+                </div>
             </div>
             <div class="form-group">
                 <label for="block-start-time">Start Time</label>

@@ -9,7 +9,8 @@
             <button id="habits-next-month-btn" class="nav-btn" aria-label="Go to next month">
                 <span aria-hidden="true">→</span>
             </button>
-            <button id="habits-today-btn" class="btn-today" aria-label="Go to current month" data-tooltip="Press T">Today</button>
+            <button id="habits-today-btn" class="btn-today" aria-label="Go to current month"
+                data-tooltip="Press T">Today</button>
         </div>
         <!-- Points Display -->
         <div class="points-display" aria-label="Your points">
@@ -21,9 +22,12 @@
 
     <!-- Tab Switcher -->
     <div class="tabs" role="tablist" aria-label="Habit tracking options">
-        <button class="tab-btn active" data-tab="daily-habits" role="tab" aria-selected="true" aria-controls="daily-habits-tab" id="daily-habits-tab-btn">Daily Habits</button>
-        <button class="tab-btn" data-tab="weekly-habits" role="tab" aria-selected="false" aria-controls="weekly-habits-tab" id="weekly-habits-tab-btn">Weekly Habits</button>
-        <button class="tab-btn" data-tab="wellness" role="tab" aria-selected="false" aria-controls="wellness-tab" id="wellness-tab-btn">Wellness Trackers</button>
+        <button class="tab-btn active" data-tab="daily-habits" role="tab" aria-selected="true"
+            aria-controls="daily-habits-tab" id="daily-habits-tab-btn">Daily Habits</button>
+        <button class="tab-btn" data-tab="weekly-habits" role="tab" aria-selected="false"
+            aria-controls="weekly-habits-tab" id="weekly-habits-tab-btn">Weekly Habits</button>
+        <button class="tab-btn" data-tab="wellness" role="tab" aria-selected="false" aria-controls="wellness-tab"
+            id="wellness-tab-btn">Wellness Trackers</button>
     </div>
 
     <!-- Daily Habits Tab -->
@@ -43,8 +47,10 @@
                     <!-- Habit names will be added here -->
                 </div>
                 <div class="habit-buttons">
-                    <button id="add-daily-habit-btn" class="btn-secondary" aria-label="Add new daily habit">+ Add Habit</button>
-                    <button id="habit-bundles-btn" class="btn-icon" aria-label="Add habit bundle" title="Quick-start bundles">📦</button>
+                    <button id="add-daily-habit-btn" class="btn-secondary" aria-label="Add new daily habit">+ Add
+                        Habit</button>
+                    <button id="habit-bundles-btn" class="btn-icon" aria-label="Add habit bundle"
+                        title="Quick-start bundles">📦</button>
                 </div>
             </section>
 
@@ -52,7 +58,7 @@
                 <div id="daily-habits-grid" class="habits-grid" role="grid" aria-label="Daily habits tracking grid">
                     <!-- Grid will be generated dynamically -->
                 </div>
-                
+
                 <!-- Habit Tracking Chart -->
                 <div class="habit-chart-container">
                     <div class="habit-chart-header">
@@ -62,10 +68,12 @@
                         </select>
                     </div>
                     <div class="habit-chart-info">
-                        <span class="info-text">💡 Double-click habit cells to add count values (e.g., pages read). Checked habits without notes count as 1.</span>
+                        <span class="info-text">💡 Double-click habit cells to add count values (e.g., pages read).
+                            Checked habits without notes count as 1.</span>
                     </div>
                     <div class="habit-line-chart" id="habit-line-chart">
-                        <svg id="habit-chart-svg" class="habit-chart-svg" viewBox="0 0 600 150" preserveAspectRatio="none">
+                        <svg id="habit-chart-svg" class="habit-chart-svg" viewBox="0 0 600 150"
+                            preserveAspectRatio="none">
                             <!-- Grid lines -->
                             <g class="chart-grid" id="chart-grid"></g>
                             <!-- Area fill -->
@@ -92,7 +100,7 @@
                 <div id="daily-progress-list" class="progress-list">
                     <!-- Progress items will be added here dynamically -->
                 </div>
-                
+
                 <!-- Streak Trend Chart -->
                 <div class="streak-chart-section">
                     <h4>Streak Trends (Last 30 Days)</h4>
@@ -105,7 +113,7 @@
                         <span class="legend-item"><span class="legend-color low"></span> &lt;50%</span>
                     </div>
                 </div>
-                
+
                 <!-- Achievement Badges -->
                 <div class="achievements-section">
                     <h4>🏆 Achievements</h4>
@@ -113,7 +121,7 @@
                         <!-- Badges will be generated dynamically -->
                     </div>
                 </div>
-                
+
                 <!-- Daily Challenge -->
                 <div class="daily-challenge-section">
                     <h4>🎯 Today's Challenge</h4>
@@ -237,6 +245,7 @@
             <span class="drag-handle" draggable="true" aria-label="Drag to reorder">⋮⋮</span>
             <input type="text" class="habit-name" placeholder="Habit name" maxlength="50" />
             <button class="link-goal-btn" aria-label="Link to goal" title="Link to annual goal">🎯</button>
+            <button class="create-card-btn" aria-label="Create card" title="Create Kanban card from habit">📋</button>
             <button class="delete-habit-btn" aria-label="Delete habit">×</button>
         </div>
         <div class="habit-goal-link" style="display: none;">
@@ -250,6 +259,9 @@
                 <span class="goal-name"></span>
                 <button class="unlink-goal-btn" aria-label="Unlink goal">×</button>
             </span>
+        </div>
+        <div class="linked-cards-display" style="display: none;">
+            <div class="linked-cards-list"></div>
         </div>
     </div>
 </template>
@@ -317,7 +329,8 @@
                     <div class="bundle-icon">🧠</div>
                     <div class="bundle-info">
                         <h4>Mindfulness</h4>
-                        <p>Morning meditation, Breathing exercises, Mindful eating, Evening reflection, Digital detox</p>
+                        <p>Morning meditation, Breathing exercises, Mindful eating, Evening reflection, Digital detox
+                        </p>
                     </div>
                     <button class="btn-primary btn-small">Add</button>
                 </div>

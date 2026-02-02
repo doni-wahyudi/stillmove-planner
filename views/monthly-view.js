@@ -4,6 +4,7 @@
  */
 
 import dataService from '../js/data-service.js';
+import integrationService from '../js/integration-service.js';
 import { getDaysInMonth, formatDate } from '../js/utils.js';
 
 // Category color mapping
@@ -26,18 +27,18 @@ class MonthlyView {
         this.monthlyData = null;
         this.selectedCategory = null;
         this.categories = [];
-        
+
         // Calendar enhancement data
         this.timeBlocksData = {}; // { 'YYYY-MM-DD': [blocks] }
         this.habitsData = {}; // { 'YYYY-MM-DD': { completed, total } }
         this.deadlinesData = {}; // { 'YYYY-MM-DD': [goals] }
-        
+
         // Multi-day selection state
         this.isDragging = false;
         this.dragStartDate = null;
         this.dragEndDate = null;
         this.selectedDateRange = [];
-        
+
         // Tooltip element
         this.tooltipEl = null;
     }
@@ -51,22 +52,22 @@ class MonthlyView {
         if (!block.start_time || !block.end_time) {
             return 1; // Default to 1 slot if times are missing
         }
-        
+
         const [startH, startM] = block.start_time.split(':').map(Number);
         const [endH, endM] = block.end_time.split(':').map(Number);
-        
+
         const startMinutes = startH * 60 + startM;
         const endMinutes = endH * 60 + endM;
         const durationMinutes = endMinutes - startMinutes;
-        
+
         if (durationMinutes <= 0) {
             return 1; // Invalid duration, default to 1
         }
-        
+
         // Each slot is 30 minutes, round up
         return Math.ceil(durationMinutes / 30);
     }
-    
+
     /**
      * Calculate total time slots for an array of time blocks
      * @param {Array} blocks - Array of time blocks
@@ -82,21 +83,21 @@ class MonthlyView {
      */
     async init(container) {
         this.container = container;
-        
+
         // Load the HTML template
         const response = await fetch('views/monthly-view.html');
         const html = await response.text();
         this.container.innerHTML = html;
-        
+
         // Setup event listeners
         this.setupEventListeners();
-        
+
         // Load categories first
         await this.loadCategories();
-        
+
         // Update display with current month/year
         this.updateMonthYearDisplay();
-        
+
         // Load data
         await this.loadData();
     }
@@ -109,25 +110,29 @@ class MonthlyView {
         document.getElementById('prev-month-btn')?.addEventListener('click', () => this.changeMonth(-1));
         document.getElementById('next-month-btn')?.addEventListener('click', () => this.changeMonth(1));
         document.getElementById('today-month-btn')?.addEventListener('click', () => this.goToToday());
-        
+
         // Add checklist item button
         document.getElementById('add-checklist-item-btn')?.addEventListener('click', () => this.addChecklistItem());
-        
+
         // Add action plan button
         document.getElementById('add-action-plan-btn')?.addEventListener('click', () => this.addActionPlan());
-        
+
         // Save notes on blur
         document.getElementById('monthly-notes-text')?.addEventListener('blur', (e) => {
             this.saveNotes(e.target.value);
         });
-        
+
         // Manage categories button
         document.getElementById('manage-categories-btn')?.addEventListener('click', () => this.openCategoryManager());
-        
+
         // Sidebar toggle (mobile)
         this.setupSidebarToggle();
+
+        // Integration events
+        integrationService.on('cardUpdated', () => this.loadData());
+        integrationService.on('cardDeleted', () => this.loadData());
     }
-    
+
     /**
      * Setup sidebar toggle for mobile
      */
@@ -135,9 +140,9 @@ class MonthlyView {
         const toggleBtn = document.getElementById('sidebar-toggle');
         const sidebar = document.querySelector('.categories-sidebar');
         const overlay = document.getElementById('sidebar-overlay');
-        
+
         if (!toggleBtn || !sidebar) return;
-        
+
         // Add close button to sidebar
         if (!sidebar.querySelector('.sidebar-close')) {
             const closeBtn = document.createElement('button');
@@ -147,7 +152,7 @@ class MonthlyView {
             closeBtn.addEventListener('click', () => this.closeSidebar());
             sidebar.insertBefore(closeBtn, sidebar.firstChild);
         }
-        
+
         toggleBtn.addEventListener('click', () => {
             const isOpen = sidebar.classList.contains('open');
             if (isOpen) {
@@ -156,10 +161,10 @@ class MonthlyView {
                 this.openSidebar();
             }
         });
-        
+
         overlay?.addEventListener('click', () => this.closeSidebar());
     }
-    
+
     /**
      * Open sidebar
      */
@@ -167,12 +172,12 @@ class MonthlyView {
         const sidebar = document.querySelector('.categories-sidebar');
         const overlay = document.getElementById('sidebar-overlay');
         const toggleBtn = document.getElementById('sidebar-toggle');
-        
+
         sidebar?.classList.add('open');
         overlay?.classList.add('visible');
         toggleBtn?.classList.add('active');
     }
-    
+
     /**
      * Close sidebar
      */
@@ -180,7 +185,7 @@ class MonthlyView {
         const sidebar = document.querySelector('.categories-sidebar');
         const overlay = document.getElementById('sidebar-overlay');
         const toggleBtn = document.getElementById('sidebar-toggle');
-        
+
         sidebar?.classList.remove('open');
         overlay?.classList.remove('visible');
         toggleBtn?.classList.remove('active');
@@ -191,7 +196,7 @@ class MonthlyView {
      */
     async changeMonth(delta) {
         this.currentMonth += delta;
-        
+
         // Handle year boundaries
         if (this.currentMonth > 12) {
             this.currentMonth = 1;
@@ -200,7 +205,7 @@ class MonthlyView {
             this.currentMonth = 12;
             this.currentYear--;
         }
-        
+
         this.updateMonthYearDisplay();
         await this.loadData();
     }
@@ -215,7 +220,7 @@ class MonthlyView {
         this.updateMonthYearDisplay();
         await this.loadData();
     }
-    
+
     /**
      * Go to a specific date
      */
@@ -232,10 +237,10 @@ class MonthlyView {
      */
     updateMonthYearDisplay() {
         const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                           'July', 'August', 'September', 'October', 'November', 'December'];
+            'July', 'August', 'September', 'October', 'November', 'December'];
         const displayText = `${monthNames[this.currentMonth - 1]} ${this.currentYear}`;
         document.getElementById('current-month-year').textContent = displayText;
-        
+
         // Update breadcrumb context
         const breadcrumbContext = document.getElementById('breadcrumb-context');
         if (breadcrumbContext) {
@@ -250,7 +255,7 @@ class MonthlyView {
         try {
             // Load monthly data
             this.monthlyData = await dataService.getMonthlyData(this.currentYear, this.currentMonth);
-            
+
             // If no data exists, create empty structure
             if (!this.monthlyData) {
                 this.monthlyData = {
@@ -261,25 +266,25 @@ class MonthlyView {
                     action_plan: []
                 };
             }
-            
+
             // Load calendar enhancement data
             await this.loadCalendarData();
-            
+
             // Render all components
             this.renderCalendar();
             this.renderChecklist();
             this.renderNotes();
             this.renderActionPlan();
-            
+
             // Update summary dashboard
             await this.updateSummaryDashboard();
-            
+
         } catch (error) {
             console.error('Failed to load monthly data:', error);
             this.showError('Failed to load data. Please try again.');
         }
     }
-    
+
     /**
      * Load calendar enhancement data (time blocks, habits, deadlines)
      */
@@ -287,12 +292,12 @@ class MonthlyView {
         const daysInMonth = getDaysInMonth(this.currentYear, this.currentMonth);
         const startDate = `${this.currentYear}-${String(this.currentMonth).padStart(2, '0')}-01`;
         const endDate = `${this.currentYear}-${String(this.currentMonth).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
-        
+
         // Reset data
         this.timeBlocksData = {};
         this.habitsData = {};
         this.deadlinesData = {};
-        
+
         try {
             // Load time blocks for the entire month
             const timeBlocks = await dataService.getTimeBlocksRange(startDate, endDate);
@@ -302,11 +307,11 @@ class MonthlyView {
                 }
                 this.timeBlocksData[block.date].push(block);
             });
-            
+
             // Load daily habits and completions
             const dailyHabits = await dataService.getDailyHabits();
             const habitCompletions = await dataService.getDailyHabitCompletions(startDate, endDate);
-            
+
             // Calculate habit completion per day
             for (let day = 1; day <= daysInMonth; day++) {
                 const dateStr = `${this.currentYear}-${String(this.currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -316,7 +321,7 @@ class MonthlyView {
                     total: dailyHabits.length
                 };
             }
-            
+
             // Load goal deadlines
             const annualGoals = await dataService.getAnnualGoals(this.currentYear);
             annualGoals.forEach(goal => {
@@ -330,7 +335,7 @@ class MonthlyView {
                     }
                 }
             });
-            
+
             // Load calendar events (unscheduled/all-day events)
             this.calendarEventsData = {};
             try {
@@ -342,14 +347,27 @@ class MonthlyView {
                     this.calendarEventsData[event.date].push(event);
                 });
             } catch (e) {
-                // Calendar events table might not exist yet
                 console.log('Calendar events not available:', e.message);
+            }
+
+            // Load Kanban cards due in range
+            this.kanbanCardsData = {};
+            try {
+                const cards = await integrationService.getCardsDueInRange(startDate, endDate);
+                cards.forEach(card => {
+                    if (!this.kanbanCardsData[card.due_date]) {
+                        this.kanbanCardsData[card.due_date] = [];
+                    }
+                    this.kanbanCardsData[card.due_date].push(card);
+                });
+            } catch (e) {
+                console.error('Failed to load Kanban cards for monthly view:', e);
             }
         } catch (error) {
             console.error('Error loading calendar data:', error);
         }
     }
-    
+
     /**
      * Update the monthly summary dashboard
      */
@@ -360,13 +378,13 @@ class MonthlyView {
             let totalTimeSlots = 0; // Count 30-min slots, not activities
             let totalMinutes = 0;
             const weeklyData = [0, 0, 0, 0, 0]; // 5 weeks max
-            
+
             // Fetch time blocks for each day
             for (let day = 1; day <= daysInMonth; day++) {
                 const date = new Date(this.currentYear, this.currentMonth - 1, day);
                 const dateStr = formatDate(date);
                 const weekIndex = Math.floor((day - 1) / 7);
-                
+
                 try {
                     const timeBlocks = await dataService.getTimeBlocks(dateStr);
                     if (timeBlocks && timeBlocks.length > 0) {
@@ -375,7 +393,7 @@ class MonthlyView {
                             const slots = this.calculateTimeSlots(block);
                             totalTimeSlots += slots;
                             weeklyData[weekIndex] += slots;
-                            
+
                             // Calculate total minutes
                             if (block.start_time && block.end_time) {
                                 const [startH, startM] = block.start_time.split(':').map(Number);
@@ -389,96 +407,116 @@ class MonthlyView {
                     // Ignore errors for individual days
                 }
             }
-            
+
             // Calculate checklist completion
             const checklist = this.monthlyData.checklist || [];
             const checklistTotal = checklist.length;
             const checklistDone = checklist.filter(item => item.completed).length;
             const checklistPercent = checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0;
-            
+
             // Calculate action plan progress
             const actionPlans = (this.monthlyData.action_plan || []).filter(item => item.type !== 'day_categories');
             const actionPlanTotal = actionPlans.length;
-            const actionPlanProgress = actionPlanTotal > 0 
+            const actionPlanProgress = actionPlanTotal > 0
                 ? Math.round(actionPlans.reduce((sum, p) => sum + (p.progress || 0), 0) / actionPlanTotal)
                 : 0;
-            
+
             // Get habits completion rate for the month
             let habitsRate = 0;
             try {
-                const habits = await dataService.getHabits();
-                if (habits && habits.length > 0) {
-                    let totalChecks = 0;
-                    let completedChecks = 0;
-                    
-                    for (let day = 1; day <= daysInMonth; day++) {
-                        const date = new Date(this.currentYear, this.currentMonth - 1, day);
-                        if (date > new Date()) break; // Don't count future days
-                        
-                        const dateStr = formatDate(date);
-                        const habitData = await dataService.getHabitData(dateStr);
-                        
-                        habits.forEach(habit => {
-                            totalChecks++;
-                            if (habitData && habitData[habit.id]) {
-                                completedChecks++;
-                            }
-                        });
-                    }
-                    
-                    habitsRate = totalChecks > 0 ? Math.round((completedChecks / totalChecks) * 100) : 0;
+                const [dailyHabits, weeklyHabits] = await Promise.all([
+                    dataService.getDailyHabits(),
+                    dataService.getWeeklyHabits()
+                ]);
+
+                const habits = [...dailyHabits, ...weeklyHabits];
+
+                if (habits.length > 0) {
+                    const startDate = `${this.currentYear}-${String(this.currentMonth).padStart(2, '0')}-01`;
+                    const endDate = `${this.currentYear}-${String(this.currentMonth).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
+                    const completions = await dataService.getDailyHabitCompletions(startDate, endDate);
+
+                    // Count completed habits for the month
+                    const completedChecks = completions.filter(c => c.completed).length;
+
+                    // Total possible checks: daily habits * days passed in month + weekly targets
+                    // For simplicity, we'll use the ratio of (completed in month) / (daily habits * days passed)
+                    const today = new Date();
+                    const daysToCount = today.getMonth() + 1 === this.currentMonth && today.getFullYear() === this.currentYear
+                        ? today.getDate()
+                        : daysInMonth;
+
+                    const totalDailyChecks = dailyHabits.length * daysToCount;
+                    // Weekly habits are a bit more complex, but we can add their completions too
+                    const weeklyCompletions = await dataService.getWeeklyHabitCompletions(startDate, endDate);
+                    const completedWeekly = weeklyCompletions.filter(c => c.completed).length;
+
+                    habitsRate = (totalDailyChecks + weeklyHabits.length) > 0
+                        ? Math.round(((completedChecks + completedWeekly) / (totalDailyChecks + weeklyHabits.length)) * 100)
+                        : 0;
                 }
             } catch (e) {
                 console.error('Error calculating habits rate:', e);
             }
-            
+
+            // Calculate Kanban completion for the month
+            let kanbanTotal = 0;
+            let kanbanDone = 0;
+            Object.values(this.kanbanCardsData).forEach(cards => {
+                kanbanTotal += cards.length;
+                kanbanDone += cards.filter(c => c.columnTitle.toLowerCase() === 'done').length;
+            });
+            const kanbanPercent = kanbanTotal > 0 ? Math.round((kanbanDone / kanbanTotal) * 100) : 0;
+
             // Update UI
             const timeBlocksEl = document.getElementById('summary-time-blocks');
             const hoursEl = document.getElementById('summary-hours');
             const checklistEl = document.getElementById('summary-checklist');
             const actionPlansEl = document.getElementById('summary-action-plans');
             const habitsEl = document.getElementById('summary-habits');
-            
+            const kanbanEl = document.getElementById('summary-kanban');
+
             if (timeBlocksEl) timeBlocksEl.textContent = totalTimeSlots;
             if (hoursEl) hoursEl.textContent = `${Math.round(totalMinutes / 60)}h`;
             if (checklistEl) checklistEl.textContent = `${checklistPercent}%`;
             if (actionPlansEl) actionPlansEl.textContent = `${actionPlanProgress}%`;
             if (habitsEl) habitsEl.textContent = `${habitsRate}%`;
-            
+            if (kanbanEl) kanbanEl.textContent = `${kanbanPercent}%`;
+
             // Render weekly trend chart
             this.renderWeeklyTrendChart(weeklyData);
-            
+
         } catch (error) {
             console.error('Error updating summary dashboard:', error);
         }
     }
-    
+
     /**
      * Render weekly trend chart
      */
     renderWeeklyTrendChart(weeklyData) {
         const container = document.getElementById('weekly-trend-chart');
         if (!container) return;
-        
+
         container.innerHTML = '';
-        
+
         const maxValue = Math.max(...weeklyData, 1);
         const currentWeek = Math.floor((new Date().getDate() - 1) / 7);
-        const isCurrentMonth = this.currentYear === new Date().getFullYear() && 
-                               this.currentMonth === new Date().getMonth() + 1;
-        
+        const isCurrentMonth = this.currentYear === new Date().getFullYear() &&
+            this.currentMonth === new Date().getMonth() + 1;
+
         weeklyData.forEach((value, index) => {
             const bar = document.createElement('div');
             bar.className = 'trend-bar';
             if (isCurrentMonth && index === currentWeek) {
                 bar.classList.add('current-week');
             }
-            
+
             const height = maxValue > 0 ? (value / maxValue) * 100 : 0;
             bar.style.height = `${Math.max(height, 5)}%`;
             bar.dataset.value = value;
             bar.title = `Week ${index + 1}: ${value} blocks`;
-            
+
             container.appendChild(bar);
         });
     }
@@ -489,26 +527,26 @@ class MonthlyView {
     renderCalendar() {
         const container = document.getElementById('calendar-days');
         if (!container) return;
-        
+
         container.innerHTML = '';
-        
+
         // Get the number of days in the month
         const daysInMonth = getDaysInMonth(this.currentYear, this.currentMonth);
-        
+
         // Get the first day of the month (0 = Sunday, 6 = Saturday)
         const firstDay = new Date(this.currentYear, this.currentMonth - 1, 1).getDay();
-        
+
         // Calculate week rows needed
         const totalCells = firstDay + daysInMonth;
         const weeksNeeded = Math.ceil(totalCells / 7);
-        
+
         let dayCounter = 1;
-        
+
         for (let week = 0; week < weeksNeeded; week++) {
             const weekRow = document.createElement('div');
             weekRow.className = 'calendar-week-row';
             weekRow.setAttribute('role', 'row');
-            
+
             // Add week number cell
             const weekNumCell = document.createElement('div');
             weekNumCell.className = 'week-number-cell';
@@ -516,11 +554,11 @@ class MonthlyView {
             weekNumCell.textContent = weekNumber;
             weekNumCell.title = `Week ${weekNumber}`;
             weekRow.appendChild(weekNumCell);
-            
+
             // Add day cells for this week
             for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
                 const cellIndex = week * 7 + dayOfWeek;
-                
+
                 if (cellIndex < firstDay || dayCounter > daysInMonth) {
                     // Empty cell
                     const emptyCell = document.createElement('div');
@@ -534,17 +572,17 @@ class MonthlyView {
                     dayCounter++;
                 }
             }
-            
+
             container.appendChild(weekRow);
         }
-        
+
         // Create tooltip element if not exists
         this.createTooltip();
-        
+
         // Setup drag selection for multi-day events
         this.setupDragSelection();
     }
-    
+
     /**
      * Get ISO week number
      */
@@ -562,43 +600,43 @@ class MonthlyView {
     createDayCell(day) {
         const template = document.getElementById('calendar-day-template');
         const cell = template.content.cloneNode(true).querySelector('.calendar-day');
-        
+
         const date = new Date(this.currentYear, this.currentMonth - 1, day);
         const dateStr = formatDate(date);
-        
+
         cell.dataset.date = dateStr;
         cell.querySelector('.day-number').textContent = day;
-        
+
         // Highlight today
         const today = new Date();
         if (date.toDateString() === today.toDateString()) {
             cell.classList.add('today');
         }
-        
+
         // Check if date is in the past
         if (date < new Date(today.getFullYear(), today.getMonth(), today.getDate())) {
             cell.classList.add('past');
         }
-        
+
         // Add activity indicators
         this.addDayIndicators(cell, dateStr);
-        
+
         // Add deadline indicator
         this.addDeadlineIndicator(cell, dateStr);
-        
+
         // Click handler - open add event modal
         cell.addEventListener('click', (e) => {
             if (!this.isDragging && !e.shiftKey) {
                 this.showAddEventModal(dateStr);
             }
         });
-        
+
         // Hover handlers for tooltip
         cell.addEventListener('mouseenter', (e) => this.showDayPreview(e, dateStr));
         cell.addEventListener('mouseleave', () => this.hideDayPreview());
         cell.addEventListener('focus', (e) => this.showDayPreview(e, dateStr));
         cell.addEventListener('blur', () => this.hideDayPreview());
-        
+
         // Keyboard navigation
         cell.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -606,17 +644,17 @@ class MonthlyView {
                 this.showAddEventModal(dateStr);
             }
         });
-        
+
         return cell;
     }
-    
+
     /**
      * Add activity indicators to day cell
      */
     addDayIndicators(cell, dateStr) {
         const indicatorsContainer = cell.querySelector('.day-indicators');
         if (!indicatorsContainer) return;
-        
+
         // Time blocks indicator - count by 30-min slots, not activities
         const timeBlocks = this.timeBlocksData[dateStr] || [];
         const timeBlocksIndicator = indicatorsContainer.querySelector('.indicator-dot.time-blocks');
@@ -634,7 +672,7 @@ class MonthlyView {
                 }
             }
         }
-        
+
         // Habits indicator
         const habitsData = this.habitsData[dateStr];
         const habitsIndicator = indicatorsContainer.querySelector('.indicator-dot.habits');
@@ -650,42 +688,62 @@ class MonthlyView {
                 }
             }
         }
-        
-        // Calendar events indicator (unscheduled/all-day events)
+
+        // Calendar events and Kanban cards (integrated view)
         const calendarEvents = this.calendarEventsData?.[dateStr] || [];
-        if (calendarEvents.length > 0) {
-            // Add calendar events to the day-events container
+        const kanbanCards = this.kanbanCardsData?.[dateStr] || [];
+        const allEvents = [
+            ...calendarEvents.map(e => ({ ...e, type: 'unscheduled' })),
+            ...kanbanCards.map(c => ({
+                title: c.title,
+                id: c.id,
+                type: 'kanban',
+                boardId: c.boardId,
+                isCompleted: c.columnTitle.toLowerCase() === 'done'
+            }))
+        ];
+
+        if (allEvents.length > 0) {
             const eventsContainer = cell.querySelector('.day-events');
             if (eventsContainer) {
-                calendarEvents.slice(0, 2).forEach(event => {
+                allEvents.slice(0, 2).forEach(event => {
                     const eventEl = document.createElement('div');
-                    eventEl.className = 'day-event-item unscheduled';
+                    eventEl.className = `day-event-item ${event.type}`;
+                    if (event.isCompleted) eventEl.classList.add('completed');
                     eventEl.textContent = event.title;
-                    eventEl.title = event.title + (event.description ? `: ${event.description}` : '');
+
+                    if (event.type === 'kanban') {
+                        eventEl.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            integrationService.navigateToCard(event.boardId, event.id);
+                        });
+                    }
+
                     eventsContainer.appendChild(eventEl);
                 });
-                if (calendarEvents.length > 2) {
+
+                if (allEvents.length > 2) {
                     const moreEl = document.createElement('div');
                     moreEl.className = 'day-event-more';
-                    moreEl.textContent = `+${calendarEvents.length - 2} more`;
+                    moreEl.textContent = `+${allEvents.length - 2} more`;
                     eventsContainer.appendChild(moreEl);
                 }
             }
         }
     }
-    
+
     /**
      * Add deadline indicator to day cell
      */
     addDeadlineIndicator(cell, dateStr) {
         const deadlines = this.deadlinesData[dateStr] || [];
         const indicator = cell.querySelector('.day-deadline-indicator');
-        
+
         if (indicator && deadlines.length > 0) {
             indicator.classList.add('active');
             indicator.textContent = '🎯';
             indicator.title = `${deadlines.length} goal${deadlines.length > 1 ? 's' : ''} due`;
-            
+
             // Check if any deadline is overdue
             const today = new Date();
             const cellDate = new Date(dateStr);
@@ -695,23 +753,23 @@ class MonthlyView {
             }
         }
     }
-    
+
     /**
      * Show add event modal for a specific day
      */
     showAddEventModal(dateStr) {
         const date = new Date(dateStr);
         const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
-                           'July', 'August', 'September', 'October', 'November', 'December'];
-        
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'];
+
         const formattedDate = `${dayNames[date.getDay()]}, ${monthNames[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
-        
+
         // Build category options
-        const categoryOptions = this.categories.map(c => 
+        const categoryOptions = this.categories.map(c =>
             `<option value="${c.name}">${c.name}</option>`
         ).join('');
-        
+
         if (window.Modal) {
             window.Modal.show({
                 title: `Add Event - ${formattedDate}`,
@@ -738,8 +796,18 @@ class MonthlyView {
                                 <span class="event-type-label">
                                     <span class="event-type-icon">📅</span>
                                     <span class="event-type-text">
-                                        <strong>Unscheduled / All-day</strong>
-                                        <small>No specific time yet</small>
+                                        <strong>Calendar Event</strong>
+                                        <small>All-day or unscheduled</small>
+                                    </span>
+                                </span>
+                            </label>
+                            <label class="event-type-option">
+                                <input type="radio" name="event-type" value="kanban-card" />
+                                <span class="event-type-label">
+                                    <span class="event-type-icon">📋</span>
+                                    <span class="event-type-text">
+                                        <strong>Kanban Card</strong>
+                                        <small>Add task to a board</small>
                                     </span>
                                 </span>
                             </label>
@@ -768,9 +836,9 @@ class MonthlyView {
                 `,
                 buttons: [
                     { text: 'Cancel', className: 'btn-secondary', action: 'cancel' },
-                    { 
-                        text: 'Add Event', 
-                        className: 'btn-primary', 
+                    {
+                        text: 'Add Event',
+                        className: 'btn-primary',
                         action: 'add',
                         primary: true,
                         onClick: () => this.createEventFromModal(dateStr),
@@ -778,15 +846,15 @@ class MonthlyView {
                     }
                 ]
             });
-            
+
             // Setup event type toggle
             setTimeout(() => {
                 document.getElementById('event-title')?.focus();
-                
+
                 // Toggle time fields based on event type
                 const eventTypeRadios = document.querySelectorAll('input[name="event-type"]');
                 const timeFields = document.getElementById('time-fields');
-                
+
                 eventTypeRadios.forEach(radio => {
                     radio.addEventListener('change', (e) => {
                         if (e.target.value === 'calendar-event') {
@@ -805,7 +873,7 @@ class MonthlyView {
             }
         }
     }
-    
+
     /**
      * Create event from modal form
      */
@@ -816,14 +884,14 @@ class MonthlyView {
         const endTime = document.getElementById('event-end-time')?.value;
         const category = document.getElementById('event-category')?.value;
         const notes = document.getElementById('event-notes')?.value?.trim();
-        
+
         if (!title) {
             if (window.showToast) {
                 window.showToast('Please enter an event title', 'error');
             }
             return;
         }
-        
+
         // Validate times only for scheduled events
         if (eventType === 'time-block' && startTime >= endTime) {
             if (window.showToast) {
@@ -831,7 +899,7 @@ class MonthlyView {
             }
             return;
         }
-        
+
         try {
             if (eventType === 'calendar-event') {
                 // Create unscheduled/all-day calendar event
@@ -842,7 +910,7 @@ class MonthlyView {
                     category: category,
                     is_all_day: true
                 });
-                
+
                 // Update local data
                 if (!this.calendarEventsData) {
                     this.calendarEventsData = {};
@@ -855,10 +923,26 @@ class MonthlyView {
                     title: title,
                     category: category
                 });
-                
+
                 if (window.showToast) {
                     window.showToast(`"${title}" added as unscheduled event`, 'success');
                 }
+            } else if (eventType === 'kanban-card') {
+                // Create Kanban card via integration service
+                await integrationService.createCardFromDate(dateStr, {
+                    title: title,
+                    description: notes || null,
+                    priority: 'medium'
+                });
+
+                if (window.showToast) {
+                    window.showToast(`"${title}" added as Kanban card`, 'success');
+                }
+
+                // Note: We don't update local data here because it will be refreshed 
+                // when the cardUpdated event is received (if we implement that)
+                // For now, let's manually re-load data to be sure
+                await this.loadCalendarData();
             } else {
                 // Create time block (scheduled event)
                 await dataService.createTimeBlock({
@@ -869,7 +953,7 @@ class MonthlyView {
                     category: category,
                     notes: notes || null
                 });
-                
+
                 // Update local data
                 if (!this.timeBlocksData[dateStr]) {
                     this.timeBlocksData[dateStr] = [];
@@ -881,23 +965,23 @@ class MonthlyView {
                     activity: title,
                     category: category
                 });
-                
+
                 if (window.showToast) {
                     window.showToast(`"${title}" added to weekly schedule`, 'success');
                 }
             }
-            
+
             // Close modal
             if (window.Modal) {
                 window.Modal.close();
             }
-            
+
             // Re-render calendar to show updated indicators
             this.renderCalendar();
-            
+
             // Update summary
             await this.updateSummaryDashboard();
-            
+
         } catch (error) {
             console.error('Failed to create event:', error);
             if (window.showToast) {
@@ -905,7 +989,7 @@ class MonthlyView {
             }
         }
     }
-    
+
     /**
      * Create quick event (fallback without modal)
      */
@@ -918,7 +1002,7 @@ class MonthlyView {
                 activity: title,
                 category: this.categories[0]?.name || 'Personal'
             });
-            
+
             // Update local data and re-render
             if (!this.timeBlocksData[dateStr]) {
                 this.timeBlocksData[dateStr] = [];
@@ -929,10 +1013,10 @@ class MonthlyView {
                 end_time: '10:00',
                 activity: title
             });
-            
+
             this.renderCalendar();
             await this.updateSummaryDashboard();
-            
+
             if (window.showToast) {
                 window.showToast(`Event "${title}" added`, 'success');
             }
@@ -940,40 +1024,40 @@ class MonthlyView {
             console.error('Failed to create quick event:', error);
         }
     }
-    
+
     /**
      * Create tooltip element
      */
     createTooltip() {
         if (this.tooltipEl) return;
-        
+
         this.tooltipEl = document.createElement('div');
         this.tooltipEl.className = 'day-preview-tooltip';
         this.tooltipEl.style.display = 'none';
         document.body.appendChild(this.tooltipEl);
     }
-    
+
     /**
      * Show day preview tooltip on hover
      */
     showDayPreview(event, dateStr) {
         if (!this.tooltipEl) return;
-        
+
         const date = new Date(dateStr);
         const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        
+
         const timeBlocks = this.timeBlocksData[dateStr] || [];
         const habitsData = this.habitsData[dateStr] || { completed: 0, total: 0 };
         const deadlines = this.deadlinesData[dateStr] || [];
-        
+
         // Calculate total time slots (30-min each)
         const totalSlots = this.calculateTotalTimeSlots(timeBlocks);
-        
-        const habitsPercent = habitsData.total > 0 
-            ? Math.round((habitsData.completed / habitsData.total) * 100) 
+
+        const habitsPercent = habitsData.total > 0
+            ? Math.round((habitsData.completed / habitsData.total) * 100)
             : 0;
-        
+
         // Build activities list (max 4) with duration
         const activitiesList = timeBlocks.slice(0, 4).map(block => {
             const slots = this.calculateTimeSlots(block);
@@ -981,14 +1065,14 @@ class MonthlyView {
             const durationStr = duration >= 60 ? `${duration / 60}h` : `${duration}m`;
             return `<li>${block.start_time?.slice(0, 5) || ''} - ${block.activity || 'Untitled'} (${durationStr})</li>`;
         }).join('');
-        
+
         const moreCount = timeBlocks.length > 4 ? timeBlocks.length - 4 : 0;
-        
+
         // Build deadlines list
-        const deadlinesList = deadlines.map(goal => 
+        const deadlinesList = deadlines.map(goal =>
             `<li>${goal.title || 'Untitled goal'}</li>`
         ).join('');
-        
+
         this.tooltipEl.innerHTML = `
             <div class="preview-header">
                 <span class="preview-date">${monthNames[date.getMonth()]} ${date.getDate()}</span>
@@ -1026,14 +1110,14 @@ class MonthlyView {
                 <span class="preview-hint">Click to add event</span>
             </div>
         `;
-        
+
         // Position tooltip
         const rect = event.target.closest('.calendar-day').getBoundingClientRect();
         const tooltipRect = this.tooltipEl.getBoundingClientRect();
-        
+
         let left = rect.right + 10;
         let top = rect.top;
-        
+
         // Adjust if tooltip would go off screen
         if (left + 250 > window.innerWidth) {
             left = rect.left - 260;
@@ -1041,12 +1125,12 @@ class MonthlyView {
         if (top + 200 > window.innerHeight) {
             top = window.innerHeight - 210;
         }
-        
+
         this.tooltipEl.style.left = `${left}px`;
         this.tooltipEl.style.top = `${top}px`;
         this.tooltipEl.style.display = 'block';
     }
-    
+
     /**
      * Hide day preview tooltip
      */
@@ -1055,40 +1139,40 @@ class MonthlyView {
             this.tooltipEl.style.display = 'none';
         }
     }
-    
+
     /**
      * Setup drag selection for multi-day events
      */
     setupDragSelection() {
         const container = document.getElementById('calendar-days');
         if (!container) return;
-        
+
         container.addEventListener('mousedown', (e) => {
             const dayCell = e.target.closest('.calendar-day:not(.empty)');
             if (!dayCell || e.button !== 0) return;
-            
+
             // Only start drag if shift is held or after a small delay
             if (e.shiftKey) {
                 e.preventDefault();
                 this.startDragSelection(dayCell.dataset.date);
             }
         });
-        
+
         container.addEventListener('mousemove', (e) => {
             if (!this.isDragging) return;
-            
+
             const dayCell = e.target.closest('.calendar-day:not(.empty)');
             if (dayCell) {
                 this.updateDragSelection(dayCell.dataset.date);
             }
         });
-        
+
         container.addEventListener('mouseup', (e) => {
             if (this.isDragging) {
                 this.endDragSelection();
             }
         });
-        
+
         // Cancel drag if mouse leaves calendar
         container.addEventListener('mouseleave', () => {
             if (this.isDragging) {
@@ -1096,7 +1180,7 @@ class MonthlyView {
             }
         });
     }
-    
+
     /**
      * Start drag selection
      */
@@ -1106,7 +1190,7 @@ class MonthlyView {
         this.dragEndDate = dateStr;
         this.updateSelectedRange();
     }
-    
+
     /**
      * Update drag selection
      */
@@ -1114,23 +1198,23 @@ class MonthlyView {
         this.dragEndDate = dateStr;
         this.updateSelectedRange();
     }
-    
+
     /**
      * End drag selection
      */
     endDragSelection() {
         this.isDragging = false;
-        
+
         if (this.selectedDateRange.length > 1) {
             this.showMultiDayEventModal();
         }
-        
+
         // Clear visual selection after a delay
         setTimeout(() => {
             this.clearSelectedRange();
         }, 100);
     }
-    
+
     /**
      * Cancel drag selection
      */
@@ -1138,7 +1222,7 @@ class MonthlyView {
         this.isDragging = false;
         this.clearSelectedRange();
     }
-    
+
     /**
      * Update selected date range visual
      */
@@ -1147,34 +1231,34 @@ class MonthlyView {
         document.querySelectorAll('.calendar-day.in-range').forEach(cell => {
             cell.classList.remove('in-range', 'range-start', 'range-end');
         });
-        
+
         if (!this.dragStartDate || !this.dragEndDate) return;
-        
+
         const start = new Date(this.dragStartDate);
         const end = new Date(this.dragEndDate);
-        
+
         // Ensure start is before end
         const [rangeStart, rangeEnd] = start <= end ? [start, end] : [end, start];
-        
+
         this.selectedDateRange = [];
-        
+
         // Highlight all days in range
         const current = new Date(rangeStart);
         while (current <= rangeEnd) {
             const dateStr = formatDate(current);
             this.selectedDateRange.push(dateStr);
-            
+
             const cell = document.querySelector(`.calendar-day[data-date="${dateStr}"]`);
             if (cell) {
                 cell.classList.add('in-range');
                 if (dateStr === formatDate(rangeStart)) cell.classList.add('range-start');
                 if (dateStr === formatDate(rangeEnd)) cell.classList.add('range-end');
             }
-            
+
             current.setDate(current.getDate() + 1);
         }
     }
-    
+
     /**
      * Clear selected range visual
      */
@@ -1186,7 +1270,7 @@ class MonthlyView {
         this.dragStartDate = null;
         this.dragEndDate = null;
     }
-    
+
     /**
      * Show modal for creating multi-day event
      */
@@ -1194,7 +1278,7 @@ class MonthlyView {
         const startDate = this.selectedDateRange[0];
         const endDate = this.selectedDateRange[this.selectedDateRange.length - 1];
         const dayCount = this.selectedDateRange.length;
-        
+
         // Use the modal component if available
         if (window.Modal) {
             window.Modal.show({
@@ -1221,9 +1305,9 @@ class MonthlyView {
                 `,
                 buttons: [
                     { text: 'Cancel', className: 'btn-secondary', action: 'cancel' },
-                    { 
-                        text: 'Create Event', 
-                        className: 'btn-primary', 
+                    {
+                        text: 'Create Event',
+                        className: 'btn-primary',
                         action: 'create',
                         primary: true,
                         onClick: () => this.createMultiDayEvent(),
@@ -1231,7 +1315,7 @@ class MonthlyView {
                     }
                 ]
             });
-            
+
             // Focus the name input
             setTimeout(() => {
                 document.getElementById('multiday-event-name')?.focus();
@@ -1244,7 +1328,7 @@ class MonthlyView {
             }
         }
     }
-    
+
     /**
      * Create multi-day event from modal
      */
@@ -1252,21 +1336,21 @@ class MonthlyView {
         const name = document.getElementById('multiday-event-name')?.value;
         const category = document.getElementById('multiday-event-category')?.value;
         const notes = document.getElementById('multiday-event-notes')?.value;
-        
+
         if (!name) {
             if (window.showToast) {
                 window.showToast('Please enter an event name', 'error');
             }
             return;
         }
-        
+
         this.applyMultiDayEvent(name, category, notes);
-        
+
         if (window.Modal) {
             window.Modal.close();
         }
     }
-    
+
     /**
      * Apply multi-day event to calendar
      */
@@ -1275,7 +1359,7 @@ class MonthlyView {
         if (!this.monthlyData.multi_day_events) {
             this.monthlyData.multi_day_events = [];
         }
-        
+
         this.monthlyData.multi_day_events.push({
             name,
             category,
@@ -1284,7 +1368,7 @@ class MonthlyView {
             end_date: this.selectedDateRange[this.selectedDateRange.length - 1],
             dates: [...this.selectedDateRange]
         });
-        
+
         // Apply visual styling to days
         const categoryObj = this.getCategoryByName(category);
         this.selectedDateRange.forEach(dateStr => {
@@ -1292,7 +1376,7 @@ class MonthlyView {
             if (cell && categoryObj) {
                 cell.style.background = `linear-gradient(135deg, ${categoryObj.color_start}40 0%, ${categoryObj.color_end}40 100%)`;
                 cell.classList.add('has-event');
-                
+
                 // Add event label to first day
                 if (dateStr === this.selectedDateRange[0]) {
                     const eventLabel = document.createElement('div');
@@ -1303,10 +1387,10 @@ class MonthlyView {
                 }
             }
         });
-        
+
         // Save to database
         this.saveMonthlyData();
-        
+
         if (window.showToast) {
             window.showToast(`Created "${name}" event`, 'success');
         }
@@ -1336,26 +1420,26 @@ class MonthlyView {
     assignCategoryToDay(dateStr, category) {
         const dayCell = document.querySelector(`[data-date="${dateStr}"]`);
         if (!dayCell) return;
-        
+
         const color = CATEGORY_COLORS[category];
         dayCell.style.backgroundColor = color;
         dayCell.style.opacity = '0.3';
-        
+
         // Store this assignment (could be in monthly_data or a separate structure)
         // For now, we'll store it in the monthly data's action_plan as metadata
         if (!this.monthlyData.action_plan) {
             this.monthlyData.action_plan = [];
         }
-        
+
         // Find or create day category mapping
         let dayCategories = this.monthlyData.action_plan.find(item => item.type === 'day_categories');
         if (!dayCategories) {
             dayCategories = { type: 'day_categories', data: {} };
             this.monthlyData.action_plan.push(dayCategories);
         }
-        
+
         dayCategories.data[dateStr] = category;
-        
+
         // Save to database
         this.saveMonthlyData();
     }
@@ -1366,11 +1450,11 @@ class MonthlyView {
     renderChecklist() {
         const container = document.getElementById('checklist-container');
         if (!container) return;
-        
+
         container.innerHTML = '';
-        
+
         const checklist = this.monthlyData.checklist || [];
-        
+
         checklist.forEach((item, index) => {
             const checklistItem = this.createChecklistItem(item, index);
             container.appendChild(checklistItem);
@@ -1383,26 +1467,26 @@ class MonthlyView {
     createChecklistItem(item, index) {
         const template = document.getElementById('checklist-item-template');
         const element = template.content.cloneNode(true).querySelector('.checklist-item');
-        
+
         const checkbox = element.querySelector('.checklist-checkbox');
         const textInput = element.querySelector('.checklist-text');
-        
+
         checkbox.checked = item.completed || false;
         textInput.value = item.text || '';
-        
+
         // Event listeners
         checkbox.addEventListener('change', (e) => {
             this.toggleChecklistItem(index, e.target.checked);
         });
-        
+
         textInput.addEventListener('blur', (e) => {
             this.updateChecklistItemText(index, e.target.value);
         });
-        
+
         element.querySelector('.delete-checklist-btn').addEventListener('click', () => {
             this.deleteChecklistItem(index);
         });
-        
+
         return element;
     }
 
@@ -1413,7 +1497,7 @@ class MonthlyView {
         if (!this.monthlyData.checklist) {
             this.monthlyData.checklist = [];
         }
-        
+
         this.monthlyData.checklist.push({ text: '', completed: false });
         this.renderChecklist();
     }
@@ -1473,12 +1557,12 @@ class MonthlyView {
     renderActionPlan() {
         const container = document.getElementById('action-plan-container');
         if (!container) return;
-        
+
         container.innerHTML = '';
-        
+
         // Filter out metadata items (like day_categories)
         const actionPlans = (this.monthlyData.action_plan || []).filter(item => item.type !== 'day_categories');
-        
+
         actionPlans.forEach((item, index) => {
             const actionPlanItem = this.createActionPlanItem(item, index);
             container.appendChild(actionPlanItem);
@@ -1491,38 +1575,51 @@ class MonthlyView {
     createActionPlanItem(item, index) {
         const template = document.getElementById('action-plan-item-template');
         const element = template.content.cloneNode(true).querySelector('.action-plan-item');
-        
+
         const goalInput = element.querySelector('.action-goal');
         const progressSlider = element.querySelector('.action-progress');
         const progressValue = element.querySelector('.progress-value');
         const evaluationTextarea = element.querySelector('.action-evaluation');
-        
+
         goalInput.value = item.goal || '';
         progressSlider.value = item.progress || 0;
         progressValue.textContent = `${item.progress || 0}%`;
         evaluationTextarea.value = item.evaluation || '';
-        
+
         // Event listeners
         goalInput.addEventListener('blur', (e) => {
             this.updateActionPlanGoal(index, e.target.value);
         });
-        
+
         progressSlider.addEventListener('input', (e) => {
             progressValue.textContent = `${e.target.value}%`;
         });
-        
+
         progressSlider.addEventListener('change', (e) => {
             this.updateActionPlanProgress(index, parseInt(e.target.value));
         });
-        
+
         evaluationTextarea.addEventListener('blur', (e) => {
             this.updateActionPlanEvaluation(index, e.target.value);
         });
-        
+
         element.querySelector('.delete-action-plan-btn').addEventListener('click', () => {
             this.deleteActionPlan(index);
         });
-        
+
+        const createCardBtn = element.querySelector('.create-action-card-btn');
+        if (createCardBtn) {
+            createCardBtn.addEventListener('click', () => {
+                integrationService.emit('openCardModal', {
+                    mode: 'create',
+                    preFill: {
+                        title: item.goal,
+                        due_date: formatDate(new Date(this.currentYear, this.currentMonth, 0)) // Last day of month
+                    }
+                });
+            });
+        }
+
         return element;
     }
 
@@ -1533,13 +1630,13 @@ class MonthlyView {
         if (!this.monthlyData.action_plan) {
             this.monthlyData.action_plan = [];
         }
-        
+
         this.monthlyData.action_plan.push({
             goal: '',
             progress: 0,
             evaluation: ''
         });
-        
+
         this.renderActionPlan();
     }
 
@@ -1582,10 +1679,10 @@ class MonthlyView {
     async deleteActionPlan(index) {
         const actionPlans = this.monthlyData.action_plan.filter(item => item.type !== 'day_categories');
         const itemToDelete = actionPlans[index];
-        
+
         // Find the actual index in the full array
         const actualIndex = this.monthlyData.action_plan.indexOf(itemToDelete);
-        
+
         if (actualIndex !== -1) {
             this.monthlyData.action_plan.splice(actualIndex, 1);
             await this.saveMonthlyData();
@@ -1621,12 +1718,12 @@ class MonthlyView {
     async loadCategories() {
         try {
             this.categories = await dataService.getCustomCategories();
-            
+
             // If no categories exist, initialize defaults
             if (this.categories.length === 0) {
                 this.categories = await dataService.initializeDefaultCategories();
             }
-            
+
             this.renderCategories();
         } catch (error) {
             console.error('Failed to load categories:', error);
@@ -1640,9 +1737,9 @@ class MonthlyView {
     renderCategories() {
         const container = document.getElementById('category-list');
         if (!container) return;
-        
+
         container.innerHTML = '';
-        
+
         this.categories.forEach(category => {
             const item = document.createElement('div');
             item.className = 'category-item';
@@ -1650,16 +1747,16 @@ class MonthlyView {
             item.tabIndex = 0;
             item.setAttribute('role', 'listitem');
             item.setAttribute('aria-label', `${category.name} category`);
-            
+
             const gradient = `linear-gradient(135deg, ${category.color_start} 0%, ${category.color_end} 100%)`;
-            
+
             item.innerHTML = `
                 <span class="category-color" style="background: ${gradient};" aria-hidden="true"></span>
                 <span class="category-name">${category.name}</span>
             `;
-            
+
             item.addEventListener('click', () => this.selectCategory(category.name));
-            
+
             container.appendChild(item);
         });
     }
@@ -1670,22 +1767,22 @@ class MonthlyView {
     openCategoryManager() {
         const modal = document.getElementById('category-manager-modal');
         if (!modal) return;
-        
+
         this.renderCategoryManager();
         modal.style.display = 'flex';
-        
+
         // Setup modal listeners
         const closeButtons = modal.querySelectorAll('.modal-close');
         closeButtons.forEach(btn => {
             btn.addEventListener('click', () => this.closeCategoryManager());
         });
-        
+
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                 this.closeCategoryManager();
             }
         });
-        
+
         document.getElementById('add-category-btn')?.addEventListener('click', () => this.addNewCategory());
     }
 
@@ -1705,9 +1802,9 @@ class MonthlyView {
     renderCategoryManager() {
         const container = document.getElementById('category-manager-list');
         if (!container) return;
-        
+
         container.innerHTML = '';
-        
+
         this.categories.forEach(category => {
             const item = this.createCategoryManagerItem(category);
             container.appendChild(item);
@@ -1720,49 +1817,49 @@ class MonthlyView {
     createCategoryManagerItem(category) {
         const template = document.getElementById('category-manager-item-template');
         const item = template.content.cloneNode(true).querySelector('.category-manager-item');
-        
+
         item.dataset.categoryId = category.id;
-        
+
         const preview = item.querySelector('.category-manager-color-preview');
         const nameInput = item.querySelector('.category-manager-name');
         const colorStartInput = item.querySelector('.category-color-start');
         const colorEndInput = item.querySelector('.category-color-end');
         const deleteBtn = item.querySelector('.delete-category-btn');
-        
+
         // Set values
         const gradient = `linear-gradient(135deg, ${category.color_start} 0%, ${category.color_end} 100%)`;
         preview.style.background = gradient;
         nameInput.value = category.name;
         colorStartInput.value = category.color_start;
         colorEndInput.value = category.color_end;
-        
+
         // Disable delete for default categories
         if (category.is_default) {
             deleteBtn.disabled = true;
             deleteBtn.title = 'Cannot delete default category';
         }
-        
+
         // Event listeners
         nameInput.addEventListener('blur', () => {
             this.updateCategoryName(category.id, nameInput.value);
         });
-        
+
         colorStartInput.addEventListener('change', () => {
             this.updateCategoryColors(category.id, colorStartInput.value, colorEndInput.value);
             const newGradient = `linear-gradient(135deg, ${colorStartInput.value} 0%, ${colorEndInput.value} 100%)`;
             preview.style.background = newGradient;
         });
-        
+
         colorEndInput.addEventListener('change', () => {
             this.updateCategoryColors(category.id, colorStartInput.value, colorEndInput.value);
             const newGradient = `linear-gradient(135deg, ${colorStartInput.value} 0%, ${colorEndInput.value} 100%)`;
             preview.style.background = newGradient;
         });
-        
+
         deleteBtn.addEventListener('click', () => {
             this.deleteCategory(category.id);
         });
-        
+
         return item;
     }
 
@@ -1778,10 +1875,10 @@ class MonthlyView {
                 order_index: this.categories.length,
                 is_default: false
             };
-            
+
             const created = await dataService.createCustomCategory(newCategory);
             this.categories.push(created);
-            
+
             this.renderCategoryManager();
             this.renderCategories();
         } catch (error) {
@@ -1796,12 +1893,12 @@ class MonthlyView {
     async updateCategoryName(categoryId, newName) {
         try {
             await dataService.updateCustomCategory(categoryId, { name: newName });
-            
+
             const category = this.categories.find(c => c.id === categoryId);
             if (category) {
                 category.name = newName;
             }
-            
+
             this.renderCategories();
         } catch (error) {
             console.error('Failed to update category name:', error);
@@ -1814,17 +1911,17 @@ class MonthlyView {
      */
     async updateCategoryColors(categoryId, colorStart, colorEnd) {
         try {
-            await dataService.updateCustomCategory(categoryId, { 
+            await dataService.updateCustomCategory(categoryId, {
                 color_start: colorStart,
                 color_end: colorEnd
             });
-            
+
             const category = this.categories.find(c => c.id === categoryId);
             if (category) {
                 category.color_start = colorStart;
                 category.color_end = colorEnd;
             }
-            
+
             this.renderCategories();
         } catch (error) {
             console.error('Failed to update category colors:', error);
@@ -1839,11 +1936,11 @@ class MonthlyView {
         if (!confirm('Are you sure you want to delete this category?')) {
             return;
         }
-        
+
         try {
             await dataService.deleteCustomCategory(categoryId);
             this.categories = this.categories.filter(c => c.id !== categoryId);
-            
+
             this.renderCategoryManager();
             this.renderCategories();
         } catch (error) {

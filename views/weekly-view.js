@@ -4,6 +4,7 @@
  */
 
 import dataService from '../js/data-service.js';
+import integrationService from '../js/integration-service.js';
 import { formatDate, getCategoryColor, getCategoryGradient } from '../js/utils.js';
 import aiService from '../js/ai-service.js';
 
@@ -120,6 +121,10 @@ class WeeklyView {
         // AI features
         document.getElementById('ai-weekly-insights-btn')?.addEventListener('click', () => this.showAIWeeklyInsights());
         document.getElementById('ai-categorize-btn')?.addEventListener('click', () => this.aiCategorizeActivity());
+
+        // Integration events
+        integrationService.on('cardUpdated', () => this.loadData());
+        integrationService.on('cardDeleted', () => this.loadData());
     }
 
     /**
@@ -222,6 +227,24 @@ class WeeklyView {
                     // Trigger change event
                     timeInput.dispatchEvent(new Event('change'));
                 });
+            });
+        });
+
+        // Event type toggle
+        const typeRadios = modal.querySelectorAll('input[name="weekly-event-type"]');
+        const startTimeGroup = document.getElementById('block-start-time').closest('.form-group');
+        const endTimeGroup = document.getElementById('block-end-time').closest('.form-group');
+
+        typeRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const isKanban = e.target.value === 'kanban-card';
+                startTimeGroup.style.display = isKanban ? 'none' : 'block';
+                endTimeGroup.style.display = isKanban ? 'none' : 'block';
+
+                // If it's a kanban card, hide duplicate/delete as we don't support 
+                // editing them from here yet (just quick creation)
+                if (deleteButton) deleteButton.style.display = isKanban ? 'none' : (this.editingBlock ? 'inline-block' : 'none');
+                if (duplicateButton) duplicateBtn.style.display = isKanban ? 'none' : (this.editingBlock ? 'inline-block' : 'none');
             });
         });
     }
@@ -409,6 +432,20 @@ class WeeklyView {
                 if (entry) {
                     this.dailyEntries[dateStr] = entry;
                 }
+            }
+
+            // Load Kanban cards for the week
+            this.kanbanCardsData = {};
+            try {
+                const cards = await integrationService.getCardsDueInRange(startDate, endDate);
+                cards.forEach(card => {
+                    if (!this.kanbanCardsData[card.due_date]) {
+                        this.kanbanCardsData[card.due_date] = [];
+                    }
+                    this.kanbanCardsData[card.due_date].push(card);
+                });
+            } catch (e) {
+                console.error('Failed to load Kanban cards for weekly view:', e);
             }
 
             // Render all components
@@ -1129,6 +1166,24 @@ class WeeklyView {
             const endTime = document.getElementById('block-end-time').value;
             const activity = document.getElementById('block-activity').value;
             const category = document.getElementById('block-category').value;
+            const eventType = document.querySelector('input[name="weekly-event-type"]:checked')?.value || 'time-block';
+
+            if (eventType === 'kanban-card') {
+                if (!date || !activity) {
+                    alert('Please fill in date and activity');
+                    return;
+                }
+
+                await integrationService.createCardFromDate(date, {
+                    title: activity,
+                    priority: 'medium'
+                });
+
+                this.showSuccess('Kanban card created');
+                await this.loadData();
+                this.closeModal();
+                return;
+            }
 
             if (!date || !startTime || !activity) {
                 alert('Please fill in all required fields');
@@ -1290,6 +1345,32 @@ class WeeklyView {
             const checklistItem = this.createChecklistItem(item, dateStr, index);
             checklistContainer.appendChild(checklistItem);
         });
+
+        // Render Kanban cards
+        const kanbanContainer = section.querySelector('.kanban-items');
+        const kanbanCards = this.kanbanCardsData[dateStr] || [];
+        if (kanbanContainer) {
+            if (kanbanCards.length === 0) {
+                kanbanContainer.innerHTML = '<p class="no-items-hint">No tasks due today</p>';
+            } else {
+                kanbanCards.forEach(card => {
+                    const cardEl = document.createElement('div');
+                    cardEl.className = 'weekly-kanban-item';
+                    if (card.columnTitle.toLowerCase() === 'done') cardEl.classList.add('completed');
+
+                    cardEl.innerHTML = `
+                        <span class="kanban-item-title">${card.title}</span>
+                        <span class="kanban-item-board">${card.boardTitle}</span>
+                    `;
+
+                    cardEl.addEventListener('click', () => {
+                        integrationService.navigateToCard(card.boardId, card.id);
+                    });
+
+                    kanbanContainer.appendChild(cardEl);
+                });
+            }
+        }
 
         // Add checklist item button
         section.querySelector('.add-checklist-item-btn').addEventListener('click', () => {
