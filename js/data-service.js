@@ -2541,6 +2541,1439 @@ class DataService {
             this.handleError(error, 'initializeDefaultCategories');
         }
     }
+
+    // ==================== CANVAS DOCUMENTS ====================
+
+    /**
+     * Get all canvas documents for the current user
+     * @returns {Promise<Array>} Array of canvas documents sorted by updated_at descending
+     */
+    async getCanvasDocuments() {
+        try {
+            // Try cache first
+            if (this.cacheEnabled) {
+                const cached = await cacheService.getAll(STORES.canvasDocuments);
+                if (cached && cached.length > 0) {
+                    if (cacheService.online) {
+                        this.syncInBackground(STORES.canvasDocuments, async () => {
+                            const { data } = await this.supabase
+                                .from('canvas_documents')
+                                .select('*')
+                                .order('updated_at', { ascending: false });
+                            return data;
+                        });
+                    }
+                    return cached.sort((a, b) => 
+                        new Date(b.updated_at) - new Date(a.updated_at)
+                    );
+                }
+            }
+
+            const { data, error } = await this.supabase
+                .from('canvas_documents')
+                .select('*')
+                .order('updated_at', { ascending: false });
+
+            if (error) throw error;
+
+            // Update cache
+            if (this.cacheEnabled && data) {
+                await cacheService.putAll(STORES.canvasDocuments, data);
+            }
+
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getCanvasDocuments');
+        }
+    }
+
+    /**
+     * Get a single canvas document by ID
+     * @param {string} id - Canvas document ID
+     * @returns {Promise<Object|null>} Canvas document or null if not found
+     */
+    async getCanvasDocument(id) {
+        try {
+            // Try cache first
+            if (this.cacheEnabled) {
+                const cached = await cacheService.get(STORES.canvasDocuments, id);
+                if (cached) {
+                    if (cacheService.online) {
+                        // Sync this specific document in background
+                        setTimeout(async () => {
+                            try {
+                                const { data } = await this.supabase
+                                    .from('canvas_documents')
+                                    .select('*')
+                                    .eq('id', id)
+                                    .single();
+                                if (data) {
+                                    await cacheService.put(STORES.canvasDocuments, data);
+                                }
+                            } catch (e) {
+                                console.warn('[Cache] Background sync failed for canvas document:', e);
+                            }
+                        }, 100);
+                    }
+                    return cached;
+                }
+            }
+
+            const { data, error } = await this.supabase
+                .from('canvas_documents')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (error && error.code !== 'PGRST116') throw error;
+
+            // Update cache
+            if (this.cacheEnabled && data) {
+                await cacheService.put(STORES.canvasDocuments, data);
+            }
+
+            return data || null;
+        } catch (error) {
+            this.handleError(error, 'getCanvasDocument');
+        }
+    }
+
+    /**
+     * Create a new canvas document
+     * @param {Object} document - Canvas document object with title, stroke_data, thumbnail_url
+     * @returns {Promise<Object>} Created canvas document
+     */
+    async createCanvasDocument(document) {
+        try {
+            const { data: { user } } = await this.supabase.auth.getUser();
+            if (!user) throw new Error('User not authenticated');
+
+            const now = new Date().toISOString();
+            const docWithUser = {
+                ...document,
+                user_id: user.id,
+                stroke_data: document.stroke_data || { version: 1, strokes: [] },
+                title: document.title || 'Untitled Canvas',
+                created_at: now,
+                updated_at: now
+            };
+
+            // If offline, create with temp ID and queue for sync
+            if (!cacheService.online) {
+                const tempDoc = {
+                    ...docWithUser,
+                    id: `temp_${Date.now()}`
+                };
+                await cacheService.put(STORES.canvasDocuments, tempDoc);
+                await cacheService.addPendingSync({
+                    type: 'create',
+                    store: 'canvas_documents',
+                    data: docWithUser
+                });
+                return tempDoc;
+            }
+
+            const { data, error } = await this.supabase
+                .from('canvas_documents')
+                .insert([docWithUser])
+                .select();
+
+            if (error) throw error;
+
+            // Update cache
+            if (this.cacheEnabled && data[0]) {
+                await cacheService.put(STORES.canvasDocuments, data[0]);
+            }
+
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'createCanvasDocument');
+        }
+    }
+
+    /**
+     * Update an existing canvas document
+     * @param {string} id - Canvas document ID
+     * @param {Object} updates - Fields to update (title, stroke_data, thumbnail_url)
+     * @returns {Promise<Object>} Updated canvas document
+     */
+    async updateCanvasDocument(id, updates) {
+        try {
+            // Add updated_at timestamp
+            const updatesWithTimestamp = {
+                ...updates,
+                updated_at: new Date().toISOString()
+            };
+
+            // Update cache immediately for instant UI feedback
+            if (this.cacheEnabled) {
+                const cached = await cacheService.get(STORES.canvasDocuments, id);
+                if (cached) {
+                    await cacheService.put(STORES.canvasDocuments, { 
+                        ...cached, 
+                        ...updatesWithTimestamp 
+                    });
+                }
+            }
+
+            // If offline, queue for sync
+            if (!cacheService.online) {
+                await cacheService.addPendingSync({
+                    type: 'update',
+                    store: 'canvas_documents',
+                    itemId: id,
+                    data: updatesWithTimestamp
+                });
+                return await cacheService.get(STORES.canvasDocuments, id);
+            }
+
+            const { data, error } = await this.supabase
+                .from('canvas_documents')
+                .update(updatesWithTimestamp)
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'updateCanvasDocument');
+        }
+    }
+
+    /**
+     * Delete a canvas document
+     * @param {string} id - Canvas document ID
+     * @returns {Promise<void>}
+     */
+    async deleteCanvasDocument(id) {
+        try {
+            // Delete from cache immediately
+            if (this.cacheEnabled) {
+                await cacheService.delete(STORES.canvasDocuments, id);
+            }
+
+            // If offline, queue for sync
+            if (!cacheService.online) {
+                await cacheService.addPendingSync({
+                    type: 'delete',
+                    store: 'canvas_documents',
+                    itemId: id
+                });
+                return;
+            }
+
+            const { error } = await this.supabase
+                .from('canvas_documents')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+        } catch (error) {
+            this.handleError(error, 'deleteCanvasDocument');
+        }
+    }
+
+    // ==================== KANBAN BOARDS ====================
+
+    /**
+     * Get all Kanban boards for the current user
+     * @returns {Promise<Array>} Array of Kanban boards sorted by updated_at descending
+     */
+    async getKanbanBoards() {
+        try {
+            // Try cache first
+            if (this.cacheEnabled) {
+                const cached = await cacheService.getAll(STORES.kanbanBoards);
+                if (cached && cached.length > 0) {
+                    if (cacheService.online) {
+                        this.syncInBackground(STORES.kanbanBoards, async () => {
+                            const { data } = await this.supabase
+                                .from('kanban_boards')
+                                .select('*')
+                                .order('updated_at', { ascending: false });
+                            return data;
+                        });
+                    }
+                    // Sort by updated_at descending (most recent first)
+                    return cached.sort((a, b) => 
+                        new Date(b.updated_at) - new Date(a.updated_at)
+                    );
+                }
+            }
+
+            const { data, error } = await this.supabase
+                .from('kanban_boards')
+                .select('*')
+                .order('updated_at', { ascending: false });
+
+            if (error) throw error;
+
+            // Update cache
+            if (this.cacheEnabled && data) {
+                await cacheService.putAll(STORES.kanbanBoards, data);
+            }
+
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getKanbanBoards');
+        }
+    }
+
+    /**
+     * Get a single Kanban board by ID
+     * @param {string} id - Board ID
+     * @returns {Promise<Object|null>} Board object or null
+     */
+    async getKanbanBoard(id) {
+        try {
+            // Try cache first
+            if (this.cacheEnabled) {
+                const cached = await cacheService.get(STORES.kanbanBoards, id);
+                if (cached) {
+                    if (cacheService.online) {
+                        this.syncInBackground(STORES.kanbanBoards, async () => {
+                            const { data } = await this.supabase
+                                .from('kanban_boards')
+                                .select('*');
+                            return data;
+                        });
+                    }
+                    return cached;
+                }
+            }
+
+            const { data, error } = await this.supabase
+                .from('kanban_boards')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (error && error.code !== 'PGRST116') throw error;
+
+            // Update cache
+            if (this.cacheEnabled && data) {
+                await cacheService.put(STORES.kanbanBoards, data);
+            }
+
+            return data || null;
+        } catch (error) {
+            this.handleError(error, 'getKanbanBoard');
+        }
+    }
+
+    /**
+     * Create a new Kanban board
+     * @param {Object} board - Board object with title, description, category_id, settings
+     * @returns {Promise<Object>} Created board
+     */
+    async createKanbanBoard(board) {
+        try {
+            const { data: { user } } = await this.supabase.auth.getUser();
+            if (!user) throw new Error('User not authenticated');
+
+            const boardWithUser = { 
+                ...board, 
+                user_id: user.id,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            // If offline, create with temp ID and queue
+            if (!cacheService.online) {
+                const tempBoard = {
+                    ...boardWithUser,
+                    id: `temp_${Date.now()}`
+                };
+                await cacheService.put(STORES.kanbanBoards, tempBoard);
+                await cacheService.addPendingSync({
+                    type: 'create',
+                    store: 'kanban_boards',
+                    data: boardWithUser
+                });
+                return tempBoard;
+            }
+
+            const { data, error } = await this.supabase
+                .from('kanban_boards')
+                .insert([boardWithUser])
+                .select();
+
+            if (error) throw error;
+
+            // Update cache
+            if (this.cacheEnabled && data[0]) {
+                await cacheService.put(STORES.kanbanBoards, data[0]);
+            }
+
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'createKanbanBoard');
+        }
+    }
+
+    /**
+     * Update a Kanban board
+     * @param {string} id - Board ID
+     * @param {Object} updates - Fields to update
+     * @returns {Promise<Object>} Updated board
+     */
+    async updateKanbanBoard(id, updates) {
+        try {
+            const updatesWithTimestamp = {
+                ...updates,
+                updated_at: new Date().toISOString()
+            };
+
+            // Update cache immediately
+            if (this.cacheEnabled) {
+                const cached = await cacheService.get(STORES.kanbanBoards, id);
+                if (cached) {
+                    await cacheService.put(STORES.kanbanBoards, { 
+                        ...cached, 
+                        ...updatesWithTimestamp 
+                    });
+                }
+            }
+
+            // If offline, queue for sync
+            if (!cacheService.online) {
+                await cacheService.addPendingSync({
+                    type: 'update',
+                    store: 'kanban_boards',
+                    itemId: id,
+                    data: updatesWithTimestamp
+                });
+                return await cacheService.get(STORES.kanbanBoards, id);
+            }
+
+            const { data, error } = await this.supabase
+                .from('kanban_boards')
+                .update(updatesWithTimestamp)
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'updateKanbanBoard');
+        }
+    }
+
+    /**
+     * Delete a Kanban board (cascades to columns and cards)
+     * @param {string} id - Board ID
+     * @returns {Promise<void>}
+     */
+    async deleteKanbanBoard(id) {
+        try {
+            // Delete from cache immediately (board, columns, and cards)
+            if (this.cacheEnabled) {
+                await cacheService.delete(STORES.kanbanBoards, id);
+                
+                // Also delete associated columns and cards from cache
+                const columns = await cacheService.getAll(STORES.kanbanColumns);
+                const boardColumns = columns.filter(c => c.board_id === id);
+                for (const col of boardColumns) {
+                    await cacheService.delete(STORES.kanbanColumns, col.id);
+                }
+                
+                const cards = await cacheService.getAll(STORES.kanbanCards);
+                const boardCards = cards.filter(c => c.board_id === id);
+                for (const card of boardCards) {
+                    await cacheService.delete(STORES.kanbanCards, card.id);
+                }
+            }
+
+            // If offline, queue for sync
+            if (!cacheService.online) {
+                await cacheService.addPendingSync({
+                    type: 'delete',
+                    store: 'kanban_boards',
+                    itemId: id
+                });
+                return;
+            }
+
+            const { error } = await this.supabase
+                .from('kanban_boards')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+        } catch (error) {
+            this.handleError(error, 'deleteKanbanBoard');
+        }
+    }
+
+    // ==================== KANBAN COLUMNS ====================
+
+    /**
+     * Get all columns for a specific board
+     * @param {string} boardId - Board ID
+     * @returns {Promise<Array>} Array of columns sorted by order_index
+     */
+    async getKanbanColumns(boardId) {
+        try {
+            // Try cache first
+            if (this.cacheEnabled) {
+                const cached = await cacheService.getAll(STORES.kanbanColumns);
+                const boardColumns = cached.filter(c => c.board_id === boardId);
+                if (boardColumns.length > 0 || cached.length > 0) {
+                    if (cacheService.online) {
+                        this.syncInBackground(STORES.kanbanColumns, async () => {
+                            const { data } = await this.supabase
+                                .from('kanban_columns')
+                                .select('*')
+                                .eq('board_id', boardId);
+                            return data;
+                        });
+                    }
+                    return boardColumns.sort((a, b) => a.order_index - b.order_index);
+                }
+            }
+
+            const { data, error } = await this.supabase
+                .from('kanban_columns')
+                .select('*')
+                .eq('board_id', boardId)
+                .order('order_index');
+
+            if (error) throw error;
+
+            // Update cache
+            if (this.cacheEnabled && data) {
+                await cacheService.putAll(STORES.kanbanColumns, data);
+            }
+
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getKanbanColumns');
+        }
+    }
+
+    /**
+     * Create a new Kanban column
+     * @param {Object} column - Column object with board_id, title, order_index, wip_limit, color
+     * @returns {Promise<Object>} Created column
+     */
+    async createKanbanColumn(column) {
+        try {
+            const columnWithTimestamp = {
+                ...column,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            // If offline, create with temp ID and queue
+            if (!cacheService.online) {
+                const tempColumn = {
+                    ...columnWithTimestamp,
+                    id: `temp_${Date.now()}`
+                };
+                await cacheService.put(STORES.kanbanColumns, tempColumn);
+                await cacheService.addPendingSync({
+                    type: 'create',
+                    store: 'kanban_columns',
+                    data: columnWithTimestamp
+                });
+                return tempColumn;
+            }
+
+            const { data, error } = await this.supabase
+                .from('kanban_columns')
+                .insert([columnWithTimestamp])
+                .select();
+
+            if (error) throw error;
+
+            // Update cache
+            if (this.cacheEnabled && data[0]) {
+                await cacheService.put(STORES.kanbanColumns, data[0]);
+            }
+
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'createKanbanColumn');
+        }
+    }
+
+    /**
+     * Update a Kanban column
+     * @param {string} id - Column ID
+     * @param {Object} updates - Fields to update
+     * @returns {Promise<Object>} Updated column
+     */
+    async updateKanbanColumn(id, updates) {
+        try {
+            const updatesWithTimestamp = {
+                ...updates,
+                updated_at: new Date().toISOString()
+            };
+
+            // Update cache immediately
+            if (this.cacheEnabled) {
+                const cached = await cacheService.get(STORES.kanbanColumns, id);
+                if (cached) {
+                    await cacheService.put(STORES.kanbanColumns, { 
+                        ...cached, 
+                        ...updatesWithTimestamp 
+                    });
+                }
+            }
+
+            // If offline, queue for sync
+            if (!cacheService.online) {
+                await cacheService.addPendingSync({
+                    type: 'update',
+                    store: 'kanban_columns',
+                    itemId: id,
+                    data: updatesWithTimestamp
+                });
+                return await cacheService.get(STORES.kanbanColumns, id);
+            }
+
+            const { data, error } = await this.supabase
+                .from('kanban_columns')
+                .update(updatesWithTimestamp)
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'updateKanbanColumn');
+        }
+    }
+
+    /**
+     * Delete a Kanban column
+     * @param {string} id - Column ID
+     * @returns {Promise<void>}
+     */
+    async deleteKanbanColumn(id) {
+        try {
+            // Delete from cache immediately
+            if (this.cacheEnabled) {
+                await cacheService.delete(STORES.kanbanColumns, id);
+                
+                // Also update cards that were in this column (set column_id to null)
+                const cards = await cacheService.getAll(STORES.kanbanCards);
+                const columnCards = cards.filter(c => c.column_id === id);
+                for (const card of columnCards) {
+                    await cacheService.put(STORES.kanbanCards, { 
+                        ...card, 
+                        column_id: null 
+                    });
+                }
+            }
+
+            // If offline, queue for sync
+            if (!cacheService.online) {
+                await cacheService.addPendingSync({
+                    type: 'delete',
+                    store: 'kanban_columns',
+                    itemId: id
+                });
+                return;
+            }
+
+            const { error } = await this.supabase
+                .from('kanban_columns')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+        } catch (error) {
+            this.handleError(error, 'deleteKanbanColumn');
+        }
+    }
+
+    // ==================== KANBAN CARDS ====================
+
+    /**
+     * Get all cards for a specific board
+     * @param {string} boardId - Board ID
+     * @returns {Promise<Array>} Array of cards sorted by order_index
+     */
+    async getKanbanCards(boardId) {
+        try {
+            // Try cache first
+            if (this.cacheEnabled) {
+                const cached = await cacheService.getAll(STORES.kanbanCards);
+                const boardCards = cached.filter(c => c.board_id === boardId);
+                if (boardCards.length > 0 || cached.length > 0) {
+                    if (cacheService.online) {
+                        this.syncInBackground(STORES.kanbanCards, async () => {
+                            const { data } = await this.supabase
+                                .from('kanban_cards')
+                                .select('*')
+                                .eq('board_id', boardId);
+                            return data;
+                        });
+                    }
+                    return boardCards.sort((a, b) => a.order_index - b.order_index);
+                }
+            }
+
+            const { data, error } = await this.supabase
+                .from('kanban_cards')
+                .select('*')
+                .eq('board_id', boardId)
+                .order('order_index');
+
+            if (error) throw error;
+
+            // Update cache
+            if (this.cacheEnabled && data) {
+                await cacheService.putAll(STORES.kanbanCards, data);
+            }
+
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getKanbanCards');
+        }
+    }
+
+    /**
+     * Get a single Kanban card by ID
+     * @param {string} id - Card ID
+     * @returns {Promise<Object|null>} Card object or null
+     */
+    async getKanbanCard(id) {
+        try {
+            // Try cache first
+            if (this.cacheEnabled) {
+                const cached = await cacheService.get(STORES.kanbanCards, id);
+                if (cached) {
+                    if (cacheService.online) {
+                        this.syncInBackground(STORES.kanbanCards, async () => {
+                            const { data } = await this.supabase
+                                .from('kanban_cards')
+                                .select('*');
+                            return data;
+                        });
+                    }
+                    return cached;
+                }
+            }
+
+            const { data, error } = await this.supabase
+                .from('kanban_cards')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (error && error.code !== 'PGRST116') throw error;
+
+            // Update cache
+            if (this.cacheEnabled && data) {
+                await cacheService.put(STORES.kanbanCards, data);
+            }
+
+            return data || null;
+        } catch (error) {
+            this.handleError(error, 'getKanbanCard');
+        }
+    }
+
+    /**
+     * Create a new Kanban card
+     * @param {Object} card - Card object with board_id, column_id, title, description, order_index, priority, due_date, labels, is_backlog, linked_goal_id
+     * @returns {Promise<Object>} Created card
+     */
+    async createKanbanCard(card) {
+        try {
+            const cardWithTimestamp = {
+                ...card,
+                pomodoro_count: card.pomodoro_count || 0,
+                labels: card.labels || [],
+                is_backlog: card.is_backlog || false,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            // If offline, create with temp ID and queue
+            if (!cacheService.online) {
+                const tempCard = {
+                    ...cardWithTimestamp,
+                    id: `temp_${Date.now()}`
+                };
+                await cacheService.put(STORES.kanbanCards, tempCard);
+                await cacheService.addPendingSync({
+                    type: 'create',
+                    store: 'kanban_cards',
+                    data: cardWithTimestamp
+                });
+                return tempCard;
+            }
+
+            const { data, error } = await this.supabase
+                .from('kanban_cards')
+                .insert([cardWithTimestamp])
+                .select();
+
+            if (error) throw error;
+
+            // Update cache
+            if (this.cacheEnabled && data[0]) {
+                await cacheService.put(STORES.kanbanCards, data[0]);
+            }
+
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'createKanbanCard');
+        }
+    }
+
+    /**
+     * Update a Kanban card
+     * @param {string} id - Card ID
+     * @param {Object} updates - Fields to update
+     * @returns {Promise<Object>} Updated card
+     */
+    async updateKanbanCard(id, updates) {
+        try {
+            const updatesWithTimestamp = {
+                ...updates,
+                updated_at: new Date().toISOString()
+            };
+
+            // Update cache immediately
+            if (this.cacheEnabled) {
+                const cached = await cacheService.get(STORES.kanbanCards, id);
+                if (cached) {
+                    await cacheService.put(STORES.kanbanCards, { 
+                        ...cached, 
+                        ...updatesWithTimestamp 
+                    });
+                }
+            }
+
+            // If offline, queue for sync
+            if (!cacheService.online) {
+                await cacheService.addPendingSync({
+                    type: 'update',
+                    store: 'kanban_cards',
+                    itemId: id,
+                    data: updatesWithTimestamp
+                });
+                return await cacheService.get(STORES.kanbanCards, id);
+            }
+
+            const { data, error } = await this.supabase
+                .from('kanban_cards')
+                .update(updatesWithTimestamp)
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'updateKanbanCard');
+        }
+    }
+
+    /**
+     * Delete a Kanban card
+     * @param {string} id - Card ID
+     * @returns {Promise<void>}
+     */
+    async deleteKanbanCard(id) {
+        try {
+            // Delete from cache immediately
+            if (this.cacheEnabled) {
+                await cacheService.delete(STORES.kanbanCards, id);
+            }
+
+            // If offline, queue for sync
+            if (!cacheService.online) {
+                await cacheService.addPendingSync({
+                    type: 'delete',
+                    store: 'kanban_cards',
+                    itemId: id
+                });
+                return;
+            }
+
+            const { error } = await this.supabase
+                .from('kanban_cards')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+        } catch (error) {
+            this.handleError(error, 'deleteKanbanCard');
+        }
+    }
+
+    // ==================== KANBAN CHECKLIST ITEMS ====================
+
+    /**
+     * Get all checklist items for a specific card
+     * @param {string} cardId - Card ID
+     * @returns {Promise<Array>} Array of checklist items sorted by order_index
+     */
+    async getChecklistItems(cardId) {
+        try {
+            // Try cache first
+            if (this.cacheEnabled) {
+                const cached = await cacheService.getAll(STORES.checklistItems);
+                const cardItems = cached.filter(item => item.card_id === cardId);
+                if (cardItems.length > 0 || cached.length > 0) {
+                    if (cacheService.online) {
+                        this.syncInBackground(STORES.checklistItems, async () => {
+                            const { data } = await this.supabase
+                                .from('kanban_checklist_items')
+                                .select('*')
+                                .eq('card_id', cardId);
+                            return data;
+                        });
+                    }
+                    return cardItems.sort((a, b) => a.order_index - b.order_index);
+                }
+            }
+
+            const { data, error } = await this.supabase
+                .from('kanban_checklist_items')
+                .select('*')
+                .eq('card_id', cardId)
+                .order('order_index');
+
+            if (error) throw error;
+
+            // Update cache
+            if (this.cacheEnabled && data) {
+                await cacheService.putAll(STORES.checklistItems, data);
+            }
+
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getChecklistItems');
+        }
+    }
+
+    /**
+     * Create a new checklist item
+     * @param {Object} item - Checklist item object with card_id, text, order_index
+     * @returns {Promise<Object>} Created checklist item
+     */
+    async createChecklistItem(item) {
+        try {
+            const itemWithDefaults = {
+                ...item,
+                is_completed: false,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            // If offline, create with temp ID and queue
+            if (!cacheService.online) {
+                const tempItem = {
+                    ...itemWithDefaults,
+                    id: `temp_${Date.now()}`
+                };
+                await cacheService.put(STORES.checklistItems, tempItem);
+                await cacheService.addPendingSync({
+                    type: 'create',
+                    store: 'kanban_checklist_items',
+                    data: itemWithDefaults
+                });
+                return tempItem;
+            }
+
+            const { data, error } = await this.supabase
+                .from('kanban_checklist_items')
+                .insert([itemWithDefaults])
+                .select();
+
+            if (error) throw error;
+
+            // Update cache
+            if (this.cacheEnabled && data[0]) {
+                await cacheService.put(STORES.checklistItems, data[0]);
+            }
+
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'createChecklistItem');
+        }
+    }
+
+    /**
+     * Update a checklist item
+     * @param {string} id - Checklist item ID
+     * @param {Object} updates - Fields to update (text, is_completed, order_index)
+     * @returns {Promise<Object>} Updated checklist item
+     */
+    async updateChecklistItem(id, updates) {
+        try {
+            const updatesWithTimestamp = {
+                ...updates,
+                updated_at: new Date().toISOString()
+            };
+
+            // Update cache immediately
+            if (this.cacheEnabled) {
+                const cached = await cacheService.get(STORES.checklistItems, id);
+                if (cached) {
+                    await cacheService.put(STORES.checklistItems, { 
+                        ...cached, 
+                        ...updatesWithTimestamp 
+                    });
+                }
+            }
+
+            // If offline, queue for sync
+            if (!cacheService.online) {
+                await cacheService.addPendingSync({
+                    type: 'update',
+                    store: 'kanban_checklist_items',
+                    itemId: id,
+                    data: updatesWithTimestamp
+                });
+                return await cacheService.get(STORES.checklistItems, id);
+            }
+
+            const { data, error } = await this.supabase
+                .from('kanban_checklist_items')
+                .update(updatesWithTimestamp)
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'updateChecklistItem');
+        }
+    }
+
+    /**
+     * Delete a checklist item
+     * @param {string} id - Checklist item ID
+     * @returns {Promise<void>}
+     */
+    async deleteChecklistItem(id) {
+        try {
+            // Delete from cache immediately
+            if (this.cacheEnabled) {
+                await cacheService.delete(STORES.checklistItems, id);
+            }
+
+            // If offline, queue for sync
+            if (!cacheService.online) {
+                await cacheService.addPendingSync({
+                    type: 'delete',
+                    store: 'kanban_checklist_items',
+                    itemId: id
+                });
+                return;
+            }
+
+            const { error } = await this.supabase
+                .from('kanban_checklist_items')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+        } catch (error) {
+            this.handleError(error, 'deleteChecklistItem');
+        }
+    }
+
+    // ==================== KANBAN ATTACHMENTS ====================
+    // Note: Attachments require online connectivity - no offline queueing
+    // Only metadata is cached, not file contents
+    // File upload/download is handled by StorageService
+
+    /**
+     * Get all attachments for a specific card
+     * @param {string} cardId - Card ID
+     * @returns {Promise<Array>} Array of attachments sorted by created_at
+     */
+    async getAttachments(cardId) {
+        try {
+            // Try cache first (metadata only)
+            if (this.cacheEnabled) {
+                const cached = await cacheService.getAll(STORES.attachments);
+                const cardAttachments = cached.filter(att => att.card_id === cardId);
+                if (cardAttachments.length > 0 || cached.length > 0) {
+                    if (cacheService.online) {
+                        this.syncInBackground(STORES.attachments, async () => {
+                            const { data } = await this.supabase
+                                .from('kanban_attachments')
+                                .select('*')
+                                .eq('card_id', cardId);
+                            return data;
+                        });
+                    }
+                    return cardAttachments.sort((a, b) => 
+                        new Date(a.created_at) - new Date(b.created_at)
+                    );
+                }
+            }
+
+            const { data, error } = await this.supabase
+                .from('kanban_attachments')
+                .select('*')
+                .eq('card_id', cardId)
+                .order('created_at');
+
+            if (error) throw error;
+
+            // Update cache with metadata only
+            if (this.cacheEnabled && data) {
+                await cacheService.putAll(STORES.attachments, data);
+            }
+
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getAttachments');
+        }
+    }
+
+    /**
+     * Create a new attachment record
+     * Note: File upload is handled by StorageService - this only creates the metadata record
+     * Requires online connectivity - no offline queueing
+     * @param {Object} attachment - Attachment object with card_id, file_name, file_path, file_type, file_size, uploaded_by
+     * @returns {Promise<Object>} Created attachment record
+     */
+    async createAttachment(attachment) {
+        try {
+            // Attachments require online connectivity
+            if (!cacheService.online) {
+                throw new Error('Attachment operations require an internet connection');
+            }
+
+            const attachmentWithTimestamp = {
+                ...attachment,
+                created_at: new Date().toISOString()
+            };
+
+            const { data, error } = await this.supabase
+                .from('kanban_attachments')
+                .insert([attachmentWithTimestamp])
+                .select();
+
+            if (error) throw error;
+
+            // Update cache with metadata
+            if (this.cacheEnabled && data[0]) {
+                await cacheService.put(STORES.attachments, data[0]);
+            }
+
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'createAttachment');
+        }
+    }
+
+    /**
+     * Delete an attachment record
+     * Note: File deletion from storage is handled by StorageService - this only deletes the metadata record
+     * Requires online connectivity - no offline queueing
+     * @param {string} id - Attachment ID
+     * @returns {Promise<void>}
+     */
+    async deleteAttachment(id) {
+        try {
+            // Attachments require online connectivity
+            if (!cacheService.online) {
+                throw new Error('Attachment operations require an internet connection');
+            }
+
+            // Delete from cache
+            if (this.cacheEnabled) {
+                await cacheService.delete(STORES.attachments, id);
+            }
+
+            const { error } = await this.supabase
+                .from('kanban_attachments')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+        } catch (error) {
+            this.handleError(error, 'deleteAttachment');
+        }
+    }
+
+    // ==================== KANBAN COMMENTS ====================
+    // Comments support offline queueing (unlike attachments)
+
+    /**
+     * Get all comments for a specific card
+     * @param {string} cardId - Card ID
+     * @returns {Promise<Array>} Array of comments sorted by created_at descending (newest first)
+     */
+    async getComments(cardId) {
+        try {
+            // Try cache first
+            if (this.cacheEnabled) {
+                const cached = await cacheService.getAll(STORES.comments);
+                const cardComments = cached.filter(comment => comment.card_id === cardId);
+                if (cardComments.length > 0 || cached.length > 0) {
+                    if (cacheService.online) {
+                        this.syncInBackground(STORES.comments, async () => {
+                            const { data } = await this.supabase
+                                .from('kanban_comments')
+                                .select('*')
+                                .eq('card_id', cardId);
+                            return data;
+                        });
+                    }
+                    // Sort by created_at descending (newest first)
+                    return cardComments.sort((a, b) => 
+                        new Date(b.created_at) - new Date(a.created_at)
+                    );
+                }
+            }
+
+            const { data, error } = await this.supabase
+                .from('kanban_comments')
+                .select('*')
+                .eq('card_id', cardId)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            // Update cache
+            if (this.cacheEnabled && data) {
+                await cacheService.putAll(STORES.comments, data);
+            }
+
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getComments');
+        }
+    }
+
+    /**
+     * Create a new comment
+     * @param {Object} comment - Comment object with card_id, user_id, text
+     * @returns {Promise<Object>} Created comment
+     */
+    async createComment(comment) {
+        try {
+            const commentWithTimestamps = {
+                ...comment,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            // If offline, create with temp ID and queue
+            if (!cacheService.online) {
+                const tempComment = {
+                    ...commentWithTimestamps,
+                    id: `temp_${Date.now()}`
+                };
+                await cacheService.put(STORES.comments, tempComment);
+                await cacheService.addPendingSync({
+                    type: 'create',
+                    store: 'kanban_comments',
+                    data: commentWithTimestamps
+                });
+                return tempComment;
+            }
+
+            const { data, error } = await this.supabase
+                .from('kanban_comments')
+                .insert([commentWithTimestamps])
+                .select();
+
+            if (error) throw error;
+
+            // Update cache
+            if (this.cacheEnabled && data[0]) {
+                await cacheService.put(STORES.comments, data[0]);
+            }
+
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'createComment');
+        }
+    }
+
+    /**
+     * Update a comment
+     * When updating a comment, sets edited_at to current timestamp
+     * @param {string} id - Comment ID
+     * @param {Object} updates - Fields to update (text)
+     * @returns {Promise<Object>} Updated comment with edited_at timestamp
+     */
+    async updateComment(id, updates) {
+        try {
+            const updatesWithTimestamps = {
+                ...updates,
+                edited_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            // Update cache immediately
+            if (this.cacheEnabled) {
+                const cached = await cacheService.get(STORES.comments, id);
+                if (cached) {
+                    await cacheService.put(STORES.comments, {
+                        ...cached,
+                        ...updatesWithTimestamps
+                    });
+                }
+            }
+
+            // If offline, queue for sync
+            if (!cacheService.online) {
+                await cacheService.addPendingSync({
+                    type: 'update',
+                    store: 'kanban_comments',
+                    itemId: id,
+                    data: updatesWithTimestamps
+                });
+                return await cacheService.get(STORES.comments, id);
+            }
+
+            const { data, error } = await this.supabase
+                .from('kanban_comments')
+                .update(updatesWithTimestamps)
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'updateComment');
+        }
+    }
+
+    /**
+     * Delete a comment
+     * @param {string} id - Comment ID
+     * @returns {Promise<void>}
+     */
+    async deleteComment(id) {
+        try {
+            // Delete from cache immediately
+            if (this.cacheEnabled) {
+                await cacheService.delete(STORES.comments, id);
+            }
+
+            // If offline, queue for sync
+            if (!cacheService.online) {
+                await cacheService.addPendingSync({
+                    type: 'delete',
+                    store: 'kanban_comments',
+                    itemId: id
+                });
+                return;
+            }
+
+            const { error } = await this.supabase
+                .from('kanban_comments')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+        } catch (error) {
+            this.handleError(error, 'deleteComment');
+        }
+    }
+
+    // ==================== KANBAN ACTIVITY LOG ====================
+    // Activity log supports offline queueing
+    // Activity entries are read-only after creation (no update/delete methods needed)
+
+    /**
+     * Get all activity log entries for a specific card
+     * @param {string} cardId - Card ID
+     * @returns {Promise<Array>} Array of activity entries sorted by created_at descending (newest first)
+     */
+    async getActivityLog(cardId) {
+        try {
+            // Try cache first
+            if (this.cacheEnabled) {
+                const cached = await cacheService.getAll(STORES.activityLog);
+                const cardActivities = cached.filter(entry => entry.card_id === cardId);
+                if (cardActivities.length > 0 || cached.length > 0) {
+                    if (cacheService.online) {
+                        this.syncInBackground(STORES.activityLog, async () => {
+                            const { data } = await this.supabase
+                                .from('kanban_activity_log')
+                                .select('*')
+                                .eq('card_id', cardId);
+                            return data;
+                        });
+                    }
+                    // Sort by created_at descending (newest first)
+                    return cardActivities.sort((a, b) => 
+                        new Date(b.created_at) - new Date(a.created_at)
+                    );
+                }
+            }
+
+            const { data, error } = await this.supabase
+                .from('kanban_activity_log')
+                .select('*')
+                .eq('card_id', cardId)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            // Update cache
+            if (this.cacheEnabled && data) {
+                await cacheService.putAll(STORES.activityLog, data);
+            }
+
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getActivityLog');
+        }
+    }
+
+    /**
+     * Create a new activity log entry
+     * Activity entries are immutable - they cannot be updated or deleted after creation
+     * @param {Object} entry - Activity entry object with card_id, user_id, action_type, action_data
+     * @returns {Promise<Object>} Created activity entry
+     */
+    async createActivityEntry(entry) {
+        try {
+            const entryWithTimestamp = {
+                ...entry,
+                action_data: entry.action_data || {},
+                created_at: new Date().toISOString()
+            };
+
+            // If offline, create with temp ID and queue
+            if (!cacheService.online) {
+                const tempEntry = {
+                    ...entryWithTimestamp,
+                    id: `temp_${Date.now()}`
+                };
+                await cacheService.put(STORES.activityLog, tempEntry);
+                await cacheService.addPendingSync({
+                    type: 'create',
+                    store: 'kanban_activity_log',
+                    data: entryWithTimestamp
+                });
+                return tempEntry;
+            }
+
+            const { data, error } = await this.supabase
+                .from('kanban_activity_log')
+                .insert([entryWithTimestamp])
+                .select();
+
+            if (error) throw error;
+
+            // Update cache
+            if (this.cacheEnabled && data[0]) {
+                await cacheService.put(STORES.activityLog, data[0]);
+            }
+
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'createActivityEntry');
+        }
+    }
 }
 
 // Create and export a singleton instance

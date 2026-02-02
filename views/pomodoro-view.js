@@ -1,6 +1,7 @@
 // Pomodoro Timer View - Enhanced with customizable durations, break suggestions, and mini timer
 import { APP_CONFIG } from '../js/config.js';
 import dataService from '../js/data-service.js';
+import kanbanService from '../js/kanban-service.js';
 import { formatDate } from '../js/utils.js';
 
 // Break suggestions for different break types
@@ -849,7 +850,8 @@ class PomodoroView {
                         completedToday: savedState.completedToday || [],
                         mode: savedState.mode || 'focus',
                         timeRemaining: savedState.timeRemaining || this.getFocusDuration(),
-                        currentTask: savedState.currentTask || ''
+                        currentTask: savedState.currentTask || '',
+                        linkedCardId: savedState.linkedCardId || null
                     });
                 } else {
                     this.resetDay();
@@ -868,6 +870,7 @@ class PomodoroView {
             mode: pomodoroState.mode,
             timeRemaining: pomodoroState.timeRemaining,
             currentTask: pomodoroState.currentTask,
+            linkedCardId: pomodoroState.linkedCardId || null,
             date: new Date().toDateString()
         }));
     }
@@ -882,7 +885,8 @@ class PomodoroView {
             timeRemaining: this.getFocusDuration(),
             isRunning: false,
             isPaused: false,
-            currentTask: ''
+            currentTask: '',
+            linkedCardId: null
         });
         this.saveState();
     }
@@ -1050,6 +1054,53 @@ class PomodoroView {
         }
     }
 
+    /**
+     * Start a Pomodoro session for a Kanban card
+     * Requirement 5.1: Click Pomodoro button on card starts session with card title as task description
+     * @param {Object} options - Session options
+     * @param {string} options.taskDescription - Task description (card title)
+     * @param {string} options.linkedCardId - ID of the linked Kanban card
+     */
+    startSessionForCard(options) {
+        const { taskDescription, linkedCardId } = options;
+        const pomodoroState = this.stateManager.getState('pomodoro');
+        
+        // Reset timer if currently running
+        if (pomodoroState.isRunning) {
+            if (this.timerInterval) {
+                clearInterval(this.timerInterval);
+                this.timerInterval = null;
+            }
+            // Delete incomplete session if exists
+            if (this.currentSessionId) {
+                dataService.deletePomodoroSession(this.currentSessionId).catch(console.warn);
+                this.currentSessionId = null;
+            }
+        }
+        
+        // Set up new session with card info
+        this.stateManager.setState('pomodoro', {
+            ...pomodoroState,
+            mode: 'focus',
+            timeRemaining: this.getFocusDuration(),
+            currentTask: taskDescription || '',
+            linkedCardId: linkedCardId || null,
+            linkedGoalId: null,
+            linkedTimeBlockId: null,
+            isRunning: false,
+            isPaused: false
+        });
+        
+        // Start the timer
+        this.startTimer();
+        this.saveState();
+        
+        // Show floating player if not on pomodoro view
+        if (!window.location.hash.includes('pomodoro')) {
+            this.showFloatingPlayer();
+        }
+    }
+
     toggleTimer() {
         const pomodoroState = this.stateManager.getState('pomodoro');
         if (!pomodoroState.isRunning) {
@@ -1202,10 +1253,21 @@ class PomodoroView {
                 } catch (error) { console.warn('Failed to update session:', error); }
                 this.currentSessionId = null;
             }
+            
+            // Requirement 5.3: Increment pomodoro_count on linked card when session completes
+            if (pomodoroState.linkedCardId) {
+                try {
+                    await kanbanService.incrementPomodoroCount(pomodoroState.linkedCardId);
+                } catch (error) {
+                    console.warn('Failed to increment card pomodoro count:', error);
+                }
+            }
+            
             const completedSession = {
                 timestamp: new Date().toISOString(),
                 duration: this.getFocusDuration() / 60,
-                task: pomodoroState.currentTask
+                task: pomodoroState.currentTask,
+                linkedCardId: pomodoroState.linkedCardId
             };
             const newCompletedToday = [...pomodoroState.completedToday, completedSession];
             let nextMode, nextDuration;
@@ -1218,7 +1280,8 @@ class PomodoroView {
             }
             this.stateManager.setState('pomodoro', {
                 ...pomodoroState, mode: nextMode, timeRemaining: nextDuration,
-                sessionCount: newSessionCount, completedToday: newCompletedToday, isRunning: true, isPaused: false
+                sessionCount: newSessionCount, completedToday: newCompletedToday, isRunning: true, isPaused: false,
+                linkedCardId: null // Clear linked card after session completes
             });
             this.showBreakSuggestion(nextMode);
             await this.loadStatistics();
@@ -1344,3 +1407,8 @@ class PomodoroView {
 }
 
 export default PomodoroView;
+
+// Make available globally for cross-view integration (e.g., Kanban Pomodoro button)
+if (typeof window !== 'undefined') {
+    window.PomodoroView = PomodoroView;
+}

@@ -4,7 +4,7 @@
  */
 
 const DB_NAME = 'DailyPlannerCache';
-const DB_VERSION = 2;
+const DB_VERSION = 4; // Incremented to add kanban card enhancement stores (checklist, attachments, comments, activity log)
 const SYNC_KEY = 'stillmove_last_sync';
 const CACHE_METADATA_KEY = 'stillmove_cache_metadata';
 
@@ -27,6 +27,14 @@ const CACHE_TTL = {
   sleepEntries: 5 * 60 * 1000,          // 5 minutes
   waterEntries: 5 * 60 * 1000,          // 5 minutes
   calendarEvents: 5 * 60 * 1000,        // 5 minutes - calendar events
+  canvasDocuments: 30 * 60 * 1000,      // 30 minutes - canvas documents
+  kanbanBoards: 30 * 60 * 1000,         // 30 minutes - kanban boards
+  kanbanColumns: 30 * 60 * 1000,        // 30 minutes - kanban columns
+  kanbanCards: 5 * 60 * 1000,           // 5 minutes - kanban cards change frequently
+  checklistItems: 5 * 60 * 1000,        // 5 minutes - checklist items change frequently
+  attachments: 30 * 60 * 1000,          // 30 minutes - attachment metadata only
+  comments: 5 * 60 * 1000,              // 5 minutes - comments change frequently
+  activityLog: 5 * 60 * 1000,           // 5 minutes - activity log entries
   default: 10 * 60 * 1000               // 10 minutes default
 };
 
@@ -50,7 +58,15 @@ const STORES = {
   moodEntries: 'mood_entries',
   sleepEntries: 'sleep_entries',
   waterEntries: 'water_entries',
-  calendarEvents: 'calendar_events'
+  calendarEvents: 'calendar_events',
+  canvasDocuments: 'canvas_documents',
+  kanbanBoards: 'kanban_boards',
+  kanbanColumns: 'kanban_columns',
+  kanbanCards: 'kanban_cards',
+  checklistItems: 'checklist_items',
+  attachments: 'attachments',           // Metadata only, not file contents
+  comments: 'comments',
+  activityLog: 'activity_log'
 };
 
 class CacheService {
@@ -213,12 +229,42 @@ class CacheService {
     if (!this.db) await this.init();
     
     return new Promise((resolve, reject) => {
-      const transaction = this.db.transaction(storeName, 'readonly');
-      const store = transaction.objectStore(storeName);
-      const request = store.getAll();
+      try {
+        // Check if the store exists before creating transaction
+        if (!this.db.objectStoreNames.contains(storeName)) {
+          console.warn(`[Cache] Store '${storeName}' not found, reinitializing database...`);
+          // Close current connection and reinitialize
+          this.db.close();
+          this.db = null;
+          this.init().then(() => {
+            // Retry after reinit
+            if (this.db.objectStoreNames.contains(storeName)) {
+              const transaction = this.db.transaction(storeName, 'readonly');
+              const store = transaction.objectStore(storeName);
+              const request = store.getAll();
+              request.onsuccess = () => resolve(request.result || []);
+              request.onerror = () => reject(request.error);
+            } else {
+              // Store still doesn't exist, return empty array
+              console.warn(`[Cache] Store '${storeName}' still not found after reinit, returning empty array`);
+              resolve([]);
+            }
+          }).catch(reject);
+          return;
+        }
+        
+        const transaction = this.db.transaction(storeName, 'readonly');
+        const store = transaction.objectStore(storeName);
+        const request = store.getAll();
 
-      request.onsuccess = () => resolve(request.result || []);
-      request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result || []);
+        request.onerror = () => reject(request.error);
+      } catch (error) {
+        console.error(`[Cache] Error in getAll for ${storeName}:`, error);
+        // If there's an error, try to reinitialize and return empty
+        this.db = null;
+        resolve([]);
+      }
     });
   }
 
@@ -229,12 +275,24 @@ class CacheService {
     if (!this.db) await this.init();
     
     return new Promise((resolve, reject) => {
-      const transaction = this.db.transaction(storeName, 'readonly');
-      const store = transaction.objectStore(storeName);
-      const request = store.get(id);
+      try {
+        // Check if the store exists
+        if (!this.db.objectStoreNames.contains(storeName)) {
+          console.warn(`[Cache] Store '${storeName}' not found in get, returning null`);
+          resolve(null);
+          return;
+        }
+        
+        const transaction = this.db.transaction(storeName, 'readonly');
+        const store = transaction.objectStore(storeName);
+        const request = store.get(id);
 
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      } catch (error) {
+        console.error(`[Cache] Error in get for ${storeName}:`, error);
+        resolve(null);
+      }
     });
   }
 
@@ -245,12 +303,23 @@ class CacheService {
     if (!this.db) await this.init();
     
     return new Promise((resolve, reject) => {
-      const transaction = this.db.transaction(storeName, 'readwrite');
-      const store = transaction.objectStore(storeName);
-      const request = store.put(item);
+      try {
+        if (!this.db.objectStoreNames.contains(storeName)) {
+          console.warn(`[Cache] Store '${storeName}' not found in put, skipping`);
+          resolve(null);
+          return;
+        }
+        
+        const transaction = this.db.transaction(storeName, 'readwrite');
+        const store = transaction.objectStore(storeName);
+        const request = store.put(item);
 
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      } catch (error) {
+        console.error(`[Cache] Error in put for ${storeName}:`, error);
+        resolve(null);
+      }
     });
   }
 
@@ -262,20 +331,31 @@ class CacheService {
     if (!items || items.length === 0) return;
     
     return new Promise((resolve, reject) => {
-      const transaction = this.db.transaction(storeName, 'readwrite');
-      const store = transaction.objectStore(storeName);
-      
-      items.forEach((item) => {
-        if (item && item.id) {
-          store.put(item);
+      try {
+        if (!this.db.objectStoreNames.contains(storeName)) {
+          console.warn(`[Cache] Store '${storeName}' not found in putAll, skipping`);
+          resolve();
+          return;
         }
-      });
+        
+        const transaction = this.db.transaction(storeName, 'readwrite');
+        const store = transaction.objectStore(storeName);
+        
+        items.forEach((item) => {
+          if (item && item.id) {
+            store.put(item);
+          }
+        });
 
-      transaction.oncomplete = () => {
-        this.markCacheUpdated(storeName);
+        transaction.oncomplete = () => {
+          this.markCacheUpdated(storeName);
+          resolve();
+        };
+        transaction.onerror = () => reject(transaction.error);
+      } catch (error) {
+        console.error(`[Cache] Error in putAll for ${storeName}:`, error);
         resolve();
-      };
-      transaction.onerror = () => reject(transaction.error);
+      }
     });
   }
 
