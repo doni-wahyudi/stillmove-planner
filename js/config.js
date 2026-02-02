@@ -105,8 +105,8 @@ export const AI_DEFAULT_CONFIG = {
 export const APP_CONFIG = {
     appName: 'Daily Planner',
     version: '1.0.0',
-    defaultView: 'weekly',
-    
+    defaultView: 'dashboard',
+
     // Invitation Code Settings
     // IMPORTANT: Change these codes regularly for security
     // You can add multiple valid codes separated by commas
@@ -115,7 +115,7 @@ export const APP_CONFIG = {
         'WELCOME2025',
         'DAILYPLAN'
     ],
-    
+
     // Pomodoro Timer Settings
     pomodoro: {
         focusDuration: 25 * 60, // 25 minutes in seconds
@@ -123,14 +123,14 @@ export const APP_CONFIG = {
         longBreakDuration: 15 * 60, // 15 minutes in seconds
         sessionsBeforeLongBreak: 4
     },
-    
+
     // Habit Tracking Settings
     habits: {
         maxDailyHabits: 30,
         maxWeeklyHabits: 10,
         defaultWaterGoal: 8 // glasses per day
     },
-    
+
     // Reading List Settings
     reading: {
         maxBooks: 50

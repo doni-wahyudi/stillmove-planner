@@ -60,10 +60,10 @@ class StateManager {
                 pendingOperations: []
             }
         };
-        
+
         this.listeners = new Map();
     }
-    
+
     /**
      * Subscribe to state changes
      */
@@ -73,7 +73,7 @@ class StateManager {
         }
         this.listeners.get(key).push(callback);
     }
-    
+
     /**
      * Update state and notify listeners
      */
@@ -81,7 +81,7 @@ class StateManager {
         this.state[key] = value;
         this.notify(key);
     }
-    
+
     /**
      * Notify all listeners for a key
      */
@@ -89,7 +89,7 @@ class StateManager {
         const callbacks = this.listeners.get(key) || [];
         callbacks.forEach(callback => callback(this.state[key]));
     }
-    
+
     /**
      * Get current state
      */
@@ -107,7 +107,7 @@ class Router {
         this.viewContainer = document.getElementById('view-container');
         this.setupEventListeners();
     }
-    
+
     setupEventListeners() {
         // Handle navigation clicks
         document.querySelectorAll('[data-view]').forEach(link => {
@@ -121,7 +121,7 @@ class Router {
                 }
             });
         });
-        
+
         // Handle browser back/forward
         window.addEventListener('popstate', (e) => {
             if (e.state && e.state.view) {
@@ -129,42 +129,43 @@ class Router {
             }
         });
     }
-    
+
     navigate(view) {
         this.loadView(view);
         history.pushState({ view }, '', `#${view}`);
     }
-    
+
     loadView(view) {
         // Update navigation state
         this.stateManager.setState('navigation', {
             ...this.stateManager.getState('navigation'),
             currentView: view
         });
-        
+
         // Update active nav item
         document.querySelectorAll('[data-view]').forEach(link => {
             link.classList.toggle('active', link.getAttribute('data-view') === view);
         });
-        
+
         // Update breadcrumb
         this.updateBreadcrumb(view);
-        
+
         // Load view content
         this.renderView(view);
     }
-    
+
     /**
      * Update breadcrumb navigation
      */
     updateBreadcrumb(view) {
         const viewEl = document.getElementById('breadcrumb-view');
         const contextEl = document.getElementById('breadcrumb-context');
-        
+
         if (!viewEl || !contextEl) return;
-        
+
         // View name mapping
         const viewNames = {
+            'dashboard': 'Dashboard',
             'weekly': 'Weekly',
             'monthly': 'Monthly',
             'annual': 'Annual',
@@ -175,17 +176,17 @@ class Router {
             'pomodoro': 'Pomodoro',
             'settings': 'Settings'
         };
-        
+
         viewEl.textContent = viewNames[view] || view;
-        
+
         // Set context based on current date/state
         const nav = this.stateManager.getState('navigation');
         const now = new Date();
         const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                           'July', 'August', 'September', 'October', 'November', 'December'];
-        
+            'July', 'August', 'September', 'October', 'November', 'December'];
+
         let context = '';
-        switch(view) {
+        switch (view) {
             case 'weekly':
                 // Will be updated by weekly view
                 context = this.getWeekContext(now);
@@ -209,16 +210,19 @@ class Router {
             case 'canvas':
                 context = 'Drawing & Notes';
                 break;
+            case 'dashboard':
+                context = 'Home';
+                break;
             case 'settings':
                 context = 'Preferences';
                 break;
             default:
                 context = '';
         }
-        
+
         contextEl.textContent = context;
     }
-    
+
     /**
      * Get week context string
      */
@@ -227,29 +231,29 @@ class Router {
         const day = d.getDay();
         const diff = day === 0 ? -6 : 1 - day;
         d.setDate(d.getDate() + diff);
-        
+
         const weekEnd = new Date(d);
         weekEnd.setDate(weekEnd.getDate() + 6);
-        
+
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        
+            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
         const startMonth = monthNames[d.getMonth()];
         const endMonth = monthNames[weekEnd.getMonth()];
         const startDay = d.getDate();
         const endDay = weekEnd.getDate();
         const year = d.getFullYear();
-        
+
         if (startMonth === endMonth) {
             return `${startMonth} ${startDay}-${endDay}, ${year}`;
         }
         return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`;
     }
-    
+
     renderView(view) {
         // Start performance tracking
         performanceMonitor.startViewLoad(view);
-        
+
         // Show skeleton loading state
         this.viewContainer.innerHTML = `
             <div class="loading-skeleton" aria-busy="true" aria-label="Loading ${view} view">
@@ -264,9 +268,12 @@ class Router {
                 <div class="skeleton skeleton-text short"></div>
             </div>
         `;
-        
+
         // Render view based on type
-        switch(view) {
+        switch (view) {
+            case 'dashboard':
+                this.renderDashboardView();
+                break;
             case 'annual':
                 this.renderAnnualView();
                 break;
@@ -299,7 +306,7 @@ class Router {
                 this.viewContainer.innerHTML = this.getErrorViewHTML('View Not Found', 'The requested view does not exist.', 'Check the URL or navigate using the menu.');
         }
     }
-    
+
     /**
      * Generate error view HTML with retry button and hints
      */
@@ -315,7 +322,7 @@ class Router {
             </div>
         `;
     }
-    
+
     async renderAnnualView() {
         // Dynamically import and initialize the annual view
         try {
@@ -333,7 +340,7 @@ class Router {
             );
         }
     }
-    
+
     async renderMonthlyView() {
         // Dynamically import and initialize the monthly view
         try {
@@ -351,7 +358,7 @@ class Router {
             );
         }
     }
-    
+
     async renderWeeklyView() {
         // Dynamically import and initialize the weekly view
         try {
@@ -369,7 +376,7 @@ class Router {
             );
         }
     }
-    
+
     async renderHabitsView() {
         // Dynamically import and initialize the habits view
         try {
@@ -387,7 +394,7 @@ class Router {
             );
         }
     }
-    
+
     async renderActionPlanView() {
         // Dynamically import and initialize the action plan view
         try {
@@ -405,26 +412,26 @@ class Router {
             );
         }
     }
-    
+
     async renderKanbanView() {
         // Dynamically import and initialize the kanban view
         // Requirements: 12.1, 12.5 - Kanban accessible from main navigation with deep-linking
         try {
             const { default: KanbanView } = await import('../views/kanban-view.js');
             const kanbanView = new KanbanView(this.stateManager);
-            
+
             // Parse deep-link parameters from hash (e.g., #kanban/board-id or #kanban/board-id/card-id)
             const hash = window.location.hash.slice(1); // Remove leading #
             const parts = hash.split('/');
             const deepLinkParams = {};
-            
+
             if (parts.length > 1 && parts[0] === 'kanban') {
                 deepLinkParams.boardId = parts[1];
                 if (parts.length > 2) {
                     deepLinkParams.cardId = parts[2];
                 }
             }
-            
+
             await kanbanView.init(this.viewContainer, deepLinkParams);
             performanceMonitor.endViewLoad('kanban');
         } catch (error) {
@@ -437,18 +444,18 @@ class Router {
             );
         }
     }
-    
+
     async renderPomodoroView() {
         // Dynamically import and initialize the pomodoro view
         try {
             const { default: PomodoroView } = await import('../views/pomodoro-view.js');
             const pomodoroView = new PomodoroView(this.stateManager);
             await pomodoroView.init(this.viewContainer);
-            
+
             // Expose globally for cross-view integration (e.g., Kanban Pomodoro button)
             // Requirement 5.1: Allow starting Pomodoro sessions from Kanban cards
             window.pomodoroTimer = pomodoroView;
-            
+
             performanceMonitor.endViewLoad('pomodoro');
         } catch (error) {
             performanceMonitor.endViewLoad('pomodoro');
@@ -460,7 +467,7 @@ class Router {
             );
         }
     }
-    
+
     async renderCanvasView() {
         // Dynamically import and initialize the canvas view
         try {
@@ -478,7 +485,7 @@ class Router {
             );
         }
     }
-    
+
     async renderSettingsView() {
         // Dynamically import and initialize the settings view
         try {
@@ -495,6 +502,24 @@ class Router {
             );
         }
     }
+
+    async renderDashboardView() {
+        // Dynamically import and initialize the dashboard view
+        try {
+            const { default: DashboardView } = await import('../views/dashboard-view.js');
+            const dashboardView = new DashboardView(this.stateManager);
+            await dashboardView.init(this.viewContainer);
+            performanceMonitor.endViewLoad('dashboard');
+        } catch (error) {
+            performanceMonitor.endViewLoad('dashboard');
+            ErrorHandler.handle(error, 'Dashboard View Loading');
+            this.viewContainer.innerHTML = this.getErrorViewHTML(
+                'Failed to load Dashboard',
+                'There was a problem loading your dashboard.',
+                'Check your internet connection and try again.'
+            );
+        }
+    }
 }
 
 /**
@@ -506,14 +531,14 @@ class App {
         this.router = null;
         this.supabase = null;
     }
-    
+
     async init() {
         console.log('Initializing Daily Planner Application...');
-        
+
         try {
             // Initialize performance monitoring
             performanceMonitor.init();
-            
+
             // Initialize cache service for offline support
             try {
                 await cacheService.init();
@@ -522,57 +547,57 @@ class App {
                 console.warn('[PWA] Cache service failed to initialize:', cacheError);
                 // Continue without cache - app will work online only
             }
-            
+
             // Check if Supabase is configured
             if (!isSupabaseConfigured()) {
                 this.showConfigurationMessage();
                 return;
             }
-            
+
             // Initialize Supabase client
             this.supabase = getSupabaseClient();
-            
+
             // Initialize router
             this.router = new Router(this.stateManager);
-            
+
             // Check authentication status
             await this.checkAuth();
-            
+
             // Setup event listeners
             this.setupEventListeners();
-            
+
             // Load initial view (handle deep-links like #kanban/board-id/card-id)
             const hash = window.location.hash.slice(1) || APP_CONFIG.defaultView;
             const viewName = hash.split('/')[0]; // Extract base view name
             this.router.navigate(viewName);
-            
+
             // Check if user should be reminded to export data
             this.checkExportReminder();
-            
+
             console.log('Application initialized successfully');
         } catch (error) {
             ErrorHandler.handle(error, 'Application Initialization');
             this.showError('Failed to initialize application. Please check your configuration.');
         }
     }
-    
+
     async checkAuth() {
         try {
             const session = await authService.getSession();
-            
+
             if (session) {
                 this.stateManager.setState('auth', {
                     user: session.user,
                     session: session,
                     isAuthenticated: true
                 });
-                
+
                 // Update UI with user email
                 const userEmailEl = document.getElementById('user-email');
                 if (userEmailEl) {
                     userEmailEl.textContent = session.user.email;
                 }
-                
+
                 // Setup auth state change listener
                 this.setupAuthStateListener();
             } else {
@@ -585,11 +610,11 @@ class App {
             window.location.href = 'auth.html';
         }
     }
-    
+
     setupAuthStateListener() {
         authService.onAuthStateChange((event, session) => {
             console.log('Auth state changed in app:', event);
-            
+
             if (event === 'SIGNED_OUT') {
                 // Clear state and redirect to auth page
                 this.stateManager.setState('auth', {
@@ -612,7 +637,7 @@ class App {
                     session: session,
                     isAuthenticated: true
                 });
-                
+
                 // Update UI
                 const userEmailEl = document.getElementById('user-email');
                 if (userEmailEl) {
@@ -621,39 +646,39 @@ class App {
             }
         });
     }
-    
+
     setupEventListeners() {
         // Keyboard shortcuts
         this.setupKeyboardShortcuts();
-        
+
         // Quick Add FAB
         this.setupQuickAddFAB();
-        
+
         // Global Search
         this.setupSearch();
-        
+
         // Floating Pomodoro Player
         this.setupFloatingPomodoroPlayer();
-        
+
         // Keyboard help button
         const keyboardHelpBtn = document.getElementById('keyboard-help-btn');
         if (keyboardHelpBtn) {
             keyboardHelpBtn.addEventListener('click', () => this.showKeyboardShortcutsHelp());
         }
-        
+
         // Swipe gestures for mobile navigation
         this.setupSwipeGestures();
-        
+
         // Mobile menu toggle
         const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
         const navMenu = document.getElementById('nav-menu');
-        
+
         if (mobileMenuToggle && navMenu) {
             mobileMenuToggle.addEventListener('click', () => {
                 navMenu.classList.toggle('active');
                 mobileMenuToggle.classList.toggle('active');
             });
-            
+
             // Close mobile menu when a link is clicked
             navMenu.querySelectorAll('a').forEach(link => {
                 link.addEventListener('click', () => {
@@ -662,17 +687,17 @@ class App {
                 });
             });
         }
-        
+
         // User menu toggle
         const userMenuBtn = document.getElementById('user-menu-btn');
         const userDropdown = document.getElementById('user-dropdown');
-        
+
         if (userMenuBtn && userDropdown) {
             userMenuBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 userDropdown.classList.toggle('hidden');
             });
-            
+
             // Close dropdown when clicking outside
             document.addEventListener('click', (e) => {
                 if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
@@ -680,13 +705,13 @@ class App {
                 }
             });
         }
-        
+
         // Sign out button
         const signOutBtn = document.getElementById('sign-out-btn');
         if (signOutBtn) {
             signOutBtn.addEventListener('click', () => this.signOut());
         }
-        
+
         // Online/offline detection
         window.addEventListener('online', () => {
             this.stateManager.setState('sync', {
@@ -695,7 +720,7 @@ class App {
             });
             console.log('Application is online');
         });
-        
+
         window.addEventListener('offline', () => {
             this.stateManager.setState('sync', {
                 ...this.stateManager.getState('sync'),
@@ -704,7 +729,7 @@ class App {
             console.log('Application is offline');
         });
     }
-    
+
     async signOut() {
         try {
             await authService.signOut();
@@ -713,7 +738,7 @@ class App {
             ErrorHandler.handleAuthError(error, 'Sign Out');
         }
     }
-    
+
     /**
      * Setup swipe gestures for mobile navigation
      */
@@ -722,42 +747,42 @@ class App {
         let touchStartY = 0;
         let touchEndX = 0;
         let touchEndY = 0;
-        
+
         const minSwipeDistance = 80;
         const maxVerticalDistance = 100;
-        
+
         const viewContainer = document.getElementById('view-container');
         if (!viewContainer) return;
-        
+
         viewContainer.addEventListener('touchstart', (e) => {
             touchStartX = e.changedTouches[0].screenX;
             touchStartY = e.changedTouches[0].screenY;
         }, { passive: true });
-        
+
         viewContainer.addEventListener('touchend', (e) => {
             touchEndX = e.changedTouches[0].screenX;
             touchEndY = e.changedTouches[0].screenY;
             this.handleSwipe(touchStartX, touchStartY, touchEndX, touchEndY, minSwipeDistance, maxVerticalDistance);
         }, { passive: true });
     }
-    
+
     /**
      * Handle swipe gesture
      */
     handleSwipe(startX, startY, endX, endY, minDistance, maxVertical) {
         const deltaX = endX - startX;
         const deltaY = Math.abs(endY - startY);
-        
+
         // Only handle horizontal swipes (not too much vertical movement)
         if (deltaY > maxVertical) return;
-        
+
         // Check if swipe distance is sufficient
         if (Math.abs(deltaX) < minDistance) return;
-        
+
         // Find navigation buttons in current view
         const prevBtn = document.querySelector('#prev-week-btn, #prev-month-btn, #habits-prev-month-btn, #prev-year-btn');
         const nextBtn = document.querySelector('#next-week-btn, #next-month-btn, #habits-next-month-btn, #next-year-btn');
-        
+
         if (deltaX > 0 && prevBtn) {
             // Swipe right = go to previous
             prevBtn.click();
@@ -768,7 +793,7 @@ class App {
             this.showSwipeIndicator('→');
         }
     }
-    
+
     /**
      * Show visual indicator for swipe
      */
@@ -778,14 +803,14 @@ class App {
         indicator.className = 'swipe-indicator';
         indicator.textContent = direction;
         document.body.appendChild(indicator);
-        
+
         // Remove after animation
         setTimeout(() => {
             indicator.classList.add('fade-out');
             setTimeout(() => indicator.remove(), 300);
         }, 200);
     }
-    
+
     /**
      * Setup keyboard shortcuts for navigation and actions
      */
@@ -795,10 +820,10 @@ class App {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
                 return;
             }
-            
+
             // Navigation shortcuts (no modifier keys)
             if (!e.ctrlKey && !e.altKey && !e.metaKey) {
-                switch(e.key.toLowerCase()) {
+                switch (e.key.toLowerCase()) {
                     case 't':
                         // Go to Today - trigger the Today button if it exists
                         e.preventDefault();
@@ -876,12 +901,12 @@ class App {
                         break;
                 }
             }
-            
+
             // Arrow key navigation for date navigation
             if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
                 const prevBtn = document.querySelector('#prev-week-btn, #prev-month-btn, #habits-prev-month-btn, #prev-year-btn');
                 const nextBtn = document.querySelector('#next-week-btn, #next-month-btn, #habits-next-month-btn, #next-year-btn');
-                
+
                 if (e.key === 'ArrowLeft' && prevBtn) {
                     e.preventDefault();
                     prevBtn.click();
@@ -892,7 +917,7 @@ class App {
             }
         });
     }
-    
+
     /**
      * Trigger the Today button in the current view
      */
@@ -902,7 +927,7 @@ class App {
             todayBtn.click();
         }
     }
-    
+
     /**
      * Show keyboard shortcuts help modal
      */
@@ -913,7 +938,7 @@ class App {
             modal.style.display = 'flex';
             return;
         }
-        
+
         // Create modal
         modal = document.createElement('div');
         modal.id = 'keyboard-shortcuts-modal';
@@ -955,7 +980,7 @@ class App {
                 </div>
             </div>
         `;
-        
+
         // Add styles for shortcut items
         const style = document.createElement('style');
         style.textContent = `
@@ -973,22 +998,22 @@ class App {
             }
         `;
         document.head.appendChild(style);
-        
+
         document.body.appendChild(modal);
-        
+
         // Close handlers
         modal.querySelectorAll('.modal-close').forEach(btn => {
             btn.addEventListener('click', () => {
                 modal.style.display = 'none';
             });
         });
-        
+
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                 modal.style.display = 'none';
             }
         });
-        
+
         // Close on Escape
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && modal.style.display === 'flex') {
@@ -996,7 +1021,7 @@ class App {
             }
         });
     }
-    
+
     /**
      * Toggle Focus Mode - hides navigation for distraction-free work
      */
@@ -1004,7 +1029,7 @@ class App {
         const body = document.body;
         const isActive = body.classList.contains('focus-mode');
         const shouldActivate = forceState !== null ? forceState : !isActive;
-        
+
         if (shouldActivate) {
             body.classList.add('focus-mode');
             this.showFocusModeIndicator();
@@ -1015,11 +1040,11 @@ class App {
             body.classList.remove('focus-mode');
             this.hideFocusModeIndicator();
         }
-        
+
         // Save preference
         localStorage.setItem('stillmove_focus_mode', shouldActivate ? 'true' : 'false');
     }
-    
+
     /**
      * Show focus mode indicator
      */
@@ -1035,7 +1060,7 @@ class App {
                 <button class="focus-exit-btn" title="Exit Focus Mode (Esc)">×</button>
             `;
             document.body.appendChild(indicator);
-            
+
             // Exit button handler
             indicator.querySelector('.focus-exit-btn').addEventListener('click', () => {
                 this.toggleFocusMode(false);
@@ -1043,7 +1068,7 @@ class App {
         }
         indicator.classList.add('visible');
     }
-    
+
     /**
      * Hide focus mode indicator
      */
@@ -1053,7 +1078,7 @@ class App {
             indicator.classList.remove('visible');
         }
     }
-    
+
     /**
      * Show date jump picker modal
      */
@@ -1065,15 +1090,15 @@ class App {
             modal.querySelector('input[type="date"]').focus();
             return;
         }
-        
+
         // Create modal
         modal = document.createElement('div');
         modal.id = 'date-jump-modal';
         modal.className = 'modal';
         modal.style.display = 'flex';
-        
+
         const today = new Date().toISOString().split('T')[0];
-        
+
         modal.innerHTML = `
             <div class="modal-content" style="max-width: 320px;">
                 <div class="modal-header">
@@ -1099,25 +1124,25 @@ class App {
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
-        
+
         // Focus the date input
         modal.querySelector('input[type="date"]').focus();
-        
+
         // Close handlers
         modal.querySelectorAll('.modal-close').forEach(btn => {
             btn.addEventListener('click', () => {
                 modal.style.display = 'none';
             });
         });
-        
+
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                 modal.style.display = 'none';
             }
         });
-        
+
         // Quick jump buttons
         modal.querySelectorAll('.date-quick-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1127,7 +1152,7 @@ class App {
                 modal.querySelector('#date-jump-input').value = date.toISOString().split('T')[0];
             });
         });
-        
+
         // Go button
         modal.querySelector('#date-jump-go-btn').addEventListener('click', () => {
             const dateInput = modal.querySelector('#date-jump-input');
@@ -1135,7 +1160,7 @@ class App {
             this.jumpToDate(selectedDate);
             modal.style.display = 'none';
         });
-        
+
         // Enter key to submit
         modal.querySelector('#date-jump-input').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
@@ -1145,17 +1170,17 @@ class App {
             }
         });
     }
-    
+
     /**
      * Jump to a specific date in the current view
      */
     jumpToDate(date) {
         const currentView = this.stateManager.state.navigation.currentView;
-        
+
         // Dispatch custom event that views can listen to
         const event = new CustomEvent('dateJump', { detail: { date, view: currentView } });
         document.dispatchEvent(event);
-        
+
         // Also try to directly update the view if possible
         if (currentView === 'weekly' && window.weeklyView) {
             window.weeklyView.goToDate(date);
@@ -1166,27 +1191,27 @@ class App {
         } else if (currentView === 'annual' && window.annualView) {
             window.annualView.goToYear(date.getFullYear());
         }
-        
+
         if (window.showToast) {
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
             window.showToast(`Jumped to ${date.toLocaleDateString(undefined, options)}`, 'info');
         }
     }
-    
+
     /**
      * Setup Quick Add Floating Action Button
      */
     setupQuickAddFAB() {
         const fabButton = document.getElementById('fab-button');
         const fabMenu = document.getElementById('fab-menu');
-        
+
         if (!fabButton || !fabMenu) return;
-        
+
         // Toggle menu on FAB click
         fabButton.addEventListener('click', () => {
             this.toggleQuickAddMenu();
         });
-        
+
         // Handle menu item clicks
         fabMenu.querySelectorAll('.fab-menu-item').forEach(item => {
             item.addEventListener('click', () => {
@@ -1195,7 +1220,7 @@ class App {
                 this.closeQuickAddMenu();
             });
         });
-        
+
         // Close menu when clicking outside
         document.addEventListener('click', (e) => {
             const fabContainer = document.getElementById('fab-container');
@@ -1204,18 +1229,18 @@ class App {
             }
         });
     }
-    
+
     /**
      * Toggle Quick Add menu
      */
     toggleQuickAddMenu() {
         const fabButton = document.getElementById('fab-button');
         const fabMenu = document.getElementById('fab-menu');
-        
+
         if (!fabButton || !fabMenu) return;
-        
+
         const isOpen = fabMenu.classList.contains('open');
-        
+
         if (isOpen) {
             this.closeQuickAddMenu();
         } else {
@@ -1224,14 +1249,14 @@ class App {
             fabMenu.classList.add('open');
         }
     }
-    
+
     /**
      * Close Quick Add menu
      */
     closeQuickAddMenu() {
         const fabButton = document.getElementById('fab-button');
         const fabMenu = document.getElementById('fab-menu');
-        
+
         if (fabButton) {
             fabButton.classList.remove('open');
             fabButton.setAttribute('aria-expanded', 'false');
@@ -1240,14 +1265,14 @@ class App {
             fabMenu.classList.remove('open');
         }
     }
-    
+
     /**
      * Handle Quick Add action
      */
     handleQuickAddAction(action) {
         const currentView = this.stateManager.getState('navigation').currentView;
-        
-        switch(action) {
+
+        switch (action) {
             case 'add-habit':
                 // Navigate to habits view and trigger add
                 if (currentView !== 'habits') {
@@ -1259,7 +1284,7 @@ class App {
                     if (addBtn) addBtn.click();
                 }, 100);
                 break;
-                
+
             case 'add-goal':
                 // Navigate to weekly view and trigger add goal
                 if (currentView !== 'weekly') {
@@ -1270,7 +1295,7 @@ class App {
                     if (addBtn) addBtn.click();
                 }, 100);
                 break;
-                
+
             case 'add-timeblock':
                 // Navigate to weekly view - user can click on time slot
                 if (currentView !== 'weekly') {
@@ -1281,7 +1306,7 @@ class App {
                 break;
         }
     }
-    
+
     /**
      * Setup Floating Pomodoro Player
      */
@@ -1299,7 +1324,7 @@ class App {
         document.getElementById('pomodoro-float-skip')?.addEventListener('click', () => {
             this.skipPomodoroPhase();
         });
-        
+
         // Minimize/expand
         document.getElementById('pomodoro-float-minimize')?.addEventListener('click', () => {
             this.minimizeFloatingPlayer();
@@ -1307,31 +1332,31 @@ class App {
         document.getElementById('pomodoro-float-expand')?.addEventListener('click', () => {
             this.expandFloatingPlayer();
         });
-        
+
         // Close button
         document.getElementById('pomodoro-float-close')?.addEventListener('click', () => {
             this.hideFloatingPlayer();
         });
-        
+
         // Make draggable
         this.setupFloatingPlayerDrag(floatPlayer);
-        
+
         // Load saved position
         this.loadFloatingPlayerPosition();
-        
+
         // Subscribe to pomodoro state changes
         this.stateManager.subscribe('pomodoro', () => {
             this.updateFloatingPlayer();
         });
     }
-    
+
     setupFloatingPlayerDrag(element) {
         let isDragging = false;
         let startX, startY, initialX, initialY;
-        
+
         const header = element.querySelector('.pomodoro-float-header');
         if (!header) return;
-        
+
         header.addEventListener('mousedown', (e) => {
             if (e.target.closest('.pomodoro-float-btn')) return;
             isDragging = true;
@@ -1342,7 +1367,7 @@ class App {
             initialX = rect.left;
             initialY = rect.top;
         });
-        
+
         document.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
             e.preventDefault();
@@ -1355,7 +1380,7 @@ class App {
             element.style.right = 'auto';
             element.style.bottom = 'auto';
         });
-        
+
         document.addEventListener('mouseup', () => {
             if (isDragging) {
                 isDragging = false;
@@ -1363,7 +1388,7 @@ class App {
                 this.saveFloatingPlayerPosition();
             }
         });
-        
+
         // Touch support
         header.addEventListener('touchstart', (e) => {
             if (e.target.closest('.pomodoro-float-btn')) return;
@@ -1375,7 +1400,7 @@ class App {
             initialX = rect.left;
             initialY = rect.top;
         });
-        
+
         document.addEventListener('touchmove', (e) => {
             if (!isDragging) return;
             const touch = e.touches[0];
@@ -1388,7 +1413,7 @@ class App {
             element.style.right = 'auto';
             element.style.bottom = 'auto';
         });
-        
+
         document.addEventListener('touchend', () => {
             if (isDragging) {
                 isDragging = false;
@@ -1396,7 +1421,7 @@ class App {
             }
         });
     }
-    
+
     saveFloatingPlayerPosition() {
         const floatPlayer = document.getElementById('pomodoro-float');
         if (!floatPlayer) return;
@@ -1406,7 +1431,7 @@ class App {
             top: rect.top
         }));
     }
-    
+
     loadFloatingPlayerPosition() {
         const floatPlayer = document.getElementById('pomodoro-float');
         if (!floatPlayer) return;
@@ -1423,7 +1448,7 @@ class App {
             // Use default position
         }
     }
-    
+
     showFloatingPlayer() {
         const floatPlayer = document.getElementById('pomodoro-float');
         if (floatPlayer) {
@@ -1431,14 +1456,14 @@ class App {
             this.updateFloatingPlayer();
         }
     }
-    
+
     hideFloatingPlayer() {
         const floatPlayer = document.getElementById('pomodoro-float');
         if (floatPlayer) {
             floatPlayer.style.display = 'none';
         }
     }
-    
+
     minimizeFloatingPlayer() {
         const floatPlayer = document.getElementById('pomodoro-float');
         const body = floatPlayer?.querySelector('.pomodoro-float-body');
@@ -1449,7 +1474,7 @@ class App {
             minimized.style.display = 'flex';
         }
     }
-    
+
     expandFloatingPlayer() {
         const floatPlayer = document.getElementById('pomodoro-float');
         const body = floatPlayer?.querySelector('.pomodoro-float-body');
@@ -1460,23 +1485,23 @@ class App {
             minimized.style.display = 'none';
         }
     }
-    
+
     updateFloatingPlayer() {
         const pomodoroState = this.stateManager.getState('pomodoro');
-        
+
         const floatMode = document.getElementById('pomodoro-float-mode');
         const floatTime = document.getElementById('pomodoro-float-time');
         const floatSession = document.getElementById('pomodoro-float-session');
         const floatToggle = document.getElementById('pomodoro-float-toggle');
         const floatMiniTime = document.getElementById('pomodoro-float-mini-time');
-        
+
         // Format time helper
         const formatTime = (seconds) => {
             const mins = Math.floor(seconds / 60);
             const secs = seconds % 60;
             return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         };
-        
+
         // Get mode text helper
         const getModeText = (mode) => {
             switch (mode) {
@@ -1486,7 +1511,7 @@ class App {
                 default: return 'Focus';
             }
         };
-        
+
         if (floatMode) {
             floatMode.textContent = getModeText(pomodoroState.mode);
             floatMode.className = `pomodoro-float-mode ${pomodoroState.mode}`;
@@ -1512,7 +1537,7 @@ class App {
         if (floatMiniTime) {
             floatMiniTime.textContent = formatTime(pomodoroState.timeRemaining);
         }
-        
+
         // Show floating player when timer is running and not on pomodoro view
         const currentView = this.stateManager.getState('navigation').currentView;
         const floatPlayer = document.getElementById('pomodoro-float');
@@ -1524,7 +1549,7 @@ class App {
             }
         }
     }
-    
+
     togglePomodoroTimer() {
         // This will be handled by the pomodoro view when it's loaded
         // For now, just navigate to pomodoro view
@@ -1533,7 +1558,7 @@ class App {
             this.router.navigate('pomodoro');
         }
     }
-    
+
     resetPomodoroTimer() {
         const pomodoroState = this.stateManager.getState('pomodoro');
         this.stateManager.setState('pomodoro', {
@@ -1544,7 +1569,7 @@ class App {
             timeRemaining: 25 * 60
         });
     }
-    
+
     skipPomodoroPhase() {
         // Navigate to pomodoro view to handle skip
         const currentView = this.stateManager.getState('navigation').currentView;
@@ -1565,19 +1590,19 @@ class App {
     showToast(message, options = {}) {
         const container = document.getElementById('toast-container');
         if (!container) return;
-        
+
         const { type = 'info', duration = 3000, action, actionLabel = 'Undo' } = options;
-        
+
         const toast = document.createElement('div');
         toast.className = `toast toast-${type}`;
-        
+
         let html = `<span class="toast-message">${message}</span>`;
         if (action) {
             html += `<button class="toast-action">${actionLabel}</button>`;
         }
         toast.innerHTML = html;
         container.appendChild(toast);
-        
+
         // Handle action button click
         if (action) {
             const actionBtn = toast.querySelector('.toast-action');
@@ -1586,16 +1611,16 @@ class App {
                 toast.remove();
             });
         }
-        
+
         // Auto-remove after duration
         setTimeout(() => {
             toast.style.opacity = '0';
             setTimeout(() => toast.remove(), 300);
         }, duration);
-        
+
         return toast;
     }
-    
+
     /**
      * Setup Global Search functionality
      */
@@ -1603,14 +1628,14 @@ class App {
         const searchToggle = document.getElementById('search-toggle-btn');
         const searchContainer = document.getElementById('search-container');
         const searchInput = document.getElementById('global-search');
-        
+
         if (!searchToggle || !searchContainer || !searchInput) return;
-        
+
         // Toggle search on button click
         searchToggle.addEventListener('click', () => {
             this.toggleSearch();
         });
-        
+
         // Search on input with debounce
         let searchTimeout;
         searchInput.addEventListener('input', (e) => {
@@ -1619,14 +1644,14 @@ class App {
                 this.performSearch(e.target.value);
             }, 300);
         });
-        
+
         // Close search when clicking outside
         document.addEventListener('click', (e) => {
             if (!searchContainer.contains(e.target) && !searchToggle.contains(e.target)) {
                 this.toggleSearch(false);
             }
         });
-        
+
         // Handle Escape in search input
         searchInput.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
@@ -1634,7 +1659,7 @@ class App {
             }
         });
     }
-    
+
     /**
      * Toggle search visibility
      */
@@ -1642,12 +1667,12 @@ class App {
         const searchContainer = document.getElementById('search-container');
         const searchInput = document.getElementById('global-search');
         const searchToggle = document.getElementById('search-toggle-btn');
-        
+
         if (!searchContainer || !searchInput) return;
-        
+
         const isHidden = searchContainer.classList.contains('hidden');
         const shouldOpen = forceOpen !== null ? forceOpen : isHidden;
-        
+
         if (shouldOpen) {
             searchContainer.classList.remove('hidden');
             searchToggle?.classList.add('active');
@@ -1659,23 +1684,23 @@ class App {
             this.clearSearchResults();
         }
     }
-    
+
     /**
      * Perform search across all data
      */
     async performSearch(query) {
         const resultsContainer = document.getElementById('search-results');
         if (!resultsContainer) return;
-        
+
         if (!query || query.trim().length < 2) {
             this.clearSearchResults();
             return;
         }
-        
+
         const searchTerm = query.toLowerCase().trim();
         const results = [];
         const data = this.stateManager.getState('data');
-        
+
         // Search weekly goals
         if (data.weeklyGoals && data.weeklyGoals.length > 0) {
             data.weeklyGoals.forEach(goal => {
@@ -1690,7 +1715,7 @@ class App {
                 }
             });
         }
-        
+
         // Search annual goals and sub-goals
         if (data.annualGoals && data.annualGoals.length > 0) {
             data.annualGoals.forEach(goal => {
@@ -1720,7 +1745,7 @@ class App {
                 }
             });
         }
-        
+
         // Search daily habits
         if (data.dailyHabits && data.dailyHabits.length > 0) {
             data.dailyHabits.forEach(habit => {
@@ -1735,7 +1760,7 @@ class App {
                 }
             });
         }
-        
+
         // Search weekly habits
         if (data.weeklyHabits && data.weeklyHabits.length > 0) {
             data.weeklyHabits.forEach(habit => {
@@ -1750,7 +1775,7 @@ class App {
                 }
             });
         }
-        
+
         // Search time blocks
         if (data.timeBlocks && data.timeBlocks.length > 0) {
             data.timeBlocks.forEach(block => {
@@ -1765,7 +1790,7 @@ class App {
                 }
             });
         }
-        
+
         // Search action plans
         if (data.actionPlans && data.actionPlans.length > 0) {
             data.actionPlans.forEach(plan => {
@@ -1781,7 +1806,7 @@ class App {
                 }
             });
         }
-        
+
         // Search reading list
         if (data.readingList && data.readingList.length > 0) {
             data.readingList.forEach(book => {
@@ -1797,7 +1822,7 @@ class App {
                 }
             });
         }
-        
+
         // Search monthly notes
         if (data.monthlyData && data.monthlyData.notes) {
             if (data.monthlyData.notes.toLowerCase().includes(searchTerm)) {
@@ -1811,7 +1836,7 @@ class App {
                 });
             }
         }
-        
+
         // Search monthly checklist
         if (data.monthlyData && data.monthlyData.checklist && data.monthlyData.checklist.length > 0) {
             data.monthlyData.checklist.forEach(item => {
@@ -1826,17 +1851,17 @@ class App {
                 }
             });
         }
-        
+
         this.displaySearchResults(results, searchTerm);
     }
-    
+
     /**
      * Display search results
      */
     displaySearchResults(results, searchTerm) {
         const resultsContainer = document.getElementById('search-results');
         if (!resultsContainer) return;
-        
+
         if (results.length === 0) {
             resultsContainer.innerHTML = `
                 <div class="search-no-results">
@@ -1846,7 +1871,7 @@ class App {
             `;
             return;
         }
-        
+
         const html = results.slice(0, 10).map(result => `
             <div class="search-result-item" data-view="${result.view}">
                 <span class="search-result-icon">${result.icon}</span>
@@ -1857,9 +1882,9 @@ class App {
                 <span class="search-result-arrow">→</span>
             </div>
         `).join('');
-        
+
         resultsContainer.innerHTML = html;
-        
+
         // Add click handlers to results
         resultsContainer.querySelectorAll('.search-result-item').forEach(item => {
             item.addEventListener('click', () => {
@@ -1869,7 +1894,7 @@ class App {
             });
         });
     }
-    
+
     /**
      * Highlight matching text in search results
      */
@@ -1878,7 +1903,7 @@ class App {
         const regex = new RegExp(`(${searchTerm})`, 'gi');
         return text.replace(regex, '<mark>$1</mark>');
     }
-    
+
     /**
      * Clear search results
      */
@@ -1888,7 +1913,7 @@ class App {
             resultsContainer.innerHTML = '';
         }
     }
-    
+
     showConfigurationMessage() {
         const viewContainer = document.getElementById('view-container');
         viewContainer.innerHTML = `
@@ -1904,7 +1929,7 @@ class App {
             </div>
         `;
     }
-    
+
     showError(message) {
         const viewContainer = document.getElementById('view-container');
         viewContainer.innerHTML = `
@@ -1914,7 +1939,7 @@ class App {
             </div>
         `;
     }
-    
+
     /**
      * Check if user should be reminded to export their data
      * Reminds every 7 days if they haven't exported
@@ -1922,12 +1947,12 @@ class App {
     checkExportReminder() {
         const EXPORT_REMINDER_KEY = 'lastExportReminder';
         const EXPORT_REMINDER_DAYS = 7;
-        
+
         try {
             const lastReminder = localStorage.getItem(EXPORT_REMINDER_KEY);
             const now = Date.now();
             const reminderInterval = EXPORT_REMINDER_DAYS * 24 * 60 * 60 * 1000;
-            
+
             // Check if we should show reminder
             if (!lastReminder || (now - parseInt(lastReminder)) > reminderInterval) {
                 // Delay the reminder so it doesn't interrupt initial load
@@ -1941,7 +1966,7 @@ class App {
             console.warn('Could not check export reminder:', e);
         }
     }
-    
+
     /**
      * Show export reminder toast
      */

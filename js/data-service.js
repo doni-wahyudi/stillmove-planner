@@ -46,12 +46,12 @@ class DataService {
                 const cached = await cacheService.getAll(storeName);
                 if (cached && cached.length > 0) {
                     console.log(`[Cache] Returning ${cached.length} items from ${storeName}`);
-                    
+
                     // Sync in background if online
                     if (cacheService.online) {
                         this.syncInBackground(storeName, fetchFn);
                     }
-                    
+
                     return cached;
                 }
             }
@@ -61,7 +61,7 @@ class DataService {
 
         // Fetch from server
         const data = await fetchFn();
-        
+
         // Update cache
         if (this.cacheEnabled && data) {
             try {
@@ -70,7 +70,7 @@ class DataService {
                 console.warn('[Cache] Failed to update cache:', e);
             }
         }
-        
+
         return data;
     }
 
@@ -179,7 +179,7 @@ class DataService {
                     return yearData;
                 }
             }
-            
+
             const data = await fetchFn();
             if (this.cacheEnabled && data) {
                 await cacheService.putAll(STORES.goals, data);
@@ -200,13 +200,13 @@ class DataService {
             // Get current user ID
             const { data: { user } } = await this.supabase.auth.getUser();
             if (!user) throw new Error('User not authenticated');
-            
+
             const goalWithUser = { ...goal, user_id: user.id };
-            
+
             // If offline, create with temp ID and queue
             if (!cacheService.online) {
-                const tempGoal = { 
-                    ...goalWithUser, 
+                const tempGoal = {
+                    ...goalWithUser,
                     id: `temp_${Date.now()}`,
                     created_at: new Date().toISOString()
                 };
@@ -218,19 +218,19 @@ class DataService {
                 });
                 return tempGoal;
             }
-            
+
             const { data, error } = await this.supabase
                 .from('annual_goals')
                 .insert([goalWithUser])
                 .select();
 
             if (error) throw error;
-            
+
             // Update cache
             if (this.cacheEnabled && data[0]) {
                 await cacheService.put(STORES.goals, data[0]);
             }
-            
+
             return data[0];
         } catch (error) {
             this.handleError(error, 'createAnnualGoal');
@@ -252,7 +252,7 @@ class DataService {
                     await cacheService.put(STORES.goals, { ...cached, ...updates });
                 }
             }
-            
+
             // If offline, queue for sync
             if (!cacheService.online) {
                 await cacheService.addPendingSync({
@@ -264,7 +264,7 @@ class DataService {
                 const cached = await cacheService.get(STORES.goals, id);
                 return cached;
             }
-            
+
             const { data, error } = await this.supabase
                 .from('annual_goals')
                 .update(updates)
@@ -289,7 +289,7 @@ class DataService {
             if (this.cacheEnabled) {
                 await cacheService.delete(STORES.goals, id);
             }
-            
+
             // If offline, queue for sync
             if (!cacheService.online) {
                 await cacheService.addPendingSync({
@@ -299,7 +299,7 @@ class DataService {
                 });
                 return;
             }
-            
+
             const { error } = await this.supabase
                 .from('annual_goals')
                 .delete()
@@ -333,7 +333,7 @@ class DataService {
                     return yearData.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
                 }
             }
-            
+
             const { data, error } = await this.supabase
                 .from('reading_list')
                 .select('*')
@@ -341,11 +341,11 @@ class DataService {
                 .order('order_index');
 
             if (error) throw error;
-            
+
             if (this.cacheEnabled && data) {
                 await cacheService.putAll(STORES.readingList, data);
             }
-            
+
             return data || [];
         } catch (error) {
             this.handleError(error, 'getReadingList');
@@ -361,16 +361,16 @@ class DataService {
         try {
             const { data: { user } } = await this.supabase.auth.getUser();
             if (!user) throw new Error('User not authenticated');
-            
+
             const bookWithUser = { ...book, user_id: user.id };
-            
+
             if (!cacheService.online) {
                 const tempBook = { ...bookWithUser, id: `temp_${Date.now()}`, created_at: new Date().toISOString() };
                 await cacheService.put(STORES.readingList, tempBook);
                 await cacheService.addPendingSync({ type: 'create', store: 'reading_list', data: bookWithUser });
                 return tempBook;
             }
-            
+
             const { data, error } = await this.supabase
                 .from('reading_list')
                 .insert([bookWithUser])
@@ -396,12 +396,12 @@ class DataService {
                 const cached = await cacheService.get(STORES.readingList, id);
                 if (cached) await cacheService.put(STORES.readingList, { ...cached, ...updates });
             }
-            
+
             if (!cacheService.online) {
                 await cacheService.addPendingSync({ type: 'update', store: 'reading_list', itemId: id, data: updates });
                 return await cacheService.get(STORES.readingList, id);
             }
-            
+
             const { data, error } = await this.supabase
                 .from('reading_list')
                 .update(updates)
@@ -423,12 +423,12 @@ class DataService {
     async deleteReadingListEntry(id) {
         try {
             if (this.cacheEnabled) await cacheService.delete(STORES.readingList, id);
-            
+
             if (!cacheService.online) {
                 await cacheService.addPendingSync({ type: 'delete', store: 'reading_list', itemId: id });
                 return;
             }
-            
+
             const { error } = await this.supabase
                 .from('reading_list')
                 .delete()
@@ -463,7 +463,7 @@ class DataService {
                     return found;
                 }
             }
-            
+
             const { data, error } = await this.supabase
                 .from('monthly_data')
                 .select('*')
@@ -488,16 +488,16 @@ class DataService {
         try {
             const { data: { user } } = await this.supabase.auth.getUser();
             if (!user) throw new Error('User not authenticated');
-            
+
             const dataWithUser = { ...monthlyData, user_id: user.id };
-            
+
             if (!cacheService.online) {
                 const tempData = { ...dataWithUser, id: dataWithUser.id || `temp_${Date.now()}` };
                 await cacheService.put(STORES.monthlyData, tempData);
                 await cacheService.addPendingSync({ type: 'create', store: 'monthly_data', data: dataWithUser });
                 return tempData;
             }
-            
+
             const { data, error } = await this.supabase
                 .from('monthly_data')
                 .upsert([dataWithUser], { onConflict: 'user_id,year,month' })
@@ -534,7 +534,7 @@ class DataService {
                     return weekData;
                 }
             }
-            
+
             const { data, error } = await this.supabase
                 .from('weekly_goals')
                 .select('*')
@@ -559,16 +559,16 @@ class DataService {
         try {
             const { data: { user } } = await this.supabase.auth.getUser();
             if (!user) throw new Error('User not authenticated');
-            
+
             const goalWithUser = { ...goal, user_id: user.id };
-            
+
             if (!cacheService.online) {
                 const tempGoal = { ...goalWithUser, id: `temp_${Date.now()}`, created_at: new Date().toISOString() };
                 await cacheService.put(STORES.weeklyGoals, tempGoal);
                 await cacheService.addPendingSync({ type: 'create', store: 'weekly_goals', data: goalWithUser });
                 return tempGoal;
             }
-            
+
             const { data, error } = await this.supabase
                 .from('weekly_goals')
                 .insert([goalWithUser])
@@ -594,12 +594,12 @@ class DataService {
                 const cached = await cacheService.get(STORES.weeklyGoals, id);
                 if (cached) await cacheService.put(STORES.weeklyGoals, { ...cached, ...updates });
             }
-            
+
             if (!cacheService.online) {
                 await cacheService.addPendingSync({ type: 'update', store: 'weekly_goals', itemId: id, data: updates });
                 return await cacheService.get(STORES.weeklyGoals, id);
             }
-            
+
             const { data, error } = await this.supabase
                 .from('weekly_goals')
                 .update(updates)
@@ -621,12 +621,12 @@ class DataService {
     async deleteWeeklyGoal(id) {
         try {
             if (this.cacheEnabled) await cacheService.delete(STORES.weeklyGoals, id);
-            
+
             if (!cacheService.online) {
                 await cacheService.addPendingSync({ type: 'delete', store: 'weekly_goals', itemId: id });
                 return;
             }
-            
+
             const { error } = await this.supabase
                 .from('weekly_goals')
                 .delete()
@@ -661,7 +661,7 @@ class DataService {
                     return dateBlocks.sort((a, b) => a.start_time.localeCompare(b.start_time));
                 }
             }
-            
+
             const { data, error } = await this.supabase
                 .from('time_blocks')
                 .select('*')
@@ -669,11 +669,11 @@ class DataService {
                 .order('start_time');
 
             if (error) throw error;
-            
+
             if (this.cacheEnabled && data) {
                 await cacheService.putAll(STORES.timeBlocks, data);
             }
-            
+
             return data || [];
         } catch (error) {
             this.handleError(error, 'getTimeBlocks');
@@ -706,7 +706,7 @@ class DataService {
                     return rangeBlocks.sort((a, b) => a.date.localeCompare(b.date) || a.start_time.localeCompare(b.start_time));
                 }
             }
-            
+
             const { data, error } = await this.supabase
                 .from('time_blocks')
                 .select('*')
@@ -716,11 +716,11 @@ class DataService {
                 .order('start_time');
 
             if (error) throw error;
-            
+
             if (this.cacheEnabled && data) {
                 await cacheService.putAll(STORES.timeBlocks, data);
             }
-            
+
             return data || [];
         } catch (error) {
             this.handleError(error, 'getTimeBlocksRange');
@@ -737,9 +737,9 @@ class DataService {
             // Get current user ID
             const { data: { user } } = await this.supabase.auth.getUser();
             if (!user) throw new Error('User not authenticated');
-            
+
             const blockWithUser = { ...timeBlock, user_id: user.id };
-            
+
             if (!cacheService.online) {
                 const tempBlock = {
                     ...blockWithUser,
@@ -754,18 +754,18 @@ class DataService {
                 });
                 return tempBlock;
             }
-            
+
             const { data, error } = await this.supabase
                 .from('time_blocks')
                 .insert([blockWithUser])
                 .select();
 
             if (error) throw error;
-            
+
             if (this.cacheEnabled && data[0]) {
                 await cacheService.put(STORES.timeBlocks, data[0]);
             }
-            
+
             return data[0];
         } catch (error) {
             this.handleError(error, 'createTimeBlock');
@@ -786,7 +786,7 @@ class DataService {
                     await cacheService.put(STORES.timeBlocks, { ...cached, ...updates });
                 }
             }
-            
+
             if (!cacheService.online) {
                 await cacheService.addPendingSync({
                     type: 'update',
@@ -796,7 +796,7 @@ class DataService {
                 });
                 return await cacheService.get(STORES.timeBlocks, id);
             }
-            
+
             const { data, error } = await this.supabase
                 .from('time_blocks')
                 .update(updates)
@@ -820,7 +820,7 @@ class DataService {
             if (this.cacheEnabled) {
                 await cacheService.delete(STORES.timeBlocks, id);
             }
-            
+
             if (!cacheService.online) {
                 await cacheService.addPendingSync({
                     type: 'delete',
@@ -829,7 +829,7 @@ class DataService {
                 });
                 return;
             }
-            
+
             const { error } = await this.supabase
                 .from('time_blocks')
                 .delete()
@@ -1003,7 +1003,7 @@ class DataService {
         try {
             const sessions = await this.getPomodoroSessionsRange(startDate, endDate);
             const focusSessions = sessions.filter(s => s.session_type === 'focus' && s.was_completed);
-            
+
             return {
                 totalSessions: focusSessions.length,
                 totalMinutes: focusSessions.reduce((sum, s) => sum + s.duration_minutes, 0),
@@ -1130,7 +1130,7 @@ class DataService {
             // Get current user ID
             const { data: { user } } = await this.supabase.auth.getUser();
             if (!user) throw new Error('User not authenticated');
-            
+
             const { data, error } = await this.supabase
                 .from('daily_entries')
                 .upsert([{ ...entry, user_id: user.id }], { onConflict: 'user_id,date' })
@@ -1164,19 +1164,19 @@ class DataService {
                     return cached.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
                 }
             }
-            
+
             const { data, error } = await this.supabase
                 .from('daily_habits')
                 .select('*')
                 .order('order_index');
 
             if (error) throw error;
-            
+
             // Update cache
             if (this.cacheEnabled && data) {
                 await cacheService.putAll(STORES.habits, data);
             }
-            
+
             return data || [];
         } catch (error) {
             this.handleError(error, 'getDailyHabits');
@@ -1193,9 +1193,9 @@ class DataService {
             // Get current user ID
             const { data: { user } } = await this.supabase.auth.getUser();
             if (!user) throw new Error('User not authenticated');
-            
+
             const habitWithUser = { ...habit, user_id: user.id };
-            
+
             // If offline, create with temp ID
             if (!cacheService.online) {
                 const tempHabit = {
@@ -1211,18 +1211,18 @@ class DataService {
                 });
                 return tempHabit;
             }
-            
+
             const { data, error } = await this.supabase
                 .from('daily_habits')
                 .insert([habitWithUser])
                 .select();
 
             if (error) throw error;
-            
+
             if (this.cacheEnabled && data[0]) {
                 await cacheService.put(STORES.habits, data[0]);
             }
-            
+
             return data[0];
         } catch (error) {
             this.handleError(error, 'createDailyHabit');
@@ -1244,7 +1244,7 @@ class DataService {
                     await cacheService.put(STORES.habits, { ...cached, ...updates });
                 }
             }
-            
+
             if (!cacheService.online) {
                 await cacheService.addPendingSync({
                     type: 'update',
@@ -1254,7 +1254,7 @@ class DataService {
                 });
                 return await cacheService.get(STORES.habits, id);
             }
-            
+
             const { data, error } = await this.supabase
                 .from('daily_habits')
                 .update(updates)
@@ -1278,7 +1278,7 @@ class DataService {
             if (this.cacheEnabled) {
                 await cacheService.delete(STORES.habits, id);
             }
-            
+
             if (!cacheService.online) {
                 await cacheService.addPendingSync({
                     type: 'delete',
@@ -1287,7 +1287,7 @@ class DataService {
                 });
                 return;
             }
-            
+
             const { error } = await this.supabase
                 .from('daily_habits')
                 .delete()
@@ -1327,7 +1327,7 @@ class DataService {
                     return filtered;
                 }
             }
-            
+
             const { data, error } = await this.supabase
                 .from('daily_habit_completions')
                 .select('*')
@@ -1354,7 +1354,7 @@ class DataService {
             // Get current user ID
             const { data: { user } } = await this.supabase.auth.getUser();
             if (!user) throw new Error('User not authenticated');
-            
+
             const { data, error } = await this.supabase
                 .from('daily_habit_completions')
                 .upsert([{ habit_id: habitId, date, completed, user_id: user.id }], { onConflict: 'habit_id,date' })
@@ -1366,7 +1366,7 @@ class DataService {
             this.handleError(error, 'toggleDailyHabitCompletion');
         }
     }
-    
+
     /**
      * Update habit note for a specific date
      * @param {string} habitId - Habit ID
@@ -1378,7 +1378,7 @@ class DataService {
         try {
             const { data: { user } } = await this.supabase.auth.getUser();
             if (!user) throw new Error('User not authenticated');
-            
+
             const { data, error } = await this.supabase
                 .from('daily_habit_completions')
                 .upsert([{ habit_id: habitId, date, notes, user_id: user.id }], { onConflict: 'habit_id,date' })
@@ -1421,7 +1421,7 @@ class DataService {
             // Get current user ID
             const { data: { user } } = await this.supabase.auth.getUser();
             if (!user) throw new Error('User not authenticated');
-            
+
             const { data, error } = await this.supabase
                 .from('weekly_habits')
                 .insert([{ ...habit, user_id: user.id }])
@@ -1509,7 +1509,7 @@ class DataService {
             // Get current user ID
             const { data: { user } } = await this.supabase.auth.getUser();
             if (!user) throw new Error('User not authenticated');
-            
+
             const { data, error } = await this.supabase
                 .from('weekly_habit_completions')
                 .upsert([{ habit_id: habitId, date, completed, user_id: user.id }], { onConflict: 'habit_id,date' })
@@ -1557,7 +1557,7 @@ class DataService {
             // Get current user ID
             const { data: { user } } = await this.supabase.auth.getUser();
             if (!user) throw new Error('User not authenticated');
-            
+
             const { data, error } = await this.supabase
                 .from('mood_tracker')
                 .upsert([{ date, mood_emoji: moodEmoji, user_id: user.id }], { onConflict: 'user_id,date' })
@@ -1607,7 +1607,7 @@ class DataService {
             // Get current user ID
             const { data: { user } } = await this.supabase.auth.getUser();
             if (!user) throw new Error('User not authenticated');
-            
+
             const { data, error } = await this.supabase
                 .from('sleep_tracker')
                 .upsert([{ date, bedtime, wake_time: wakeTime, hours_slept: hoursSlept, user_id: user.id }], { onConflict: 'user_id,date' })
@@ -1656,7 +1656,7 @@ class DataService {
             // Get current user ID
             const { data: { user } } = await this.supabase.auth.getUser();
             if (!user) throw new Error('User not authenticated');
-            
+
             const { data, error } = await this.supabase
                 .from('water_tracker')
                 .upsert([{ date, glasses_consumed: glassesConsumed, goal_glasses: goalGlasses, user_id: user.id }], { onConflict: 'user_id,date' })
@@ -1703,7 +1703,7 @@ class DataService {
             // Get current user ID
             const { data: { user } } = await this.supabase.auth.getUser();
             if (!user) throw new Error('User not authenticated');
-            
+
             const { data, error } = await this.supabase
                 .from('action_plans')
                 .insert([{ ...actionPlan, user_id: user.id }])
@@ -1904,11 +1904,11 @@ class DataService {
             const link = document.createElement('a');
             link.href = url;
             link.download = filename;
-            
+
             // Trigger download
             document.body.appendChild(link);
             link.click();
-            
+
             // Cleanup
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
@@ -1916,7 +1916,7 @@ class DataService {
             throw new Error(`Failed to download export file: ${error.message}`);
         }
     }
-    
+
     /**
      * Export time blocks as iCal file
      * @param {Array} timeBlocks - Array of time blocks to export
@@ -1928,7 +1928,7 @@ class DataService {
                 const date = new Date().toISOString().split('T')[0];
                 filename = `planner-schedule-${date}.ics`;
             }
-            
+
             // Generate iCal content
             let icalContent = [
                 'BEGIN:VCALENDAR',
@@ -1938,20 +1938,20 @@ class DataService {
                 'METHOD:PUBLISH',
                 'X-WR-CALNAME:Stillmove Planner Schedule'
             ];
-            
+
             timeBlocks.forEach(block => {
                 if (!block.date || !block.start_time) return;
-                
+
                 // Parse date and time
                 const dateStr = block.date.replace(/-/g, '');
                 const startTime = block.start_time.replace(/:/g, '').substring(0, 4) + '00';
-                const endTime = block.end_time 
+                const endTime = block.end_time
                     ? block.end_time.replace(/:/g, '').substring(0, 4) + '00'
                     : this.addMinutesToTime(block.start_time, 30).replace(/:/g, '') + '00';
-                
+
                 const uid = `${block.id}@stillmove-planner`;
                 const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-                
+
                 icalContent.push(
                     'BEGIN:VEVENT',
                     `UID:${uid}`,
@@ -1963,27 +1963,27 @@ class DataService {
                     'END:VEVENT'
                 );
             });
-            
+
             icalContent.push('END:VCALENDAR');
-            
+
             // Create and download file
             const blob = new Blob([icalContent.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
             link.download = filename;
-            
+
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
-            
+
             return true;
         } catch (error) {
             throw new Error(`Failed to export iCal: ${error.message}`);
         }
     }
-    
+
     /**
      * Helper to add minutes to a time string
      */
@@ -1994,7 +1994,7 @@ class DataService {
         const newMins = totalMins % 60;
         return `${String(newHours).padStart(2, '0')}:${String(newMins).padStart(2, '0')}`;
     }
-    
+
     /**
      * Escape special characters for iCal format
      */
@@ -2068,7 +2068,7 @@ class DataService {
                 errors.push(`Invalid field type: data.${field} must be an array`);
             }
         }
-        
+
         // Enhanced validation: Check data integrity
         if (errors.length === 0) {
             // Validate annual goals structure
@@ -2082,7 +2082,7 @@ class DataService {
                     }
                 });
             }
-            
+
             // Validate daily habits structure
             if (importData.data.dailyHabits) {
                 importData.data.dailyHabits.forEach((habit, i) => {
@@ -2094,7 +2094,7 @@ class DataService {
                     }
                 });
             }
-            
+
             // Validate time blocks structure
             if (importData.data.timeBlocks) {
                 importData.data.timeBlocks.forEach((block, i) => {
@@ -2106,7 +2106,7 @@ class DataService {
                     }
                 });
             }
-            
+
             // Validate reading list structure
             if (importData.data.readingList) {
                 importData.data.readingList.forEach((book, i) => {
@@ -2118,9 +2118,9 @@ class DataService {
                     }
                 });
             }
-            
+
             // Check for suspiciously large data
-            const totalItems = Object.values(importData.data).reduce((sum, arr) => 
+            const totalItems = Object.values(importData.data).reduce((sum, arr) =>
                 sum + (Array.isArray(arr) ? arr.length : 0), 0);
             if (totalItems > 10000) {
                 warnings.push(`Large import detected: ${totalItems} total items`);
@@ -2367,7 +2367,7 @@ class DataService {
     async readImportFile(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            
+
             reader.onload = (event) => {
                 try {
                     const jsonData = JSON.parse(event.target.result);
@@ -2376,11 +2376,11 @@ class DataService {
                     reject(new Error('Invalid JSON file format'));
                 }
             };
-            
+
             reader.onerror = () => {
                 reject(new Error('Failed to read file'));
             };
-            
+
             reader.readAsText(file);
         });
     }
@@ -2405,7 +2405,7 @@ class DataService {
                     return cached.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
                 }
             }
-            
+
             const { data, error } = await this.supabase
                 .from('custom_categories')
                 .select('*')
@@ -2428,16 +2428,16 @@ class DataService {
         try {
             const { data: { user } } = await this.supabase.auth.getUser();
             if (!user) throw new Error('User not authenticated');
-            
+
             const catWithUser = { ...category, user_id: user.id };
-            
+
             if (!cacheService.online) {
                 const tempCat = { ...catWithUser, id: `temp_${Date.now()}`, created_at: new Date().toISOString() };
                 await cacheService.put(STORES.categories, tempCat);
                 await cacheService.addPendingSync({ type: 'create', store: 'custom_categories', data: catWithUser });
                 return tempCat;
             }
-            
+
             const { data, error } = await this.supabase
                 .from('custom_categories')
                 .insert([catWithUser])
@@ -2463,7 +2463,7 @@ class DataService {
                 const cached = await cacheService.get(STORES.categories, id);
                 if (cached) await cacheService.put(STORES.categories, { ...cached, ...updates });
             }
-            
+
             if (!cacheService.online) {
                 await cacheService.addPendingSync({ type: 'update', store: 'custom_categories', itemId: id, data: updates });
                 return await cacheService.get(STORES.categories, id);
@@ -2489,12 +2489,12 @@ class DataService {
     async deleteCustomCategory(id) {
         try {
             if (this.cacheEnabled) await cacheService.delete(STORES.categories, id);
-            
+
             if (!cacheService.online) {
                 await cacheService.addPendingSync({ type: 'delete', store: 'custom_categories', itemId: id });
                 return;
             }
-            
+
             const { error } = await this.supabase
                 .from('custom_categories')
                 .delete()
@@ -2563,7 +2563,7 @@ class DataService {
                             return data;
                         });
                     }
-                    return cached.sort((a, b) => 
+                    return cached.sort((a, b) =>
                         new Date(b.updated_at) - new Date(a.updated_at)
                     );
                 }
@@ -2709,9 +2709,9 @@ class DataService {
             if (this.cacheEnabled) {
                 const cached = await cacheService.get(STORES.canvasDocuments, id);
                 if (cached) {
-                    await cacheService.put(STORES.canvasDocuments, { 
-                        ...cached, 
-                        ...updatesWithTimestamp 
+                    await cacheService.put(STORES.canvasDocuments, {
+                        ...cached,
+                        ...updatesWithTimestamp
                     });
                 }
             }
@@ -2795,7 +2795,7 @@ class DataService {
                         });
                     }
                     // Sort by updated_at descending (most recent first)
-                    return cached.sort((a, b) => 
+                    return cached.sort((a, b) =>
                         new Date(b.updated_at) - new Date(a.updated_at)
                     );
                 }
@@ -2871,8 +2871,8 @@ class DataService {
             const { data: { user } } = await this.supabase.auth.getUser();
             if (!user) throw new Error('User not authenticated');
 
-            const boardWithUser = { 
-                ...board, 
+            const boardWithUser = {
+                ...board,
                 user_id: user.id,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
@@ -2928,9 +2928,9 @@ class DataService {
             if (this.cacheEnabled) {
                 const cached = await cacheService.get(STORES.kanbanBoards, id);
                 if (cached) {
-                    await cacheService.put(STORES.kanbanBoards, { 
-                        ...cached, 
-                        ...updatesWithTimestamp 
+                    await cacheService.put(STORES.kanbanBoards, {
+                        ...cached,
+                        ...updatesWithTimestamp
                     });
                 }
             }
@@ -2969,14 +2969,14 @@ class DataService {
             // Delete from cache immediately (board, columns, and cards)
             if (this.cacheEnabled) {
                 await cacheService.delete(STORES.kanbanBoards, id);
-                
+
                 // Also delete associated columns and cards from cache
                 const columns = await cacheService.getAll(STORES.kanbanColumns);
                 const boardColumns = columns.filter(c => c.board_id === id);
                 for (const col of boardColumns) {
                     await cacheService.delete(STORES.kanbanColumns, col.id);
                 }
-                
+
                 const cards = await cacheService.getAll(STORES.kanbanCards);
                 const boardCards = cards.filter(c => c.board_id === id);
                 for (const card of boardCards) {
@@ -3114,9 +3114,9 @@ class DataService {
             if (this.cacheEnabled) {
                 const cached = await cacheService.get(STORES.kanbanColumns, id);
                 if (cached) {
-                    await cacheService.put(STORES.kanbanColumns, { 
-                        ...cached, 
-                        ...updatesWithTimestamp 
+                    await cacheService.put(STORES.kanbanColumns, {
+                        ...cached,
+                        ...updatesWithTimestamp
                     });
                 }
             }
@@ -3155,14 +3155,14 @@ class DataService {
             // Delete from cache immediately
             if (this.cacheEnabled) {
                 await cacheService.delete(STORES.kanbanColumns, id);
-                
+
                 // Also update cards that were in this column (set column_id to null)
                 const cards = await cacheService.getAll(STORES.kanbanCards);
                 const columnCards = cards.filter(c => c.column_id === id);
                 for (const card of columnCards) {
-                    await cacheService.put(STORES.kanbanCards, { 
-                        ...card, 
-                        column_id: null 
+                    await cacheService.put(STORES.kanbanCards, {
+                        ...card,
+                        column_id: null
                     });
                 }
             }
@@ -3342,9 +3342,9 @@ class DataService {
             if (this.cacheEnabled) {
                 const cached = await cacheService.get(STORES.kanbanCards, id);
                 if (cached) {
-                    await cacheService.put(STORES.kanbanCards, { 
-                        ...cached, 
-                        ...updatesWithTimestamp 
+                    await cacheService.put(STORES.kanbanCards, {
+                        ...cached,
+                        ...updatesWithTimestamp
                     });
                 }
             }
@@ -3516,9 +3516,9 @@ class DataService {
             if (this.cacheEnabled) {
                 const cached = await cacheService.get(STORES.checklistItems, id);
                 if (cached) {
-                    await cacheService.put(STORES.checklistItems, { 
-                        ...cached, 
-                        ...updatesWithTimestamp 
+                    await cacheService.put(STORES.checklistItems, {
+                        ...cached,
+                        ...updatesWithTimestamp
                     });
                 }
             }
@@ -3606,7 +3606,7 @@ class DataService {
                             return data;
                         });
                     }
-                    return cardAttachments.sort((a, b) => 
+                    return cardAttachments.sort((a, b) =>
                         new Date(a.created_at) - new Date(b.created_at)
                     );
                 }
@@ -3723,7 +3723,7 @@ class DataService {
                         });
                     }
                     // Sort by created_at descending (newest first)
-                    return cardComments.sort((a, b) => 
+                    return cardComments.sort((a, b) =>
                         new Date(b.created_at) - new Date(a.created_at)
                     );
                 }
@@ -3903,7 +3903,7 @@ class DataService {
                         });
                     }
                     // Sort by created_at descending (newest first)
-                    return cardActivities.sort((a, b) => 
+                    return cardActivities.sort((a, b) =>
                         new Date(b.created_at) - new Date(a.created_at)
                     );
                 }
@@ -3972,6 +3972,33 @@ class DataService {
             return data[0];
         } catch (error) {
             this.handleError(error, 'createActivityEntry');
+        }
+    }
+    /**
+     * Get activity log entries for a specific board within a date range
+     * @param {string} boardId - Board ID
+     * @param {string} startDate - Start date (ISO)
+     * @param {string} endDate - End date (ISO)
+     * @returns {Promise<Array>} Array of activity log entries
+     */
+    async getKanbanActivityLogRange(boardId, startDate, endDate) {
+        try {
+            const cards = await this.getKanbanCards(boardId);
+            const cardIds = cards.map(c => c.id);
+            if (cardIds.length === 0) return [];
+
+            const { data, error } = await this.supabase
+                .from('kanban_activity_log')
+                .select('*')
+                .in('card_id', cardIds)
+                .gte('created_at', startDate)
+                .lte('created_at', endDate)
+                .order('created_at', { ascending: true });
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getKanbanActivityLogRange');
         }
     }
 }

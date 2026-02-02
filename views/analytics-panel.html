@@ -1,0 +1,94 @@
+<div id="analytics-panel" class="analytics-panel" role="complementary" aria-label="Board Analytics"
+    style="display: none;">
+    <div class="analytics-panel-header">
+        <div class="analytics-panel-title">
+            <span class="icon">📊</span>
+            <h3>Board Analytics</h3>
+        </div>
+        <button id="close-analytics-btn" class="btn-icon" aria-label="Close analytics">&times;</button>
+    </div>
+
+    <div class="analytics-panel-content">
+        <!-- Date Range Selector -->
+        <section class="analytics-section date-range-picker">
+            <div class="date-presets">
+                <button class="btn-preset active" data-range="7">7 Days</button>
+                <button class="btn-preset" data-range="30">30 Days</button>
+                <button class="btn-preset" data-range="90">90 Days</button>
+                <button class="btn-preset" data-range="custom">Custom</button>
+            </div>
+            <div id="custom-date-range" class="custom-date-range" style="display: none;">
+                <input type="date" id="analytics-start-date" class="form-input-small">
+                <span>to</span>
+                <input type="date" id="analytics-end-date" class="form-input-small">
+                <button id="apply-custom-range-btn" class="btn-primary btn-small">Apply</button>
+            </div>
+        </section>
+
+        <!-- Board Health Overview -->
+        <section class="analytics-section health-overview">
+            <h4>Board Health</h4>
+            <div class="health-cards">
+                <div id="health-overdue" class="health-card danger">
+                    <span class="count">0</span>
+                    <span class="label">Overdue</span>
+                </div>
+                <div id="health-stale" class="health-card warning">
+                    <span class="count">0</span>
+                    <span class="label">Stale</span>
+                </div>
+                <div id="health-wip" class="health-card info">
+                    <span class="count">0</span>
+                    <span class="label">WIP Over</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Completion Metrics -->
+        <section class="analytics-section">
+            <div class="section-header">
+                <h4>Completion</h4>
+                <div id="completion-stats" class="summary-stats">
+                    <span class="stat-item"><strong id="total-completed-val">0</strong> Done</span>
+                    <span class="stat-item"><strong id="completion-rate-val">0</strong>% Rare</span>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="completion-trend-chart"></canvas>
+            </div>
+            <div class="chart-container half-width">
+                <canvas id="priority-breakdown-chart"></canvas>
+            </div>
+        </section>
+
+        <!-- Cycle Time Metrics -->
+        <section class="analytics-section">
+            <div class="section-header">
+                <h4>Cycle Time</h4>
+                <div id="cycle-time-stats" class="summary-stats">
+                    <span class="stat-item">Avg: <strong id="avg-cycle-time-val">0</strong>d</span>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="cycle-time-trend-chart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="column-time-chart"></canvas>
+            </div>
+        </section>
+
+        <!-- Throughput Metrics -->
+        <section class="analytics-section">
+            <h4>Throughput & Flow</h4>
+            <div class="chart-container">
+                <canvas id="cumulative-flow-chart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="throughput-chart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="burnup-chart"></canvas>
+            </div>
+        </section>
+    </div>
+</div>

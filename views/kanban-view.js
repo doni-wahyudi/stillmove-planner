@@ -7,6 +7,7 @@
 
 import dataService from '../js/data-service.js';
 import kanbanService from '../js/kanban-service.js';
+import analyticsPanel from '../js/analytics-panel.js';
 
 // LocalStorage key for persisting last viewed board
 const LAST_VIEWED_BOARD_KEY = 'kanban_last_viewed_board';
@@ -140,7 +141,7 @@ class DragDropHandler {
 
         // Move placeholder to the calculated position
         const cards = Array.from(cardsContainer.querySelectorAll('.kanban-card:not(.dragging):not(.drag-placeholder)'));
-        
+
         if (position >= cards.length) {
             cardsContainer.appendChild(this.placeholder);
         } else if (cards[position]) {
@@ -258,7 +259,7 @@ class DragDropHandler {
         if (!this.draggedCard) return;
 
         const cardId = this.draggedCard.dataset.cardId;
-        
+
         try {
             // Dropping on backlog
             // Requirement 11.4: Drag card from column to backlog
@@ -377,16 +378,16 @@ class DragDropHandler {
     async _reorderBacklog(cardId, position) {
         const backlog = await kanbanService.getBacklog(this.view.currentBoardId);
         const cardOrder = backlog.map(c => c.id);
-        
+
         // Remove card from current position
         const currentIndex = cardOrder.indexOf(cardId);
         if (currentIndex > -1) {
             cardOrder.splice(currentIndex, 1);
         }
-        
+
         // Insert at new position
         cardOrder.splice(position, 0, cardId);
-        
+
         await kanbanService.reorderBacklog(this.view.currentBoardId, cardOrder);
     }
 
@@ -400,7 +401,7 @@ class DragDropHandler {
 
         const cards = Array.from(container.querySelectorAll('.kanban-card:not(.dragging), .drag-placeholder'));
         const placeholderIndex = cards.indexOf(this.placeholder);
-        
+
         return placeholderIndex >= 0 ? placeholderIndex : 0;
     }
 
@@ -413,13 +414,13 @@ class DragDropHandler {
 
         this.placeholder = document.createElement('div');
         this.placeholder.className = `drag-placeholder drag-placeholder-${type}`;
-        
+
         if (type === 'card') {
-            this.placeholder.style.height = this.draggedCard ? 
+            this.placeholder.style.height = this.draggedCard ?
                 `${this.draggedCard.offsetHeight}px` : '60px';
             this.placeholder.style.margin = '8px 0';
         } else if (type === 'column') {
-            this.placeholder.style.width = this.draggedColumn ? 
+            this.placeholder.style.width = this.draggedColumn ?
                 `${this.draggedColumn.offsetWidth}px` : '280px';
             this.placeholder.style.minHeight = '200px';
         }
@@ -445,7 +446,7 @@ class DragDropHandler {
         if (!container) return 0;
 
         const cards = Array.from(container.querySelectorAll('.kanban-card:not(.dragging):not(.drag-placeholder)'));
-        
+
         if (cards.length === 0) return 0;
 
         const mouseY = event.clientY;
@@ -535,14 +536,14 @@ class DragDropHandler {
 
             // Create visual clone for dragging
             this._createTouchClone(cardEl, touch);
-            
+
             // Create placeholder
             this.createPlaceholder('card');
-            
+
             // Add dragging class
             cardEl.classList.add('dragging');
             this.draggedCard = cardEl;
-            
+
             // Add is-dragging to container to prevent text selection
             document.querySelector('.kanban-view')?.classList.add('is-dragging');
 
@@ -557,7 +558,7 @@ class DragDropHandler {
             this.createPlaceholder('column');
             columnEl.classList.add('dragging');
             this.draggedColumn = columnEl;
-            
+
             // Add is-dragging to container to prevent text selection
             document.querySelector('.kanban-view')?.classList.add('is-dragging');
 
@@ -573,7 +574,7 @@ class DragDropHandler {
         if (!this.touchElement || !this.touchClone) return;
 
         const touch = event.touches[0];
-        
+
         // Move the clone
         this.touchClone.style.left = `${touch.clientX - this.touchClone.offsetWidth / 2}px`;
         this.touchClone.style.top = `${touch.clientY - this.touchClone.offsetHeight / 2}px`;
@@ -634,7 +635,7 @@ class DragDropHandler {
         if (!columnsContainer || !this.placeholder) return;
 
         const columns = Array.from(columnsContainer.querySelectorAll('.kanban-column:not(.dragging):not(.drag-placeholder)'));
-        
+
         let insertBefore = null;
         for (const col of columns) {
             const rect = col.getBoundingClientRect();
@@ -665,7 +666,7 @@ class DragDropHandler {
         if (!container) return 0;
 
         const cards = Array.from(container.querySelectorAll('.kanban-card:not(.dragging):not(.drag-placeholder)'));
-        
+
         if (cards.length === 0) return 0;
 
         for (let i = 0; i < cards.length; i++) {
@@ -878,15 +879,18 @@ class KanbanView {
         // Initialize keyboard navigation
         this.initKeyboardNavigation();
 
+        // Initialize analytics panel
+        await analyticsPanel.init();
+
         // Load boards and handle deep-linking
         await this.loadBoards();
-        
+
         // Handle deep-link to specific card after board is loaded
         if (this.deepLinkParams.cardId && this.currentBoardId) {
             await this.handleDeepLinkCard(this.deepLinkParams.cardId);
         }
     }
-    
+
     /**
      * Handle deep-link to a specific card
      * Requirement 12.5: Deep-linking support for specific board or card
@@ -898,15 +902,15 @@ class KanbanView {
         if (cardElement) {
             // Scroll the card into view
             cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            
+
             // Add highlight effect
             cardElement.classList.add('deep-link-highlight');
-            
+
             // Remove highlight after animation
             setTimeout(() => {
                 cardElement.classList.remove('deep-link-highlight');
             }, 2000);
-            
+
             // Optionally open the card modal
             const card = this.currentBoard?.cards?.find(c => c.id === cardId);
             if (card) {
@@ -945,6 +949,13 @@ class KanbanView {
         // Backlog panel
         document.getElementById('toggle-backlog-btn')?.addEventListener('click', () => this.toggleBacklog());
         document.getElementById('add-backlog-card-btn')?.addEventListener('click', () => this.openCardModal(null, true));
+
+        // Analytics panel toggle
+        document.getElementById('analytics-toggle-btn')?.addEventListener('click', () => {
+            if (this.currentBoardId) {
+                analyticsPanel.open(this.currentBoardId);
+            }
+        });
 
         // Modal event listeners
         this.setupModalListeners();
@@ -1030,7 +1041,7 @@ class KanbanView {
             });
             document.getElementById('skip-goal-progress-btn')?.addEventListener('click', () => this.closeGoalProgressModal());
             document.getElementById('update-goal-progress-btn')?.addEventListener('click', () => this.updateGoalProgress());
-            
+
             // Update displayed value when slider changes
             const progressInput = document.getElementById('goal-progress-input');
             const progressValue = document.getElementById('goal-progress-value');
@@ -1048,25 +1059,25 @@ class KanbanView {
     async loadBoards() {
         try {
             this.showLoading(true);
-            
+
             // Load boards from service
             this.boards = await kanbanService.getBoards();
-            
+
             // Load categories for board creation
             this.categories = await dataService.getCustomCategories();
-            
+
             // Render board selector
             this.renderBoardSelector();
-            
+
             // Priority for board selection:
             // 1. Deep-link board ID (from URL hash)
             // 2. Last viewed board ID (from localStorage)
             // 3. First board in list (most recently updated)
             const deepLinkBoardId = this.deepLinkParams?.boardId;
             const lastViewedBoardId = this._getLastViewedBoardId();
-            
+
             let boardIdToLoad = null;
-            
+
             if (deepLinkBoardId && this.boards.some(b => b.id === deepLinkBoardId)) {
                 // Deep-link takes priority
                 boardIdToLoad = deepLinkBoardId;
@@ -1077,7 +1088,7 @@ class KanbanView {
                 // Fall back to first board (most recently updated)
                 boardIdToLoad = this.boards[0].id;
             }
-            
+
             if (boardIdToLoad) {
                 await this.loadBoard(boardIdToLoad);
             } else {
@@ -1105,10 +1116,10 @@ class KanbanView {
 
         try {
             this.showLoading(true);
-            
+
             // Load board with columns and cards
             this.currentBoard = await kanbanService.getBoard(boardId);
-            
+
             if (!this.currentBoard) {
                 this.showError('Board not found');
                 this.showEmptyState();
@@ -1116,23 +1127,29 @@ class KanbanView {
             }
 
             this.currentBoardId = boardId;
-            
+
             // Persist last viewed board ID
             this._setLastViewedBoardId(boardId);
-            
+
             // Update board selector
             const boardSelector = document.getElementById('board-selector');
             if (boardSelector) {
                 boardSelector.value = boardId;
             }
-            
+
             // Load annual goals for card linking
             const currentYear = new Date().getFullYear();
             this.annualGoals = await dataService.getAnnualGoals(currentYear);
-            
+
             // Show board action buttons
             this.showBoardActions(true);
-            
+
+            // Show analytics toggle button
+            const analyticsBtn = document.getElementById('analytics-toggle-btn');
+            if (analyticsBtn) {
+                analyticsBtn.style.display = 'inline-block';
+            }
+
             // Render the board
             this.render();
         } catch (error) {
@@ -1264,7 +1281,7 @@ class KanbanView {
         if (wipBadge && column.wip_limit) {
             wipBadge.textContent = `WIP: ${columnCards.length}/${column.wip_limit}`;
             wipBadge.style.display = 'inline-block';
-            
+
             // Add warning class if at or over limit
             if (columnCards.length >= column.wip_limit) {
                 wipBadge.classList.add('wip-over-limit');
@@ -1338,14 +1355,14 @@ class KanbanView {
             const dueDate = new Date(card.due_date + 'T00:00:00'); // Normalize to midnight local time
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            
+
             // Calculate days until due
             const timeDiff = dueDate.getTime() - today.getTime();
             const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
-            
+
             dueDateEl.textContent = this.formatDueDate(card.due_date);
             dueDateEl.style.display = 'inline';
-            
+
             // Add appropriate CSS class based on due date status
             if (daysDiff < 0) {
                 // Past due - overdue
@@ -1406,7 +1423,7 @@ class KanbanView {
                 checklistEl.textContent = `📋 ${checklistProgress.completed}/${checklistProgress.total}`;
                 checklistEl.style.display = 'inline';
                 checklistEl.title = `Checklist: ${checklistProgress.completed} of ${checklistProgress.total} items completed`;
-                
+
                 // Add completion style if all items are complete
                 if (checklistProgress.completed === checklistProgress.total) {
                     checklistEl.classList.add('all-complete');
@@ -1583,7 +1600,7 @@ class KanbanView {
     async createBoard(boardData) {
         try {
             this.showLoading(true);
-            
+
             const templateId = boardData.template || 'blank';
             const newBoard = await kanbanService.createBoardFromTemplate(templateId, {
                 title: boardData.title,
@@ -1593,11 +1610,11 @@ class KanbanView {
 
             // Add to boards list
             this.boards.unshift(newBoard);
-            
+
             // Update selector and load the new board
             this.renderBoardSelector();
             await this.loadBoard(newBoard.id);
-            
+
             this.showSuccess('Board created successfully');
         } catch (error) {
             console.error('Failed to create board:', error);
@@ -1615,27 +1632,27 @@ class KanbanView {
 
         try {
             this.showLoading(true);
-            
+
             await kanbanService.deleteBoard(this.currentBoardId);
-            
+
             // Remove from boards list
             this.boards = this.boards.filter(b => b.id !== this.currentBoardId);
-            
+
             // Clear current board
             this.currentBoard = null;
             this.currentBoardId = null;
             this._clearLastViewedBoardId();
-            
+
             // Update selector
             this.renderBoardSelector();
-            
+
             // Load another board or show empty state
             if (this.boards.length > 0) {
                 await this.loadBoard(this.boards[0].id);
             } else {
                 this.showEmptyState();
             }
-            
+
             this.showSuccess('Board deleted successfully');
         } catch (error) {
             console.error('Failed to delete board:', error);
@@ -1704,7 +1721,7 @@ class KanbanView {
     toggleFilterPanel() {
         const filterPanel = document.getElementById('filter-panel');
         const toggleBtn = document.getElementById('filter-toggle-btn');
-        
+
         if (!filterPanel) return;
 
         const isVisible = filterPanel.style.display !== 'none';
@@ -1755,7 +1772,7 @@ class KanbanView {
         if (!this.currentBoard) return;
 
         const hasFilters = Object.values(this.filters).some(v => v !== undefined);
-        
+
         // Update filter indicator
         const indicator = document.querySelector('.filter-active-indicator');
         if (indicator) {
@@ -1764,7 +1781,7 @@ class KanbanView {
 
         // Get all card elements
         const cardElements = this.container.querySelectorAll('.kanban-card');
-        
+
         if (!hasFilters) {
             // Show all cards
             cardElements.forEach(el => el.style.display = '');
@@ -1788,18 +1805,18 @@ class KanbanView {
      */
     clearFilters() {
         this.filters = {};
-        
+
         // Reset filter inputs
         const searchInput = document.getElementById('search-input');
         const priorityFilter = document.getElementById('priority-filter');
         const labelFilter = document.getElementById('label-filter');
         const dueDateFilter = document.getElementById('due-date-filter');
-        
+
         if (searchInput) searchInput.value = '';
         if (priorityFilter) priorityFilter.value = '';
         if (labelFilter) labelFilter.value = '';
         if (dueDateFilter) dueDateFilter.value = '';
-        
+
         this.applyFilters();
     }
 
@@ -1851,7 +1868,7 @@ class KanbanView {
         if (titleInput) titleInput.value = board?.title || '';
         if (descInput) descInput.value = board?.description || '';
         if (categorySelect) categorySelect.value = board?.category_id || '';
-        
+
         // Hide template selector when editing
         const templateGroup = templateSelect?.closest('.form-group');
         if (templateGroup) {
@@ -1907,7 +1924,7 @@ class KanbanView {
             // Update existing board
             try {
                 await kanbanService.updateBoard(this._editingBoard.id, boardData);
-                
+
                 // Update local state
                 const boardIndex = this.boards.findIndex(b => b.id === this._editingBoard.id);
                 if (boardIndex >= 0) {
@@ -1916,7 +1933,7 @@ class KanbanView {
                 if (this.currentBoard?.id === this._editingBoard.id) {
                     this.currentBoard = { ...this.currentBoard, ...boardData };
                 }
-                
+
                 this.renderBoardSelector();
                 this.showSuccess('Board updated successfully');
             } catch (error) {
@@ -2045,7 +2062,7 @@ class KanbanView {
             // Remove existing listeners by cloning
             const newTab = tab.cloneNode(true);
             tab.parentNode.replaceChild(newTab, tab);
-            
+
             newTab.addEventListener('click', () => {
                 this._handleCardTabClick(newTab.dataset.tab, card);
             });
@@ -2149,7 +2166,7 @@ class KanbanView {
             // Get current user ID for ownership checks
             const { data: { user } } = await dataService.supabase.auth.getUser();
             const currentUserId = user?.id || null;
-            
+
             const component = new CommentsComponent(cardId, container, kanbanService, currentUserId);
             await component.init();
             this._cardModalComponents.comments = component;
@@ -2247,7 +2264,7 @@ class KanbanView {
         const attachmentsContainer = document.getElementById('card-tab-attachments');
         const commentsContainer = document.getElementById('card-tab-comments');
         const activityContainer = document.getElementById('card-tab-activity');
-        
+
         if (checklistContainer) checklistContainer.innerHTML = '';
         if (attachmentsContainer) attachmentsContainer.innerHTML = '';
         if (commentsContainer) commentsContainer.innerHTML = '';
@@ -2260,7 +2277,7 @@ class KanbanView {
      */
     _getAllBoardLabels() {
         const labelsMap = new Map();
-        
+
         if (!this.currentBoard) return [];
 
         // Collect labels from all cards in columns
@@ -2309,7 +2326,7 @@ class KanbanView {
         const allLabels = this._getAllBoardLabels();
 
         // Normalize selected labels to array of names
-        const selectedLabelNames = (selectedLabels || []).map(label => 
+        const selectedLabelNames = (selectedLabels || []).map(label =>
             typeof label === 'string' ? label : label.name
         );
 
@@ -2337,7 +2354,7 @@ class KanbanView {
     _createLabelCheckbox(label, isChecked) {
         const labelItem = document.createElement('label');
         labelItem.className = 'label-checkbox-item';
-        
+
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.name = 'card-label';
@@ -2448,7 +2465,7 @@ class KanbanView {
     closeCardModal() {
         // Destroy tab components before closing
         this._destroyCardModalComponents();
-        
+
         const modal = document.getElementById('card-modal');
         if (modal) modal.style.display = 'none';
         this._editingCard = null;
@@ -2862,10 +2879,10 @@ class KanbanView {
 
         // Populate modal with goal info
         if (goalTitleEl) goalTitleEl.textContent = goal.title || 'Unnamed Goal';
-        
+
         const currentProgress = goal.progress || 0;
         if (currentProgressEl) currentProgressEl.textContent = currentProgress;
-        
+
         // Set slider to current progress (or slightly higher as suggestion)
         const suggestedProgress = Math.min(100, currentProgress + 10);
         if (progressInput) {
@@ -2930,7 +2947,7 @@ class KanbanView {
     async startPomodoroForCard(card) {
         try {
             const pomodoroData = await kanbanService.startPomodoroForCard(card.id);
-            
+
             // Check if Pomodoro view/timer is available via global instance
             if (window.pomodoroTimer && typeof window.pomodoroTimer.startSessionForCard === 'function') {
                 window.pomodoroTimer.startSessionForCard({
@@ -2954,7 +2971,7 @@ class KanbanView {
                         isPaused: false
                     });
                     this.showSuccess(`Started Pomodoro for "${card.title}"`);
-                    
+
                     // Navigate to pomodoro view to see the timer
                     if (window.location.hash !== '#pomodoro') {
                         this.showSuccess('Navigate to Pomodoro view to see the timer');
@@ -2963,7 +2980,7 @@ class KanbanView {
                     this.showError('Pomodoro timer not available. Please visit the Pomodoro view first.');
                 }
             }
-            
+
             // Update the card UI to show active indicator
             this.updateActivePomodoroIndicator(card.id);
         } catch (error) {
@@ -2991,7 +3008,7 @@ class KanbanView {
             const activeCard = this.container?.querySelector(`.kanban-card[data-card-id="${activeCardId}"]`);
             if (activeCard) {
                 activeCard.classList.add('pomodoro-active');
-                
+
                 // Add pulsing indicator if not already present
                 if (!activeCard.querySelector('.pomodoro-active-indicator')) {
                     const indicator = document.createElement('div');
@@ -3051,7 +3068,7 @@ class KanbanView {
 
         if (emptyState) emptyState.style.display = 'flex';
         if (addColumnPlaceholder) addColumnPlaceholder.style.display = 'none';
-        
+
         this.showBoardActions(false);
     }
 
@@ -3115,17 +3132,17 @@ class KanbanView {
      */
     formatDueDate(dateStr) {
         if (!dateStr) return '';
-        
+
         const date = new Date(dateStr);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
+
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
-        
+
         const dateOnly = new Date(date);
         dateOnly.setHours(0, 0, 0, 0);
-        
+
         if (dateOnly.getTime() === today.getTime()) {
             return 'Today';
         } else if (dateOnly.getTime() === tomorrow.getTime()) {
@@ -3369,7 +3386,7 @@ class KanbanView {
     navigateToNextCard(currentCard) {
         const column = currentCard.closest('.kanban-column');
         const backlogPanel = currentCard.closest('#backlog-panel');
-        
+
         let cards;
         if (backlogPanel) {
             cards = Array.from(backlogPanel.querySelectorAll('.kanban-card'));
@@ -3381,7 +3398,7 @@ class KanbanView {
 
         const currentIndex = cards.indexOf(currentCard);
         const nextCard = cards[currentIndex + 1];
-        
+
         if (nextCard) {
             nextCard.focus();
             nextCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -3395,7 +3412,7 @@ class KanbanView {
     navigateToPreviousCard(currentCard) {
         const column = currentCard.closest('.kanban-column');
         const backlogPanel = currentCard.closest('#backlog-panel');
-        
+
         let cards;
         if (backlogPanel) {
             cards = Array.from(backlogPanel.querySelectorAll('.kanban-card'));
@@ -3407,7 +3424,7 @@ class KanbanView {
 
         const currentIndex = cards.indexOf(currentCard);
         const prevCard = cards[currentIndex - 1];
-        
+
         if (prevCard) {
             prevCard.focus();
             prevCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -3429,10 +3446,10 @@ class KanbanView {
         if (nextColumn) {
             const currentCards = Array.from(currentColumn.querySelectorAll('.kanban-card'));
             const currentCardIndex = currentCards.indexOf(currentCard);
-            
+
             const nextCards = Array.from(nextColumn.querySelectorAll('.kanban-card'));
             const targetCard = nextCards[Math.min(currentCardIndex, nextCards.length - 1)] || nextCards[0];
-            
+
             if (targetCard) {
                 targetCard.focus();
                 targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -3458,10 +3475,10 @@ class KanbanView {
         if (prevColumn) {
             const currentCards = Array.from(currentColumn.querySelectorAll('.kanban-card'));
             const currentCardIndex = currentCards.indexOf(currentCard);
-            
+
             const prevCards = Array.from(prevColumn.querySelectorAll('.kanban-card'));
             const targetCard = prevCards[Math.min(currentCardIndex, prevCards.length - 1)] || prevCards[0];
-            
+
             if (targetCard) {
                 targetCard.focus();
                 targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -3480,7 +3497,7 @@ class KanbanView {
         const columns = Array.from(this.container.querySelectorAll('.kanban-column'));
         const currentIndex = columns.indexOf(currentColumn);
         const nextColumn = columns[currentIndex + 1];
-        
+
         if (nextColumn) {
             const firstCard = nextColumn.querySelector('.kanban-card');
             if (firstCard) {
@@ -3499,7 +3516,7 @@ class KanbanView {
         const columns = Array.from(this.container.querySelectorAll('.kanban-column'));
         const currentIndex = columns.indexOf(currentColumn);
         const prevColumn = columns[currentIndex - 1];
-        
+
         if (prevColumn) {
             const firstCard = prevColumn.querySelector('.kanban-card');
             if (firstCard) {
@@ -3568,7 +3585,7 @@ class ChecklistComponent {
         this._editingItemId = null;
         this._isOffline = false;
         this._hasQueuedOperations = false;
-        
+
         // Listen for online/offline events
         this._handleOnline = () => this._onOnlineStatusChange(true);
         this._handleOffline = () => this._onOnlineStatusChange(false);
@@ -3585,7 +3602,7 @@ class ChecklistComponent {
         this._isOffline = !isOnline;
         // Re-render to update offline indicator
         this.render();
-        
+
         if (isOnline && this._hasQueuedOperations) {
             this._showSuccess('Back online - syncing changes...');
             this._hasQueuedOperations = false;
@@ -3604,7 +3621,7 @@ class ChecklistComponent {
             const result = await this.kanbanService.getChecklistItems(this.cardId);
             this.items = result.items || result; // Handle both new and old return format
             this._isOffline = result.isOffline || !navigator.onLine;
-            
+
             // Render the component
             await this.render();
         } catch (error) {
@@ -3675,15 +3692,15 @@ class ChecklistComponent {
         indicator.className = 'kanban-checklist-offline-indicator';
         indicator.setAttribute('role', 'status');
         indicator.setAttribute('aria-live', 'polite');
-        
+
         const icon = document.createElement('span');
         icon.className = 'offline-icon';
         icon.innerHTML = '📡';
         icon.setAttribute('aria-hidden', 'true');
-        
+
         const text = document.createElement('span');
         text.className = 'offline-text';
-        
+
         if (this._isOffline) {
             text.textContent = 'You are offline. Viewing cached data.';
             indicator.classList.add('offline');
@@ -3691,10 +3708,10 @@ class ChecklistComponent {
             text.textContent = 'Changes queued for sync.';
             indicator.classList.add('queued');
         }
-        
+
         indicator.appendChild(icon);
         indicator.appendChild(text);
-        
+
         return indicator;
     }
 
@@ -3790,7 +3807,7 @@ class ChecklistComponent {
         itemEl.className = 'kanban-checklist-item';
         itemEl.dataset.itemId = item.id;
         itemEl.setAttribute('role', 'listitem');
-        
+
         // Make item draggable for reordering (Requirement 4.4)
         itemEl.setAttribute('draggable', 'true');
 
@@ -3830,6 +3847,36 @@ class ChecklistComponent {
         textEl.addEventListener('dblclick', handleDoubleClick);
         this._eventListeners.push({ element: textEl, event: 'dblclick', handler: handleDoubleClick });
 
+        // Due date input
+        const dueDateContainer = document.createElement('div');
+        dueDateContainer.className = 'kanban-checklist-item-due-date';
+
+        const dueDateInput = document.createElement('input');
+        dueDateInput.type = 'date';
+        dueDateInput.className = 'kanban-checklist-due-date-input';
+        dueDateInput.value = item.due_date || '';
+        dueDateInput.setAttribute('aria-label', `Due date for "${item.text}"`);
+        dueDateInput.title = 'Set due date';
+
+        // Add visual indicator if due date is set and past
+        if (item.due_date) {
+            const today = new Date().toISOString().split('T')[0];
+            if (item.due_date < today && !item.is_completed) {
+                dueDateContainer.classList.add('overdue');
+            } else if (item.due_date === today && !item.is_completed) {
+                dueDateContainer.classList.add('due-today');
+            }
+        }
+
+        const handleDueDateChange = async () => {
+            const newDueDate = dueDateInput.value || null;
+            await this.updateItemDueDate(item.id, newDueDate);
+        };
+        dueDateInput.addEventListener('change', handleDueDateChange);
+        this._eventListeners.push({ element: dueDateInput, event: 'change', handler: handleDueDateChange });
+
+        dueDateContainer.appendChild(dueDateInput);
+
         // Actions container
         const actionsEl = document.createElement('div');
         actionsEl.className = 'kanban-checklist-item-actions';
@@ -3868,9 +3915,44 @@ class ChecklistComponent {
         itemEl.appendChild(dragHandle);
         itemEl.appendChild(checkbox);
         itemEl.appendChild(textEl);
+        itemEl.appendChild(dueDateContainer);
         itemEl.appendChild(actionsEl);
 
         return itemEl;
+    }
+
+    /**
+     * Update the due date of a checklist item
+     * @param {string} itemId - The ID of the item to update
+     * @param {string|null} dueDate - The new due date (YYYY-MM-DD format) or null to clear
+     */
+    async updateItemDueDate(itemId, dueDate) {
+        try {
+            // Update via service
+            const result = await this.kanbanService.updateChecklistItem(itemId, { due_date: dueDate });
+            const updatedItem = result.item || result;
+            const wasQueued = result.queued || false;
+
+            // Update local items array
+            const index = this.items.findIndex(item => item.id === itemId);
+            if (index !== -1) {
+                this.items[index] = updatedItem;
+            }
+
+            // Track if we have queued operations
+            if (wasQueued) {
+                this._hasQueuedOperations = true;
+                this._showWarning('Due date updated (will sync when online)');
+            } else {
+                this._showSuccess('Due date updated');
+            }
+
+            // Re-render to update visual indicators
+            await this.render();
+        } catch (error) {
+            console.error('Failed to update checklist item due date:', error);
+            this._showError('Failed to update due date');
+        }
     }
 
     /**
@@ -3959,10 +4041,10 @@ class ChecklistComponent {
             const result = await this.kanbanService.createChecklistItem(this.cardId, text.trim());
             const newItem = result.item || result; // Handle both new and old return format
             const wasQueued = result.queued || false;
-            
+
             // Add to local items array
             this.items.push(newItem);
-            
+
             // Track if we have queued operations
             if (wasQueued) {
                 this._hasQueuedOperations = true;
@@ -3970,7 +4052,7 @@ class ChecklistComponent {
             } else {
                 this._showSuccess('Item added');
             }
-            
+
             // Re-render to show new item
             await this.render();
         } catch (error) {
@@ -3991,18 +4073,18 @@ class ChecklistComponent {
             const result = await this.kanbanService.toggleChecklistItem(itemId);
             const updatedItem = result.item || result; // Handle both new and old return format
             const wasQueued = result.queued || false;
-            
+
             // Update local items array
             const index = this.items.findIndex(item => item.id === itemId);
             if (index !== -1) {
                 this.items[index] = updatedItem;
             }
-            
+
             // Track if we have queued operations
             if (wasQueued) {
                 this._hasQueuedOperations = true;
             }
-            
+
             // Re-render to update UI (Requirement 2.2: strikethrough, 2.3: progress indicator)
             await this.render();
         } catch (error) {
@@ -4030,13 +4112,13 @@ class ChecklistComponent {
             const result = await this.kanbanService.updateChecklistItem(itemId, { text: text.trim() });
             const updatedItem = result.item || result; // Handle both new and old return format
             const wasQueued = result.queued || false;
-            
+
             // Update local items array
             const index = this.items.findIndex(item => item.id === itemId);
             if (index !== -1) {
                 this.items[index] = updatedItem;
             }
-            
+
             // Track if we have queued operations
             if (wasQueued) {
                 this._hasQueuedOperations = true;
@@ -4044,7 +4126,7 @@ class ChecklistComponent {
             } else {
                 this._showSuccess('Item updated');
             }
-            
+
             // Re-render to show updated text
             await this.render();
         } catch (error) {
@@ -4072,10 +4154,10 @@ class ChecklistComponent {
             // Delete via service (returns {queued})
             const result = await this.kanbanService.deleteChecklistItem(itemId);
             const wasQueued = result.queued || false;
-            
+
             // Remove from local items array
             this.items = this.items.filter(i => i.id !== itemId);
-            
+
             // Track if we have queued operations
             if (wasQueued) {
                 this._hasQueuedOperations = true;
@@ -4083,7 +4165,7 @@ class ChecklistComponent {
             } else {
                 this._showSuccess('Item deleted');
             }
-            
+
             // Re-render to remove item from UI
             await this.render();
         } catch (error) {
@@ -4110,7 +4192,7 @@ class ChecklistComponent {
             progress.classList.add('empty');
         } else {
             progress.textContent = `${completed}/${total} done`;
-            
+
             // Add completion style when all items are complete (Requirement 3.4)
             if (completed === total) {
                 progress.classList.add('all-complete');
@@ -4123,15 +4205,15 @@ class ChecklistComponent {
         if (total > 0) {
             const progressBar = document.createElement('div');
             progressBar.className = 'kanban-checklist-progress-bar';
-            
+
             const progressFill = document.createElement('div');
             progressFill.className = 'kanban-checklist-progress-fill';
             progressFill.style.width = `${(completed / total) * 100}%`;
-            
+
             if (completed === total) {
                 progressFill.classList.add('complete');
             }
-            
+
             progressBar.appendChild(progressFill);
             progress.appendChild(progressBar);
         }
@@ -4408,7 +4490,7 @@ class ChecklistComponent {
         if (newOrder && newOrder.length > 0) {
             try {
                 await this.kanbanService.reorderChecklistItems(this.cardId, newOrder);
-                
+
                 // Update local items with new order
                 newOrder.forEach((itemId, index) => {
                     const item = this.items.find(i => i.id === itemId);
@@ -4435,7 +4517,7 @@ class ChecklistComponent {
     _handleItemDragEnd(e) {
         // Remove all drag-over highlights
         this._itemsContainer?.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-        
+
         this._cleanupDrag();
     }
 
@@ -4542,13 +4624,13 @@ class ChecklistComponent {
 
         // Check if touch started on drag handle or item itself (not on buttons/checkbox)
         const target = e.target;
-        if (target.closest('.kanban-checklist-item-btn') || 
+        if (target.closest('.kanban-checklist-item-btn') ||
             target.closest('.kanban-checklist-checkbox')) {
             return; // Don't start drag on interactive elements
         }
 
         const touch = e.touches[0];
-        
+
         this._dragState.draggedItem = itemEl;
         this._dragState.draggedItemId = itemEl.dataset.itemId;
         this._dragState.touchStartY = touch.clientY;
@@ -4588,7 +4670,7 @@ class ChecklistComponent {
 
         // Calculate drop position
         const items = Array.from(itemsContainer.querySelectorAll('.kanban-checklist-item:not(.dragging):not(.drag-placeholder)'));
-        
+
         let insertBefore = null;
         for (const item of items) {
             const rect = item.getBoundingClientRect();
@@ -4626,7 +4708,7 @@ class ChecklistComponent {
         if (newOrder && newOrder.length > 0) {
             try {
                 await this.kanbanService.reorderChecklistItems(this.cardId, newOrder);
-                
+
                 // Update local items with new order
                 newOrder.forEach((itemId, index) => {
                     const item = this.items.find(i => i.id === itemId);
@@ -4747,7 +4829,7 @@ class AttachmentsComponent {
         try {
             // Load attachments from service
             this.attachments = await this.kanbanService.getAttachments(this.cardId);
-            
+
             // Render the component
             await this.render();
         } catch (error) {
@@ -4915,10 +4997,10 @@ class AttachmentsComponent {
         // Set up online/offline event listeners - Requirement 5.8
         const handleOnline = () => this._updateOfflineState(false);
         const handleOffline = () => this._updateOfflineState(true);
-        
+
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
-        
+
         this._eventListeners.push(
             { element: window, event: 'online', handler: handleOnline },
             { element: window, event: 'offline', handler: handleOffline }
@@ -4959,7 +5041,7 @@ class AttachmentsComponent {
                 this._uploadBtn.title = '';
             }
         }
-        
+
         if (this._offlineIndicator) {
             this._offlineIndicator.style.display = isOffline ? 'flex' : 'none';
             if (isOffline) {
@@ -5025,7 +5107,7 @@ class AttachmentsComponent {
             this._showSuccess('File uploaded successfully');
         } catch (error) {
             console.error('Failed to upload file:', error);
-            
+
             // Show specific error message if available
             if (error.message.includes('File size')) {
                 this._showError('File size must be 10MB or less');
@@ -5131,7 +5213,7 @@ class AttachmentsComponent {
         nameEl.type = 'button';
         nameEl.className = 'kanban-attachment-name kanban-attachment-name-btn';
         nameEl.textContent = attachment.file_name;
-        
+
         if (isImage) {
             // Requirement 6.3: Open larger preview modal when clicking image attachment
             nameEl.setAttribute('aria-label', `Preview ${attachment.file_name}`);
@@ -5409,13 +5491,13 @@ class AttachmentsComponent {
             return '📕';
         }
 
-        if (fileType === 'application/msword' || 
+        if (fileType === 'application/msword' ||
             fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
             return '📘';
         }
 
         // Spreadsheet/CSV
-        if (fileType === 'text/csv' || 
+        if (fileType === 'text/csv' ||
             fileType === 'application/vnd.ms-excel' ||
             fileType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
             return '📊';
@@ -5427,7 +5509,7 @@ class AttachmentsComponent {
         }
 
         // Archive files
-        if (fileType === 'application/zip' || 
+        if (fileType === 'application/zip' ||
             fileType === 'application/x-zip-compressed' ||
             fileType === 'application/x-rar-compressed') {
             return '📦';
@@ -5593,7 +5675,7 @@ class CommentsComponent {
         this._editingCommentId = null;
         this._isOffline = false;
         this._hasQueuedOperations = false;
-        
+
         // Listen for online/offline events - Requirement 8.6, 9.5, 13.4
         this._handleOnline = () => this._onOnlineStatusChange(true);
         this._handleOffline = () => this._onOnlineStatusChange(false);
@@ -5610,7 +5692,7 @@ class CommentsComponent {
         this._isOffline = !isOnline;
         // Re-render to update offline indicator
         this.render();
-        
+
         if (isOnline && this._hasQueuedOperations) {
             this._showSuccess('Back online - syncing changes...');
             this._hasQueuedOperations = false;
@@ -5635,7 +5717,7 @@ class CommentsComponent {
                 this.comments = result.comments || [];
                 this._isOffline = result.isOffline || !navigator.onLine;
             }
-            
+
             // Render the component
             await this.render();
         } catch (error) {
@@ -5714,15 +5796,15 @@ class CommentsComponent {
         indicator.className = 'kanban-comments-offline-indicator';
         indicator.setAttribute('role', 'status');
         indicator.setAttribute('aria-live', 'polite');
-        
+
         const icon = document.createElement('span');
         icon.className = 'offline-icon';
         icon.innerHTML = '📡';
         icon.setAttribute('aria-hidden', 'true');
-        
+
         const text = document.createElement('span');
         text.className = 'offline-text';
-        
+
         if (this._isOffline) {
             text.textContent = 'You are offline. Viewing cached comments.';
             indicator.classList.add('offline');
@@ -5730,10 +5812,10 @@ class CommentsComponent {
             text.textContent = 'Changes queued for sync.';
             indicator.classList.add('queued');
         }
-        
+
         indicator.appendChild(icon);
         indicator.appendChild(text);
-        
+
         return indicator;
     }
 
@@ -5832,7 +5914,7 @@ class CommentsComponent {
         try {
             // Create comment via service (returns {comment, queued})
             const result = await this.kanbanService.createComment(this.cardId, text);
-            
+
             // Handle both new format {comment, queued} and old format (comment object)
             const newComment = result.comment || result;
             const wasQueued = result.queued || false;
@@ -5876,7 +5958,7 @@ class CommentsComponent {
         try {
             // Update comment via service (returns {comment, queued})
             const result = await this.kanbanService.updateComment(commentId, text);
-            
+
             // Handle both new format {comment, queued} and old format (comment object)
             const updatedComment = result.comment || result;
             const wasQueued = result.queued || false;
@@ -5931,7 +6013,7 @@ class CommentsComponent {
         try {
             // Delete via service (returns {queued})
             const result = await this.kanbanService.deleteComment(commentId);
-            
+
             // Handle both new format {queued} and old format (void)
             const wasQueued = result?.queued || false;
 
@@ -6351,7 +6433,7 @@ class ActivityLogComponent {
         try {
             // Load activity log from service
             this.activities = await this.kanbanService.getActivityLog(this.cardId);
-            
+
             // Render the component
             await this.render();
         } catch (error) {
@@ -6478,56 +6560,56 @@ class ActivityLogComponent {
      */
     formatActivityMessage(entry) {
         const actionData = entry.action_data || {};
-        
+
         switch (entry.action_type) {
             case 'card_created':
                 return 'Card was <strong>created</strong>';
-            
+
             case 'card_moved':
                 const fromColumn = this._escapeHtml(actionData.from_column || 'unknown');
                 const toColumn = this._escapeHtml(actionData.to_column || 'unknown');
                 return `Card moved from <strong>${fromColumn}</strong> to <strong>${toColumn}</strong>`;
-            
+
             case 'card_edited':
                 const editedField = actionData.field ? this._escapeHtml(actionData.field) : 'details';
                 return `Card <strong>${editedField}</strong> was updated`;
-            
+
             case 'checklist_item_added':
                 const addedText = this._truncateText(actionData.text || 'item', 50);
                 return `Added checklist item: <strong>${this._escapeHtml(addedText)}</strong>`;
-            
+
             case 'checklist_item_completed':
                 const completedText = this._truncateText(actionData.text || 'item', 50);
                 return `Completed: <strong>${this._escapeHtml(completedText)}</strong>`;
-            
+
             case 'checklist_item_uncompleted':
                 const uncompletedText = this._truncateText(actionData.text || 'item', 50);
                 return `Uncompleted: <strong>${this._escapeHtml(uncompletedText)}</strong>`;
-            
+
             case 'checklist_item_deleted':
                 const deletedItemText = this._truncateText(actionData.text || 'item', 50);
                 return `Deleted checklist item: <strong>${this._escapeHtml(deletedItemText)}</strong>`;
-            
+
             case 'attachment_added':
                 const addedFileName = this._escapeHtml(actionData.file_name || 'file');
                 return `Added attachment: <strong>${addedFileName}</strong>`;
-            
+
             case 'attachment_deleted':
                 const deletedFileName = this._escapeHtml(actionData.file_name || 'file');
                 return `Deleted attachment: <strong>${deletedFileName}</strong>`;
-            
+
             case 'comment_added':
                 const commentPreview = this._truncateText(actionData.text || '', 50);
-                return commentPreview 
+                return commentPreview
                     ? `Added comment: <em>"${this._escapeHtml(commentPreview)}"</em>`
                     : 'Added a <strong>comment</strong>';
-            
+
             case 'comment_edited':
                 return 'Edited a <strong>comment</strong>';
-            
+
             case 'comment_deleted':
                 return 'Deleted a <strong>comment</strong>';
-            
+
             default:
                 return `Activity: <strong>${this._escapeHtml(entry.action_type)}</strong>`;
         }
