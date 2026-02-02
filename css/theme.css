@@ -9060,3 +9060,874 @@ html[data-theme="dark"] .pomodoro-float-control-btn:hover {
 html[data-theme="dark"] #pomodoro-float-mini-time {
     color: var(--text-primary) !important;
 }
+
+
+/* ============================================================
+   KANBAN BOARD - DARK MODE STYLES
+   Task 15.2: Dark mode overrides for Kanban board
+   Requirements: 9.2 - Ensure proper contrast for all elements
+   ============================================================ */
+
+@media (prefers-color-scheme: dark) {
+    /* Kanban View Container */
+    .kanban-view {
+        background: transparent !important;
+    }
+
+    /* Board Header */
+    .kanban-header {
+        background: var(--bg-surface) !important;
+        border-color: var(--border-default) !important;
+    }
+
+    .kanban-header h2 {
+        color: var(--text-primary) !important;
+    }
+
+    /* Board Selector */
+    .board-selector {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-strong) !important;
+    }
+
+    .board-selector:focus {
+        border-color: var(--accent-primary) !important;
+        box-shadow: 0 0 0 3px var(--accent-bg) !important;
+    }
+
+    /* Kanban Columns */
+    .kanban-column {
+        background: var(--bg-surface) !important;
+        border-color: var(--border-default) !important;
+    }
+
+    .kanban-column .column-header {
+        background: var(--bg-elevated) !important;
+        border-bottom-color: var(--border-default) !important;
+    }
+
+    .kanban-column .column-title {
+        color: var(--text-primary) !important;
+    }
+
+    .kanban-column .column-count {
+        background: var(--accent-bg) !important;
+        color: var(--accent-primary) !important;
+    }
+
+    /* WIP Limit Indicator */
+    .kanban-column .wip-limit {
+        color: var(--text-muted) !important;
+    }
+
+    .kanban-column.wip-exceeded .column-header {
+        background: rgba(239, 68, 68, 0.15) !important;
+        border-color: rgba(239, 68, 68, 0.3) !important;
+    }
+
+    .kanban-column.wip-exceeded .wip-limit {
+        color: #ef4444 !important;
+    }
+
+    /* Kanban Cards */
+    .kanban-card {
+        background: var(--bg-elevated) !important;
+        border-color: var(--border-default) !important;
+    }
+
+    .kanban-card:hover {
+        background: var(--accent-bg) !important;
+        border-color: var(--border-accent) !important;
+    }
+
+    .kanban-card:focus {
+        outline-color: var(--accent-primary) !important;
+    }
+
+    .kanban-card .card-title {
+        color: var(--text-primary) !important;
+    }
+
+    .kanban-card .card-description {
+        color: var(--text-secondary) !important;
+    }
+
+    /* Card Priority Badges */
+    .kanban-card .priority-badge.priority-high {
+        background: rgba(239, 68, 68, 0.2) !important;
+        color: #f87171 !important;
+    }
+
+    .kanban-card .priority-badge.priority-medium {
+        background: rgba(245, 158, 11, 0.2) !important;
+        color: #fbbf24 !important;
+    }
+
+    .kanban-card .priority-badge.priority-low {
+        background: rgba(34, 197, 94, 0.2) !important;
+        color: #4ade80 !important;
+    }
+
+    /* Card Due Date */
+    .kanban-card .due-date {
+        color: var(--text-muted) !important;
+    }
+
+    .kanban-card .due-date.overdue {
+        background: rgba(239, 68, 68, 0.15) !important;
+        color: #f87171 !important;
+    }
+
+    .kanban-card .due-date.due-soon {
+        background: rgba(245, 158, 11, 0.15) !important;
+        color: #fbbf24 !important;
+    }
+
+    /* Card Labels */
+    .kanban-card .card-labels .label {
+        opacity: 0.9;
+    }
+
+    /* Card Actions */
+    .kanban-card .card-actions button {
+        color: var(--text-muted) !important;
+        background: transparent !important;
+    }
+
+    .kanban-card .card-actions button:hover {
+        color: var(--accent-primary) !important;
+        background: var(--accent-bg) !important;
+    }
+
+    /* Pomodoro Active Indicator */
+    .kanban-card.pomodoro-active {
+        border-color: var(--accent-primary) !important;
+        box-shadow: 0 0 0 2px rgba(212, 165, 116, 0.3) !important;
+    }
+
+    .kanban-card .pomodoro-indicator {
+        background: var(--accent-primary) !important;
+        color: var(--text-on-accent) !important;
+    }
+
+    /* Goal Link Badge */
+    .kanban-card .goal-link-badge {
+        background: var(--accent-bg) !important;
+        color: var(--accent-primary) !important;
+    }
+
+    /* Card Preview Indicators - Requirements 3.2, 6.5, 12.1 */
+    .kanban-card .card-checklist-progress,
+    .kanban-card .card-attachment-count,
+    .kanban-card .card-comment-count {
+        background: var(--bg-elevated) !important;
+        color: var(--text-secondary) !important;
+    }
+
+    .kanban-card .card-checklist-progress.all-complete {
+        background: rgba(34, 197, 94, 0.15) !important;
+        color: #4ade80 !important;
+    }
+
+    /* Backlog Panel */
+    .backlog-panel {
+        background: var(--bg-surface) !important;
+        border-color: var(--border-default) !important;
+    }
+
+    .backlog-panel .backlog-header {
+        background: var(--bg-elevated) !important;
+        border-bottom-color: var(--border-default) !important;
+    }
+
+    .backlog-panel .backlog-title {
+        color: var(--text-primary) !important;
+    }
+
+    .backlog-panel .backlog-count {
+        background: var(--accent-bg) !important;
+        color: var(--accent-primary) !important;
+    }
+
+    .backlog-panel .backlog-toggle {
+        color: var(--text-muted) !important;
+    }
+
+    .backlog-panel .backlog-toggle:hover {
+        color: var(--accent-primary) !important;
+    }
+
+    /* Drag and Drop States */
+    .kanban-card.dragging {
+        opacity: 0.5 !important;
+        background: var(--bg-elevated) !important;
+    }
+
+    .kanban-column.drag-over {
+        background: var(--accent-bg) !important;
+        border-color: var(--accent-primary) !important;
+    }
+
+    .drag-placeholder-card,
+    .drag-placeholder-column {
+        background: var(--accent-bg) !important;
+        border-color: var(--accent-primary) !important;
+    }
+
+    /* Filter Panel */
+    .kanban-view .filter-panel {
+        background: var(--bg-surface) !important;
+        border-color: var(--border-default) !important;
+    }
+
+    .kanban-view .filter-input,
+    .kanban-view .filter-select {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-strong) !important;
+    }
+
+    .kanban-view .filter-input:focus,
+    .kanban-view .filter-select:focus {
+        border-color: var(--accent-primary) !important;
+        box-shadow: 0 0 0 2px var(--accent-bg) !important;
+    }
+
+    /* Context Menu */
+    .kanban-view .context-menu,
+    #card-context-menu,
+    #column-context-menu {
+        background: var(--bg-elevated) !important;
+        border-color: var(--border-default) !important;
+        box-shadow: var(--shadow-lg) !important;
+    }
+
+    .kanban-view .context-menu-item,
+    #card-context-menu .context-menu-item,
+    #column-context-menu .context-menu-item {
+        color: var(--text-primary) !important;
+    }
+
+    .kanban-view .context-menu-item:hover,
+    #card-context-menu .context-menu-item:hover,
+    #column-context-menu .context-menu-item:hover {
+        background: var(--accent-bg) !important;
+    }
+
+    .kanban-view .context-menu-item-danger,
+    #card-context-menu .context-menu-item-danger,
+    #column-context-menu .context-menu-item-danger {
+        color: #ef4444 !important;
+    }
+
+    /* Empty State */
+    .kanban-view .empty-state {
+        color: var(--text-muted) !important;
+    }
+
+    .kanban-view .empty-state h3 {
+        color: var(--text-secondary) !important;
+    }
+
+    /* Add Card/Column Buttons */
+    .kanban-column .add-card-btn,
+    .kanban-content .add-column-btn {
+        background: transparent !important;
+        border-color: var(--border-accent) !important;
+        color: var(--accent-primary) !important;
+    }
+
+    .kanban-column .add-card-btn:hover,
+    .kanban-content .add-column-btn:hover {
+        background: var(--accent-bg) !important;
+    }
+
+    /* Kanban Modals */
+    .kanban-view .modal-content {
+        background: var(--bg-surface) !important;
+    }
+
+    .kanban-view .modal-header {
+        background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%) !important;
+    }
+
+    .kanban-view .modal-body {
+        background: var(--bg-surface) !important;
+    }
+
+    .kanban-view .modal-footer {
+        background: var(--bg-elevated) !important;
+        border-top-color: var(--border-default) !important;
+    }
+
+    /* Card Modal Enhanced - Tabbed Interface (Requirement 12.2, 12.4) */
+    .card-modal-enhanced {
+        background: var(--bg-surface) !important;
+    }
+
+    .card-modal-tabs {
+        background: transparent !important;
+        border-bottom-color: var(--border-default) !important;
+    }
+
+    .card-modal-tabs .card-modal-tab {
+        color: var(--text-secondary) !important;
+        background: transparent !important;
+        border-bottom-color: transparent !important;
+    }
+
+    .card-modal-tabs .card-modal-tab:hover {
+        color: var(--accent-primary) !important;
+        background: var(--accent-bg) !important;
+    }
+
+    .card-modal-tabs .card-modal-tab.active {
+        color: var(--accent-primary) !important;
+        border-bottom-color: var(--accent-primary) !important;
+        background: transparent !important;
+    }
+
+    .card-modal-tabs .tab-count {
+        color: var(--text-muted) !important;
+    }
+
+    .card-modal-tabs .card-modal-tab.active .tab-count {
+        color: var(--accent-primary) !important;
+    }
+
+    .card-modal-body {
+        background: var(--bg-surface) !important;
+    }
+
+    .card-tab-content {
+        background: transparent !important;
+    }
+
+    .card-tab-content .error-message {
+        color: #f87171 !important;
+    }    /* Form inputs in modals */
+    .kanban-view .modal-content input[type="text"],
+    .kanban-view .modal-content input[type="date"],
+    .kanban-view .modal-content input[type="number"],
+    .kanban-view .modal-content textarea,
+    .kanban-view .modal-content select {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-strong) !important;
+    }
+
+    .kanban-view .modal-content input:focus,
+    .kanban-view .modal-content textarea:focus,
+    .kanban-view .modal-content select:focus {
+        border-color: var(--accent-primary) !important;
+        box-shadow: 0 0 0 3px var(--accent-bg) !important;
+    }
+
+    /* Keyboard Focus Indicator */
+    .kanban-card:focus-visible,
+    .kanban-column:focus-visible {
+        outline: 2px solid var(--accent-primary) !important;
+        outline-offset: 2px !important;
+    }
+
+    /* ==================== KANBAN CHECKLIST COMPONENT - DARK MODE ==================== */
+    /* Requirements: 12.4 - Support dark mode using existing theme system */
+
+    .kanban-checklist {
+        background: var(--bg-elevated) !important;
+    }
+
+    .kanban-checklist-title {
+        color: var(--text-primary) !important;
+    }
+
+    /* Offline Indicator - Dark Mode - Requirement 1.7, 13.4 */
+    .kanban-checklist-offline-indicator {
+        background: var(--bg-surface) !important;
+    }
+
+    .kanban-checklist-offline-indicator.offline {
+        background: rgba(239, 68, 68, 0.15) !important;
+        border-color: rgba(239, 68, 68, 0.4) !important;
+        color: #f87171 !important;
+    }
+
+    .kanban-checklist-offline-indicator.queued {
+        background: rgba(245, 158, 11, 0.15) !important;
+        border-color: rgba(245, 158, 11, 0.4) !important;
+        color: #fbbf24 !important;
+    }
+
+    /* Comments Offline Indicator - Dark Mode - Requirement 8.6, 9.5, 13.4 */
+    .kanban-comments-offline-indicator {
+        background: var(--bg-surface) !important;
+    }
+
+    .kanban-comments-offline-indicator.offline {
+        background: rgba(239, 68, 68, 0.15) !important;
+        border-color: rgba(239, 68, 68, 0.4) !important;
+        color: #f87171 !important;
+    }
+
+    .kanban-comments-offline-indicator.queued {
+        background: rgba(245, 158, 11, 0.15) !important;
+        border-color: rgba(245, 158, 11, 0.4) !important;
+        color: #fbbf24 !important;
+    }
+
+    .kanban-checklist-progress {
+        color: var(--text-secondary) !important;
+    }
+
+    .kanban-checklist-progress.empty {
+        color: var(--text-muted) !important;
+    }
+
+    .kanban-checklist-progress.in-progress {
+        color: var(--info-color) !important;
+    }
+
+    .kanban-checklist-progress.all-complete {
+        color: var(--success-color) !important;
+    }
+
+    .kanban-checklist-progress-bar {
+        background: var(--border-default) !important;
+    }
+
+    .kanban-checklist-progress-fill {
+        background: var(--info-color) !important;
+    }
+
+    .kanban-checklist-progress-fill.complete {
+        background: var(--success-color) !important;
+    }
+
+    .kanban-checklist-add-input {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--border-strong) !important;
+    }
+
+    .kanban-checklist-add-input:focus {
+        border-color: var(--accent-primary) !important;
+        box-shadow: 0 0 0 2px var(--accent-bg) !important;
+    }
+
+    .kanban-checklist-add-input::placeholder {
+        color: var(--text-muted) !important;
+    }
+
+    .kanban-checklist-add-btn {
+        background: var(--accent-primary) !important;
+        border-color: var(--accent-primary) !important;
+        color: var(--text-on-accent) !important;
+    }
+
+    .kanban-checklist-add-btn:hover {
+        background: var(--accent-secondary) !important;
+    }
+
+    .kanban-checklist-item {
+        background: var(--bg-surface) !important;
+        border-color: var(--border-default) !important;
+    }
+
+    .kanban-checklist-item:hover {
+        background: var(--accent-bg) !important;
+        border-color: var(--border-accent) !important;
+    }
+
+    .kanban-checklist-item.completed {
+        background: rgba(34, 197, 94, 0.1) !important;
+        border-color: rgba(34, 197, 94, 0.2) !important;
+    }
+
+    .kanban-checklist-item.completed .kanban-checklist-item-text {
+        color: var(--text-muted) !important;
+    }
+
+    .kanban-checklist-item-text {
+        color: var(--text-primary) !important;
+    }
+
+    .kanban-checklist-edit-input {
+        background: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border-color: var(--accent-primary) !important;
+    }
+
+    .kanban-checklist-edit-input:focus {
+        box-shadow: 0 0 0 2px var(--accent-bg) !important;
+    }
+
+    .kanban-checklist-item-btn {
+        color: var(--text-muted) !important;
+    }
+
+    .kanban-checklist-item-btn:hover {
+        background: var(--bg-elevated) !important;
+    }
+
+    .kanban-checklist-edit-btn:hover {
+        background: rgba(59, 130, 246, 0.15) !important;
+    }
+
+    .kanban-checklist-delete-btn:hover {
+        background: rgba(239, 68, 68, 0.15) !important;
+    }
+
+    /* Checklist Drag-and-Drop States - Dark Mode */
+    .kanban-checklist-item.dragging {
+        opacity: 0.5 !important;
+        background: var(--bg-elevated) !important;
+        border-style: dashed !important;
+    }
+
+    .kanban-checklist-item.drag-over {
+        border-color: var(--accent-primary) !important;
+        border-width: 2px !important;
+        background: var(--accent-bg) !important;
+    }
+
+    .kanban-checklist-items .drag-placeholder {
+        background: var(--accent-bg) !important;
+        border-color: var(--accent-primary) !important;
+    }
+
+    .kanban-checklist-item .drag-handle {
+        color: var(--text-muted) !important;
+    }
+
+    /* ==================== END KANBAN CHECKLIST COMPONENT - DARK MODE ==================== */
+
+    /* ==================== KANBAN ATTACHMENTS COMPONENT - DARK MODE ==================== */
+    /* Requirements: 12.4 - Support dark mode using existing theme system */
+
+    .kanban-attachments {
+        background: var(--bg-elevated) !important;
+    }
+
+    .kanban-attachments-title {
+        color: var(--text-primary) !important;
+    }
+
+    .kanban-attachments-count {
+        color: var(--text-secondary) !important;
+    }
+
+    .kanban-attachments-upload-btn {
+        background: var(--bg-surface) !important;
+        border-color: var(--border-default) !important;
+        color: var(--text-secondary) !important;
+    }
+
+    .kanban-attachments-upload-btn:hover {
+        border-color: var(--accent-primary) !important;
+        color: var(--accent-primary) !important;
+        background: var(--accent-bg) !important;
+    }
+
+    .kanban-attachments-upload-btn:disabled,
+    .kanban-attachments-upload-btn.uploading {
+        border-color: var(--border-default) !important;
+        color: var(--text-muted) !important;
+    }
+
+    /* Attachments Offline Indicator - Dark Mode - Requirement 5.8, 7.5 */
+    .kanban-attachments-offline-indicator {
+        background: var(--bg-surface) !important;
+    }
+
+    .kanban-attachments-offline-indicator.offline {
+        background: rgba(239, 68, 68, 0.15) !important;
+        border-color: rgba(239, 68, 68, 0.4) !important;
+        color: #f87171 !important;
+    }
+
+    /* Disabled upload button when offline - Dark Mode - Requirement 5.8 */
+    .kanban-attachments-upload-btn.disabled {
+        opacity: 0.5 !important;
+        border-color: var(--border-default) !important;
+        color: var(--text-muted) !important;
+        background: var(--bg-surface) !important;
+    }
+
+    .kanban-attachments-upload-btn.disabled:hover {
+        border-color: var(--border-default) !important;
+        color: var(--text-muted) !important;
+        background: var(--bg-surface) !important;
+    }
+
+    .kanban-attachments-progress {
+        background: var(--bg-surface) !important;
+    }
+
+    .kanban-attachments-progress-bar {
+        background: var(--border-default) !important;
+    }
+
+    .kanban-attachments-progress-fill {
+        background: var(--accent-primary) !important;
+    }
+
+    .kanban-attachments-progress-text {
+        color: var(--text-secondary) !important;
+    }
+
+    .kanban-attachments-empty {
+        color: var(--text-muted) !important;
+    }
+
+    .kanban-attachment-item {
+        background: var(--bg-surface) !important;
+        border-color: var(--border-default) !important;
+    }
+
+    .kanban-attachment-item:hover {
+        background: var(--accent-bg) !important;
+        border-color: var(--border-accent) !important;
+    }
+
+    .kanban-attachment-name {
+        color: var(--text-primary) !important;
+    }
+
+    .kanban-attachment-name:hover {
+        color: var(--accent-primary) !important;
+    }
+
+    .kanban-attachment-size {
+        color: var(--text-muted) !important;
+    }
+
+    .kanban-attachment-delete-btn {
+        color: var(--text-muted) !important;
+    }
+
+    .kanban-attachment-delete-btn:hover {
+        background: rgba(239, 68, 68, 0.15) !important;
+    }
+
+    /* Image Thumbnail Preview - Dark Mode - Requirement 6.2 */
+    .kanban-attachment-thumbnail {
+        background: var(--bg-surface) !important;
+        border-color: var(--border-default) !important;
+    }
+
+    .kanban-attachment-thumbnail:hover {
+        border-color: var(--accent-primary) !important;
+        box-shadow: 0 0 0 2px var(--accent-bg) !important;
+    }
+
+    .kanban-attachment-thumbnail-placeholder {
+        color: var(--text-muted) !important;
+    }
+
+    /* Attachment name button - Dark Mode */
+    .kanban-attachment-name-btn {
+        color: var(--text-primary) !important;
+    }
+
+    .kanban-attachment-name-btn:hover {
+        color: var(--accent-primary) !important;
+    }
+
+    /* Image Preview Modal - Dark Mode - Requirement 6.3 */
+    .kanban-image-modal {
+        background: rgba(0, 0, 0, 0.9) !important;
+    }
+
+    .kanban-image-modal-close {
+        background: rgba(255, 255, 255, 0.15) !important;
+    }
+
+    .kanban-image-modal-close:hover {
+        background: rgba(255, 255, 255, 0.25) !important;
+    }
+
+    .kanban-image-modal-image-container {
+        background: var(--bg-surface) !important;
+    }
+
+    .kanban-image-modal-download {
+        background: rgba(255, 255, 255, 0.15) !important;
+        border-color: rgba(255, 255, 255, 0.3) !important;
+    }
+
+    .kanban-image-modal-download:hover {
+        background: rgba(255, 255, 255, 0.25) !important;
+        border-color: rgba(255, 255, 255, 0.5) !important;
+    }
+
+    /* ==================== END KANBAN ATTACHMENTS COMPONENT - DARK MODE ==================== */
+
+    /* ==================== KANBAN COMMENTS COMPONENT - DARK MODE ==================== */
+    /* Requirements: 12.4 - Support dark mode using existing theme system */
+
+    .kanban-comments {
+        background: var(--bg-elevated) !important;
+    }
+
+    .kanban-comments-title {
+        color: var(--text-primary) !important;
+    }
+
+    .kanban-comments-count {
+        color: var(--text-secondary) !important;
+    }
+
+    .kanban-comments-textarea {
+        background: var(--bg-surface) !important;
+        border-color: var(--border-default) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .kanban-comments-textarea:focus {
+        border-color: var(--accent-primary) !important;
+        box-shadow: 0 0 0 3px var(--accent-bg) !important;
+    }
+
+    .kanban-comments-textarea::placeholder {
+        color: var(--text-muted) !important;
+    }
+
+    .kanban-comments-submit-btn {
+        background: var(--accent-primary) !important;
+        color: var(--text-on-accent) !important;
+    }
+
+    .kanban-comments-submit-btn:hover {
+        background: var(--accent-hover) !important;
+    }
+
+    .kanban-comments-empty {
+        color: var(--text-muted) !important;
+    }
+
+    .kanban-comment-item {
+        background: var(--bg-surface) !important;
+        border-color: var(--border-default) !important;
+    }
+
+    .kanban-comment-item:hover {
+        border-color: var(--border-accent) !important;
+    }
+
+    .kanban-comment-avatar {
+        background: var(--accent-bg) !important;
+    }
+
+    .kanban-comment-user-name {
+        color: var(--text-primary) !important;
+    }
+
+    .kanban-comment-timestamp {
+        color: var(--text-muted) !important;
+    }
+
+    .kanban-comment-edited {
+        color: var(--text-muted) !important;
+    }
+
+    .kanban-comment-text {
+        color: var(--text-primary) !important;
+    }
+
+    .kanban-comment-edit-btn,
+    .kanban-comment-delete-btn {
+        color: var(--text-muted) !important;
+    }
+
+    .kanban-comment-edit-btn:hover {
+        background: var(--accent-bg) !important;
+    }
+
+    .kanban-comment-delete-btn:hover {
+        background: rgba(239, 68, 68, 0.15) !important;
+    }
+
+    .kanban-comment-edit-textarea {
+        background: var(--bg-surface) !important;
+        border-color: var(--accent-primary) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .kanban-comment-edit-textarea:focus {
+        box-shadow: 0 0 0 3px var(--accent-bg) !important;
+    }
+
+    .kanban-comment-save-btn {
+        background: var(--accent-primary) !important;
+        color: var(--text-on-accent) !important;
+    }
+
+    .kanban-comment-save-btn:hover {
+        background: var(--accent-hover) !important;
+    }
+
+    .kanban-comment-cancel-btn {
+        background: transparent !important;
+        color: var(--text-secondary) !important;
+        border-color: var(--border-default) !important;
+    }
+
+    .kanban-comment-cancel-btn:hover {
+        background: var(--accent-bg) !important;
+        border-color: var(--border-accent) !important;
+    }
+
+    /* ==================== END KANBAN COMMENTS COMPONENT - DARK MODE ==================== */
+
+    /* ==================== KANBAN ACTIVITY LOG COMPONENT - DARK MODE ==================== */
+    /* Requirements: 12.4 - Support dark mode using existing theme system */
+
+    .kanban-activity-log {
+        background: var(--bg-elevated) !important;
+    }
+
+    .kanban-activity-title {
+        color: var(--text-primary) !important;
+    }
+
+    .kanban-activity-count {
+        color: var(--text-secondary) !important;
+    }
+
+    .kanban-activity-empty {
+        color: var(--text-muted) !important;
+    }
+
+    .kanban-activity-entry {
+        background: var(--bg-surface) !important;
+        border-color: var(--border-default) !important;
+    }
+
+    .kanban-activity-entry:hover {
+        background: var(--bg-hover) !important;
+        border-color: var(--border-accent) !important;
+    }
+
+    .kanban-activity-icon {
+        background: var(--accent-bg) !important;
+    }
+
+    .kanban-activity-message {
+        color: var(--text-primary) !important;
+    }
+
+    .kanban-activity-message strong {
+        color: var(--text-primary) !important;
+    }
+
+    .kanban-activity-message em {
+        color: var(--text-secondary) !important;
+    }
+
+    .kanban-activity-timestamp {
+        color: var(--text-muted) !important;
+    }
+
+    /* ==================== END KANBAN ACTIVITY LOG COMPONENT - DARK MODE ==================== */
+}

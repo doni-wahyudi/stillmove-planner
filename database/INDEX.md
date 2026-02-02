@@ -19,6 +19,9 @@ Complete guide to the Daily Planner Application database.
 - **[add-calendar-events-table.sql](add-calendar-events-table.sql)** - Migration for calendar events (unscheduled/all-day events)
 - **[add-pomodoro-sessions-table.sql](add-pomodoro-sessions-table.sql)** - Migration for Pomodoro session tracking
 
+### 📦 Storage Setup
+- **[STORAGE_SETUP.md](STORAGE_SETUP.md)** - Supabase Storage bucket setup for Kanban attachments
+
 ## 🎯 Quick Start
 
 1. **Setup**: Follow [README.md](README.md) to create your database
@@ -210,7 +213,8 @@ database/
 ├── SCHEMA_DIAGRAM.md          # Visual schema representation
 ├── QUICK_REFERENCE.md         # Query examples and patterns
 ├── VERIFICATION_CHECKLIST.md  # Setup verification checklist
-└── MIGRATION_GUIDE.md         # Schema change guide
+├── MIGRATION_GUIDE.md         # Schema change guide
+└── STORAGE_SETUP.md           # Supabase Storage setup for attachments
 ```
 
 ## 🎉 You're Ready!

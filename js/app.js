@@ -170,6 +170,8 @@ class Router {
             'annual': 'Annual',
             'habits': 'Habits',
             'action-plan': 'Action Plan',
+            'kanban': 'Kanban',
+            'canvas': 'Canvas',
             'pomodoro': 'Pomodoro',
             'settings': 'Settings'
         };
@@ -200,6 +202,12 @@ class Router {
                 break;
             case 'action-plan':
                 context = 'Goals & Tasks';
+                break;
+            case 'kanban':
+                context = 'Task Boards';
+                break;
+            case 'canvas':
+                context = 'Drawing & Notes';
                 break;
             case 'settings':
                 context = 'Preferences';
@@ -273,6 +281,12 @@ class Router {
                 break;
             case 'action-plan':
                 this.renderActionPlanView();
+                break;
+            case 'kanban':
+                this.renderKanbanView();
+                break;
+            case 'canvas':
+                this.renderCanvasView();
                 break;
             case 'pomodoro':
                 this.renderPomodoroView();
@@ -392,12 +406,49 @@ class Router {
         }
     }
     
+    async renderKanbanView() {
+        // Dynamically import and initialize the kanban view
+        // Requirements: 12.1, 12.5 - Kanban accessible from main navigation with deep-linking
+        try {
+            const { default: KanbanView } = await import('../views/kanban-view.js');
+            const kanbanView = new KanbanView(this.stateManager);
+            
+            // Parse deep-link parameters from hash (e.g., #kanban/board-id or #kanban/board-id/card-id)
+            const hash = window.location.hash.slice(1); // Remove leading #
+            const parts = hash.split('/');
+            const deepLinkParams = {};
+            
+            if (parts.length > 1 && parts[0] === 'kanban') {
+                deepLinkParams.boardId = parts[1];
+                if (parts.length > 2) {
+                    deepLinkParams.cardId = parts[2];
+                }
+            }
+            
+            await kanbanView.init(this.viewContainer, deepLinkParams);
+            performanceMonitor.endViewLoad('kanban');
+        } catch (error) {
+            performanceMonitor.endViewLoad('kanban');
+            ErrorHandler.handle(error, 'Kanban View Loading');
+            this.viewContainer.innerHTML = this.getErrorViewHTML(
+                'Failed to load Kanban Board',
+                'There was a problem loading your Kanban boards.',
+                'Check your internet connection and try again.'
+            );
+        }
+    }
+    
     async renderPomodoroView() {
         // Dynamically import and initialize the pomodoro view
         try {
             const { default: PomodoroView } = await import('../views/pomodoro-view.js');
             const pomodoroView = new PomodoroView(this.stateManager);
             await pomodoroView.init(this.viewContainer);
+            
+            // Expose globally for cross-view integration (e.g., Kanban Pomodoro button)
+            // Requirement 5.1: Allow starting Pomodoro sessions from Kanban cards
+            window.pomodoroTimer = pomodoroView;
+            
             performanceMonitor.endViewLoad('pomodoro');
         } catch (error) {
             performanceMonitor.endViewLoad('pomodoro');
@@ -405,6 +456,24 @@ class Router {
             this.viewContainer.innerHTML = this.getErrorViewHTML(
                 'Failed to load Pomodoro Timer',
                 'There was a problem loading the focus timer.',
+                'Check your internet connection and try again.'
+            );
+        }
+    }
+    
+    async renderCanvasView() {
+        // Dynamically import and initialize the canvas view
+        try {
+            const { default: CanvasView } = await import('../views/canvas-view.js');
+            const canvasView = new CanvasView(this.stateManager);
+            await canvasView.init(this.viewContainer);
+            performanceMonitor.endViewLoad('canvas');
+        } catch (error) {
+            performanceMonitor.endViewLoad('canvas');
+            ErrorHandler.handle(error, 'Canvas View Loading');
+            this.viewContainer.innerHTML = this.getErrorViewHTML(
+                'Failed to load Canvas View',
+                'There was a problem loading the canvas.',
                 'Check your internet connection and try again.'
             );
         }
@@ -472,9 +541,10 @@ class App {
             // Setup event listeners
             this.setupEventListeners();
             
-            // Load initial view
+            // Load initial view (handle deep-links like #kanban/board-id/card-id)
             const hash = window.location.hash.slice(1) || APP_CONFIG.defaultView;
-            this.router.navigate(hash);
+            const viewName = hash.split('/')[0]; // Extract base view name
+            this.router.navigate(viewName);
             
             // Check if user should be reminded to export data
             this.checkExportReminder();
@@ -759,6 +829,16 @@ class App {
                         e.preventDefault();
                         this.router.navigate('pomodoro');
                         break;
+                    case 'k':
+                        // Go to Kanban view
+                        e.preventDefault();
+                        this.router.navigate('kanban');
+                        break;
+                    case 'c':
+                        // Go to Canvas view
+                        e.preventDefault();
+                        this.router.navigate('canvas');
+                        break;
                     case '?':
                         // Show keyboard shortcuts help
                         e.preventDefault();
@@ -853,6 +933,8 @@ class App {
                             <div class="shortcut-item"><span class="kbd">M</span> Monthly View</div>
                             <div class="shortcut-item"><span class="kbd">H</span> Habits View</div>
                             <div class="shortcut-item"><span class="kbd">A</span> Annual View</div>
+                            <div class="shortcut-item"><span class="kbd">K</span> Kanban Board</div>
+                            <div class="shortcut-item"><span class="kbd">C</span> Canvas</div>
                             <div class="shortcut-item"><span class="kbd">P</span> Pomodoro Timer</div>
                         </div>
                         <div class="shortcut-group" style="margin-top: 1rem;">

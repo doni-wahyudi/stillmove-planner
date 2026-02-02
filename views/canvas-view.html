@@ -1,0 +1,166 @@
+<div class="canvas-view">
+    <!-- Document List Sidebar -->
+    <aside class="canvas-sidebar" id="canvas-sidebar">
+        <div class="sidebar-header">
+            <h2>Canvas Documents</h2>
+            <button class="btn btn-primary btn-sm" id="new-canvas-btn" aria-label="Create new canvas">
+                <span class="icon">+</span> New
+            </button>
+        </div>
+        <div class="document-list" id="document-list" role="list" aria-label="Canvas documents">
+            <!-- Documents will be rendered here -->
+        </div>
+    </aside>
+
+    <!-- Main Canvas Area -->
+    <main class="canvas-main">
+        <!-- Toolbar -->
+        <div class="canvas-toolbar" role="toolbar" aria-label="Drawing tools">
+            <!-- Tool Selection -->
+            <div class="tool-group" role="group" aria-label="Drawing tools">
+                <button class="tool-btn active" data-tool="pen" aria-label="Pen tool" aria-pressed="true">
+                    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
+                    </svg>
+                    <span class="tool-label">Pen</span>
+                </button>
+                <button class="tool-btn" data-tool="highlighter" aria-label="Highlighter tool" aria-pressed="false">
+                    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                        <path d="M6 14l3 3v5h6v-5l3-3V9H6v5zm5-12h2v3h-2V2zM3.5 5.875L4.914 4.46l2.12 2.122L5.622 7.997 3.5 5.875zm13.46.71l2.123-2.12 1.414 1.414L18.375 8 16.96 6.586z" fill="currentColor"/>
+                    </svg>
+                    <span class="tool-label">Highlighter</span>
+                </button>
+                <button class="tool-btn" data-tool="eraser" aria-label="Eraser tool" aria-pressed="false">
+                    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                        <path d="M15.14 3c-.51 0-1.02.2-1.41.59L2.59 14.73c-.78.78-.78 2.05 0 2.83l3.85 3.85c.39.39.9.59 1.41.59h8.29c.53 0 1.04-.21 1.41-.59l4.86-4.86c.78-.78.78-2.05 0-2.83l-6.86-6.86c-.39-.39-.9-.59-1.41-.59zM7.85 19.59l-3.44-3.44 5.86-5.86 3.44 3.44-5.86 5.86z" fill="currentColor"/>
+                    </svg>
+                    <span class="tool-label">Eraser</span>
+                </button>
+            </div>
+
+            <div class="toolbar-divider" aria-hidden="true"></div>
+
+            <!-- Color Picker -->
+            <div class="tool-group" role="group" aria-label="Color selection">
+                <div class="color-picker-wrapper">
+                    <button class="color-preview" id="color-preview" aria-label="Current color" aria-haspopup="true">
+                        <span class="color-swatch" id="color-swatch" style="background-color: #000000;"></span>
+                    </button>
+                    <div class="color-dropdown" id="color-dropdown" role="listbox" aria-label="Color presets" hidden>
+                        <div class="color-presets">
+                            <button class="color-preset" data-color="#000000" style="background-color: #000000;" aria-label="Black"></button>
+                            <button class="color-preset" data-color="#ffffff" style="background-color: #ffffff;" aria-label="White"></button>
+                            <button class="color-preset" data-color="#ff0000" style="background-color: #ff0000;" aria-label="Red"></button>
+                            <button class="color-preset" data-color="#00ff00" style="background-color: #00ff00;" aria-label="Green"></button>
+                            <button class="color-preset" data-color="#0000ff" style="background-color: #0000ff;" aria-label="Blue"></button>
+                            <button class="color-preset" data-color="#ffff00" style="background-color: #ffff00;" aria-label="Yellow"></button>
+                            <button class="color-preset" data-color="#ff00ff" style="background-color: #ff00ff;" aria-label="Magenta"></button>
+                            <button class="color-preset" data-color="#00ffff" style="background-color: #00ffff;" aria-label="Cyan"></button>
+                            <button class="color-preset" data-color="#ff8000" style="background-color: #ff8000;" aria-label="Orange"></button>
+                            <button class="color-preset" data-color="#8000ff" style="background-color: #8000ff;" aria-label="Purple"></button>
+                            <button class="color-preset" data-color="#808080" style="background-color: #808080;" aria-label="Gray"></button>
+                            <button class="color-preset" data-color="#804000" style="background-color: #804000;" aria-label="Brown"></button>
+                        </div>
+                        <div class="custom-color">
+                            <label for="custom-color-input">Custom:</label>
+                            <input type="color" id="custom-color-input" value="#000000">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="toolbar-divider" aria-hidden="true"></div>
+
+            <!-- Width Slider -->
+            <div class="tool-group width-group" role="group" aria-label="Stroke width">
+                <label for="width-slider" class="width-label">Width:</label>
+                <input type="range" id="width-slider" min="1" max="20" value="3" class="width-slider" aria-label="Stroke width">
+                <span class="width-value" id="width-value">3</span>
+            </div>
+
+            <div class="toolbar-divider" aria-hidden="true"></div>
+
+            <!-- Undo/Redo -->
+            <div class="tool-group" role="group" aria-label="History">
+                <button class="tool-btn" id="undo-btn" aria-label="Undo" disabled>
+                    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                        <path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" fill="currentColor"/>
+                    </svg>
+                </button>
+                <button class="tool-btn" id="redo-btn" aria-label="Redo" disabled>
+                    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                        <path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z" fill="currentColor"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="toolbar-divider" aria-hidden="true"></div>
+
+            <!-- Actions -->
+            <div class="tool-group" role="group" aria-label="Actions">
+                <button class="tool-btn" id="clear-btn" aria-label="Clear canvas">
+                    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/>
+                    </svg>
+                    <span class="tool-label">Clear</span>
+                </button>
+                <button class="tool-btn" id="export-btn" aria-label="Export to PNG">
+                    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" fill="currentColor"/>
+                    </svg>
+                    <span class="tool-label">Export</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div class="canvas-container" id="canvas-container">
+            <canvas id="static-canvas" class="drawing-canvas static-canvas"></canvas>
+            <canvas id="active-canvas" class="drawing-canvas active-canvas"></canvas>
+            
+            <!-- Empty State -->
+            <div class="canvas-empty-state" id="canvas-empty-state">
+                <div class="empty-state-content">
+                    <svg viewBox="0 0 24 24" width="64" height="64" aria-hidden="true">
+                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill="currentColor"/>
+                    </svg>
+                    <h3>No Canvas Selected</h3>
+                    <p>Select a canvas from the sidebar or create a new one to start drawing.</p>
+                    <button class="btn btn-primary" id="empty-new-canvas-btn">Create New Canvas</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Document Title (editable) -->
+        <div class="canvas-title-bar" id="canvas-title-bar" hidden>
+            <input type="text" id="canvas-title-input" class="canvas-title-input" placeholder="Untitled Canvas" aria-label="Canvas title">
+            <span class="save-indicator" id="save-indicator">Saved</span>
+        </div>
+    </main>
+</div>
+
+<!-- Confirm Clear Modal -->
+<div class="modal" id="clear-confirm-modal" role="dialog" aria-labelledby="clear-modal-title" aria-modal="true" hidden>
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+        <h3 id="clear-modal-title">Clear Canvas?</h3>
+        <p>This will remove all strokes from the canvas. This action cannot be undone.</p>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" id="clear-cancel-btn">Cancel</button>
+            <button class="btn btn-danger" id="clear-confirm-btn">Clear</button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Document Modal -->
+<div class="modal" id="delete-confirm-modal" role="dialog" aria-labelledby="delete-modal-title" aria-modal="true" hidden>
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+        <h3 id="delete-modal-title">Delete Canvas?</h3>
+        <p>This will permanently delete this canvas document. This action cannot be undone.</p>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" id="delete-cancel-btn">Cancel</button>
+            <button class="btn btn-danger" id="delete-confirm-btn">Delete</button>
+        </div>
+    </div>
+</div>

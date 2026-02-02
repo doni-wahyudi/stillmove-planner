@@ -1,0 +1,479 @@
+<div class="kanban-view" role="region" aria-label="Kanban board view">
+    <!-- Header with Board Selector and Actions -->
+    <div class="view-header kanban-header">
+        <div class="board-selector-container" role="group" aria-label="Board selection">
+            <label for="board-selector" class="visually-hidden">Select Board</label>
+            <select id="board-selector" class="board-selector" aria-label="Select a board">
+                <option value="">-- Select a Board --</option>
+                <!-- Board options will be dynamically populated -->
+            </select>
+            <button id="new-board-btn" class="btn-icon" aria-label="Create new board" title="Create new board">
+                <span aria-hidden="true">+</span>
+            </button>
+            <button id="edit-board-btn" class="btn-icon" aria-label="Edit board settings" title="Edit board" style="display: none;">
+                <span aria-hidden="true">⚙️</span>
+            </button>
+            <button id="delete-board-btn" class="btn-icon btn-danger-icon" aria-label="Delete board" title="Delete board" style="display: none;">
+                <span aria-hidden="true">🗑️</span>
+            </button>
+        </div>
+        
+        <div class="kanban-actions" role="group" aria-label="Board actions">
+            <button id="filter-toggle-btn" class="btn-icon" aria-label="Toggle filters" title="Filter cards" aria-expanded="false" aria-controls="filter-panel">
+                <span aria-hidden="true">🔍</span>
+                <span class="filter-active-indicator" style="display: none;" aria-label="Filters active"></span>
+            </button>
+            <button id="add-column-btn" class="btn-secondary" aria-label="Add new column" style="display: none;">
+                + Column
+            </button>
+            <button id="add-card-btn" class="btn-primary" aria-label="Add new card" style="display: none;">
+                + Add Card
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Panel (Hidden by default) -->
+    <div id="filter-panel" class="filter-panel" role="search" aria-label="Card filters" style="display: none;">
+        <div class="filter-panel-content">
+            <div class="filter-group">
+                <label for="search-input">Search</label>
+                <input type="text" id="search-input" class="filter-input" placeholder="Search cards..." aria-label="Search cards by title or description">
+            </div>
+            
+            <div class="filter-group">
+                <label for="priority-filter">Priority</label>
+                <select id="priority-filter" class="filter-select" aria-label="Filter by priority">
+                    <option value="">All Priorities</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="label-filter">Label</label>
+                <select id="label-filter" class="filter-select" aria-label="Filter by label">
+                    <option value="">All Labels</option>
+                    <!-- Labels will be dynamically populated -->
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="due-date-filter">Due Date</label>
+                <select id="due-date-filter" class="filter-select" aria-label="Filter by due date">
+                    <option value="">All Dates</option>
+                    <option value="overdue">Overdue</option>
+                    <option value="today">Due Today</option>
+                    <option value="week">Due This Week</option>
+                    <option value="none">No Due Date</option>
+                </select>
+            </div>
+            
+            <button id="clear-filters-btn" class="btn-secondary btn-small" aria-label="Clear all filters">
+                Clear Filters
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Kanban Content Area -->
+    <div class="kanban-content">
+        <!-- Collapsible Backlog Panel -->
+        <aside id="backlog-panel" class="backlog-panel" role="region" aria-label="Backlog" aria-expanded="true">
+            <div class="backlog-header">
+                <h3 class="backlog-title">
+                    BACKLOG
+                    <span id="backlog-count" class="backlog-count" aria-label="Backlog item count">(0)</span>
+                </h3>
+                <button id="toggle-backlog-btn" class="btn-icon backlog-toggle" aria-label="Collapse backlog" aria-expanded="true" aria-controls="backlog-cards">
+                    <span aria-hidden="true">◀</span>
+                </button>
+            </div>
+            
+            <div id="backlog-cards" class="backlog-cards" role="list" aria-label="Backlog cards">
+                <!-- Backlog cards will be dynamically populated -->
+                <div class="backlog-empty-state" style="display: none;">
+                    <p>No items in backlog</p>
+                    <p class="hint">Drag cards here to save for later</p>
+                </div>
+            </div>
+            
+            <div class="backlog-footer">
+                <button id="add-backlog-card-btn" class="btn-secondary btn-small btn-full-width" aria-label="Add card to backlog">
+                    + Add to Backlog
+                </button>
+            </div>
+        </aside>
+
+        <!-- Kanban Columns Container -->
+        <div id="columns-container" class="columns-container" role="region" aria-label="Kanban columns">
+            <!-- Empty state when no board is selected -->
+            <div id="no-board-state" class="empty-state">
+                <div class="empty-state-icon" aria-hidden="true">📋</div>
+                <h3>No Board Selected</h3>
+                <p>Select a board from the dropdown above or create a new one to get started.</p>
+                <button id="create-first-board-btn" class="btn-primary">Create Your First Board</button>
+            </div>
+            
+            <!-- Columns will be dynamically populated here -->
+            <!-- Each column follows this structure:
+            <div class="kanban-column" data-column-id="" role="region" aria-label="Column name">
+                <div class="column-header">
+                    <h4 class="column-title">Column Name</h4>
+                    <span class="column-count">0</span>
+                    <span class="wip-limit-indicator" style="display: none;">WIP: 0/0</span>
+                    <button class="column-menu-btn" aria-label="Column options">⋮</button>
+                </div>
+                <div class="column-cards" role="list">
+                    Cards go here
+                </div>
+                <button class="add-card-to-column-btn">+ Add Card</button>
+            </div>
+            -->
+            
+            <!-- Add Column Placeholder (shown when board is loaded) -->
+            <div id="add-column-placeholder" class="add-column-placeholder" style="display: none;">
+                <button id="add-column-inline-btn" class="btn-add-column" aria-label="Add new column">
+                    <span aria-hidden="true">+</span>
+                    <span>Add Column</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Drag and Drop Ghost Element -->
+    <div id="drag-ghost" class="drag-ghost" aria-hidden="true" style="display: none;"></div>
+    
+    <!-- Drop Placeholder -->
+    <div id="drop-placeholder" class="drop-placeholder" aria-hidden="true" style="display: none;"></div>
+</div>
+
+<!-- Kanban Card Template -->
+<template id="kanban-card-template">
+    <div class="kanban-card" data-card-id="" draggable="true" role="listitem" tabindex="0">
+        <div class="card-labels" aria-label="Card labels">
+            <!-- Labels will be dynamically added -->
+        </div>
+        <div class="card-title"></div>
+        <div class="card-meta">
+            <span class="card-priority" aria-label="Priority" style="display: none;"></span>
+            <span class="card-due-date" aria-label="Due date" style="display: none;"></span>
+            <span class="card-goal-link" aria-label="Linked goal" style="display: none;">🎯</span>
+            <span class="card-pomodoro-count" aria-label="Pomodoro sessions" style="display: none;">🍅 0</span>
+            <span class="card-checklist-progress" aria-label="Checklist progress" style="display: none;"></span>
+            <span class="card-attachment-count" aria-label="Attachments" style="display: none;"></span>
+            <span class="card-comment-count" aria-label="Comments" style="display: none;"></span>
+        </div>
+        <div class="card-actions">
+            <button class="card-pomodoro-btn btn-icon-small" aria-label="Start Pomodoro" title="Start Pomodoro">🍅</button>
+            <button class="card-edit-btn btn-icon-small" aria-label="Edit card" title="Edit card">✏️</button>
+        </div>
+    </div>
+</template>
+
+<!-- Kanban Column Template -->
+<template id="kanban-column-template">
+    <div class="kanban-column" data-column-id="" role="region" draggable="true">
+        <div class="column-header">
+            <div class="column-header-left">
+                <h4 class="column-title" contenteditable="false"></h4>
+                <span class="column-count">(0)</span>
+            </div>
+            <div class="column-header-right">
+                <span class="wip-limit-badge" style="display: none;" aria-label="Work in progress limit"></span>
+                <button class="column-menu-btn btn-icon-small" aria-label="Column options" aria-haspopup="true">⋮</button>
+            </div>
+        </div>
+        <div class="column-cards" role="list" aria-label="Cards in column">
+            <!-- Cards will be dynamically added -->
+        </div>
+        <button class="add-card-to-column-btn btn-ghost" aria-label="Add card to this column">
+            + Add Card
+        </button>
+    </div>
+</template>
+
+<!-- Board Modal -->
+<div id="board-modal" class="modal" role="dialog" aria-labelledby="board-modal-title" aria-modal="true" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="board-modal-title">Create New Board</h3>
+            <button class="modal-close" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="board-title">Board Title <span class="required">*</span></label>
+                <input type="text" id="board-title" class="form-input" placeholder="Enter board title" required maxlength="100">
+            </div>
+            <div class="form-group">
+                <label for="board-description">Description</label>
+                <textarea id="board-description" class="form-textarea" placeholder="Optional description" rows="3" maxlength="500"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="board-category">Category</label>
+                <select id="board-category" class="form-select">
+                    <option value="">-- No Category --</option>
+                    <!-- Categories will be dynamically populated -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="board-template">Template</label>
+                <select id="board-template" class="form-select">
+                    <option value="blank">Blank Board</option>
+                    <option value="personal">Personal Tasks</option>
+                    <option value="project">Project Management</option>
+                    <option value="weekly">Weekly Planning</option>
+                </select>
+                <p class="form-hint">Templates provide pre-configured columns to get you started quickly.</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="save-board-btn" class="btn-primary">Create Board</button>
+            <button class="btn-secondary modal-close">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Card Modal -->
+<div id="card-modal" class="modal" role="dialog" aria-labelledby="card-modal-title" aria-modal="true" style="display: none;">
+    <div class="modal-content modal-large card-modal-enhanced">
+        <div class="modal-header">
+            <h3 id="card-modal-title">Add New Card</h3>
+            <button class="modal-close" aria-label="Close modal">&times;</button>
+        </div>
+        
+        <!-- Tab Navigation - Requirement 12.2 -->
+        <div id="card-modal-tabs" class="card-modal-tabs tabs" role="tablist" aria-label="Card sections" style="display: none;">
+            <button class="tab-btn card-modal-tab active" data-tab="details" role="tab" aria-selected="true" aria-controls="card-tab-details" id="tab-details">
+                Details
+            </button>
+            <button class="tab-btn card-modal-tab" data-tab="checklist" role="tab" aria-selected="false" aria-controls="card-tab-checklist" id="tab-checklist">
+                Checklist <span class="tab-count" id="checklist-tab-count"></span>
+            </button>
+            <button class="tab-btn card-modal-tab" data-tab="attachments" role="tab" aria-selected="false" aria-controls="card-tab-attachments" id="tab-attachments">
+                Attachments <span class="tab-count" id="attachments-tab-count"></span>
+            </button>
+            <button class="tab-btn card-modal-tab" data-tab="comments" role="tab" aria-selected="false" aria-controls="card-tab-comments" id="tab-comments">
+                Comments <span class="tab-count" id="comments-tab-count"></span>
+            </button>
+            <button class="tab-btn card-modal-tab" data-tab="activity" role="tab" aria-selected="false" aria-controls="card-tab-activity" id="tab-activity">
+                Activity
+            </button>
+        </div>
+        
+        <div class="modal-body card-modal-body">
+            <!-- Details Tab Content -->
+            <div id="card-tab-details" class="card-tab-content tab-content active" role="tabpanel" aria-labelledby="tab-details">
+                <div class="form-row">
+                    <div class="form-group form-group-large">
+                        <label for="card-title">Title <span class="required">*</span></label>
+                        <input type="text" id="card-title" class="form-input" placeholder="Enter card title" required maxlength="200">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="card-description">Description</label>
+                    <textarea id="card-description" class="form-textarea" placeholder="Add a more detailed description..." rows="4" maxlength="2000"></textarea>
+                </div>
+                <div class="form-row form-row-2col">
+                    <div class="form-group">
+                        <label for="card-priority">Priority</label>
+                        <select id="card-priority" class="form-select">
+                            <option value="">No Priority</option>
+                            <option value="high">🔴 High</option>
+                            <option value="medium">🟡 Medium</option>
+                            <option value="low">🟢 Low</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="card-due-date">Due Date</label>
+                        <input type="date" id="card-due-date" class="form-input">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="card-labels">Labels</label>
+                    <div id="card-labels-container" class="labels-container">
+                        <!-- Label checkboxes will be dynamically populated -->
+                    </div>
+                    <button type="button" id="add-label-btn" class="btn-ghost btn-small">+ Add New Label</button>
+                </div>
+                <div class="form-group">
+                    <label for="card-goal">Link to Annual Goal</label>
+                    <select id="card-goal" class="form-select">
+                        <option value="">-- No Goal Linked --</option>
+                        <!-- Goals will be dynamically populated -->
+                    </select>
+                </div>
+                <div id="card-pomodoro-stats" class="pomodoro-stats" style="display: none;">
+                    <h4>Pomodoro Sessions</h4>
+                    <div class="pomodoro-stats-content">
+                        <span class="pomodoro-icon">🍅</span>
+                        <span id="card-pomodoro-total">0</span> sessions completed
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Checklist Tab Content -->
+            <div id="card-tab-checklist" class="card-tab-content tab-content" role="tabpanel" aria-labelledby="tab-checklist">
+                <!-- ChecklistComponent will render here -->
+            </div>
+            
+            <!-- Attachments Tab Content -->
+            <div id="card-tab-attachments" class="card-tab-content tab-content" role="tabpanel" aria-labelledby="tab-attachments">
+                <!-- AttachmentsComponent will render here -->
+            </div>
+            
+            <!-- Comments Tab Content -->
+            <div id="card-tab-comments" class="card-tab-content tab-content" role="tabpanel" aria-labelledby="tab-comments">
+                <!-- CommentsComponent will render here -->
+            </div>
+            
+            <!-- Activity Tab Content -->
+            <div id="card-tab-activity" class="card-tab-content tab-content" role="tabpanel" aria-labelledby="tab-activity">
+                <!-- ActivityLogComponent will render here -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="delete-card-btn" class="btn-danger" style="display: none;">Delete Card</button>
+            <div class="modal-footer-right">
+                <button id="save-card-btn" class="btn-primary">Save Card</button>
+                <button class="btn-secondary modal-close">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Column Modal -->
+<div id="column-modal" class="modal" role="dialog" aria-labelledby="column-modal-title" aria-modal="true" style="display: none;">
+    <div class="modal-content modal-small">
+        <div class="modal-header">
+            <h3 id="column-modal-title">Column Settings</h3>
+            <button class="modal-close" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="column-title">Column Title <span class="required">*</span></label>
+                <input type="text" id="column-title" class="form-input" placeholder="Enter column title" required maxlength="50">
+            </div>
+            <div class="form-group">
+                <label for="column-wip-limit">WIP Limit</label>
+                <input type="number" id="column-wip-limit" class="form-input" placeholder="No limit" min="1" max="99">
+                <p class="form-hint">Work-in-progress limit. Leave empty for no limit.</p>
+            </div>
+            <div class="form-group">
+                <label for="column-color">Column Color</label>
+                <input type="color" id="column-color" class="form-color-input" value="#6366f1">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="delete-column-btn" class="btn-danger" style="display: none;">Delete Column</button>
+            <div class="modal-footer-right">
+                <button id="save-column-btn" class="btn-primary">Save</button>
+                <button class="btn-secondary modal-close">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="delete-confirm-modal" class="modal" role="alertdialog" aria-labelledby="delete-confirm-title" aria-describedby="delete-confirm-message" aria-modal="true" style="display: none;">
+    <div class="modal-content modal-small">
+        <div class="modal-header">
+            <h3 id="delete-confirm-title">Confirm Delete</h3>
+            <button class="modal-close" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="delete-confirm-message">Are you sure you want to delete this item? This action cannot be undone.</p>
+            <div id="delete-column-options" class="delete-options" style="display: none;">
+                <label>
+                    <input type="radio" name="delete-column-action" value="move" checked>
+                    Move cards to adjacent column
+                </label>
+                <label>
+                    <input type="radio" name="delete-column-action" value="delete">
+                    Delete all cards in this column
+                </label>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="confirm-delete-btn" class="btn-danger">Delete</button>
+            <button class="btn-secondary modal-close">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Column Context Menu -->
+<div id="column-context-menu" class="context-menu" role="menu" aria-label="Column options" style="display: none;">
+    <button class="context-menu-item" data-action="edit" role="menuitem">
+        <span aria-hidden="true">✏️</span> Edit Column
+    </button>
+    <button class="context-menu-item" data-action="add-card" role="menuitem">
+        <span aria-hidden="true">➕</span> Add Card
+    </button>
+    <hr class="context-menu-divider">
+    <button class="context-menu-item" data-action="move-left" role="menuitem">
+        <span aria-hidden="true">◀</span> Move Left
+    </button>
+    <button class="context-menu-item" data-action="move-right" role="menuitem">
+        <span aria-hidden="true">▶</span> Move Right
+    </button>
+    <hr class="context-menu-divider">
+    <button class="context-menu-item context-menu-item-danger" data-action="delete" role="menuitem">
+        <span aria-hidden="true">🗑️</span> Delete Column
+    </button>
+</div>
+
+<!-- Add Label Modal -->
+<div id="add-label-modal" class="modal" role="dialog" aria-labelledby="add-label-modal-title" aria-modal="true" style="display: none;">
+    <div class="modal-content modal-small">
+        <div class="modal-header">
+            <h3 id="add-label-modal-title">Add New Label</h3>
+            <button class="modal-close" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="new-label-name">Label Name <span class="required">*</span></label>
+                <input type="text" id="new-label-name" class="form-input" placeholder="Enter label name" required maxlength="30">
+            </div>
+            <div class="form-group">
+                <label for="new-label-color">Label Color</label>
+                <input type="color" id="new-label-color" class="form-color-input" value="#10b981">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="save-new-label-btn" class="btn-primary">Add Label</button>
+            <button class="btn-secondary modal-close">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Goal Progress Prompt Modal -->
+<!-- Requirement 4.4: Optionally prompt to update goal's progress when card moved to Done -->
+<div id="goal-progress-modal" class="modal" role="dialog" aria-labelledby="goal-progress-modal-title" aria-modal="true" style="display: none;">
+    <div class="modal-content modal-small">
+        <div class="modal-header">
+            <h3 id="goal-progress-modal-title">Update Goal Progress?</h3>
+            <button class="modal-close" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="goal-progress-message">You've completed a task linked to a goal. Would you like to update the goal's progress?</p>
+            <div class="goal-progress-info">
+                <div class="goal-title-display">
+                    <strong>Goal:</strong> <span id="goal-progress-goal-title"></span>
+                </div>
+                <div class="goal-current-progress">
+                    <strong>Current Progress:</strong> <span id="goal-progress-current"></span>%
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="goal-progress-input">New Progress (%)</label>
+                <input type="range" id="goal-progress-input" class="form-range" min="0" max="100" value="0">
+                <div class="progress-value-display">
+                    <span id="goal-progress-value">0</span>%
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="skip-goal-progress-btn" class="btn-secondary">Skip</button>
+            <button id="update-goal-progress-btn" class="btn-primary">Update Progress</button>
+        </div>
+    </div>
+</div>
