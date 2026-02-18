@@ -29,6 +29,10 @@ class HabitsView {
         this.selectedMoodDate = null;
         this.draggedHabitId = null; // For drag and drop reordering
         this.editingChallengeId = null;
+
+        // Grid display modes
+        this.dailyGridMode = 'checklist'; // 'checklist' or 'count'
+        this.challengeGridModes = {}; // { challengeId: 'checklist' | 'count' }
     }
 
     /**
@@ -79,10 +83,50 @@ class HabitsView {
         // Habit bundles button
         document.getElementById('habit-bundles-btn')?.addEventListener('click', () => this.openHabitBundlesModal());
 
+        // Habit drag and drop reordering in modal
+        const habitInputsContainer = document.getElementById('challenge-habits-inputs');
+        if (habitInputsContainer) {
+            habitInputsContainer.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const dragging = document.querySelector('.challenge-habit-input-row.dragging');
+                if (!dragging) return;
+
+                const afterElement = this.getDragAfterElement(habitInputsContainer, e.clientY);
+                if (afterElement == null) {
+                    habitInputsContainer.appendChild(dragging);
+                } else {
+                    habitInputsContainer.insertBefore(dragging, afterElement);
+                }
+            });
+        }
+
         // Habit filter
         document.getElementById('daily-habits-filter')?.addEventListener('change', (e) => this.filterHabits(e.target.value));
 
+        // Grid mode toggle for daily habits
+        document.getElementById('daily-grid-mode-toggle')?.addEventListener('click', (e) => {
+            const btn = e.target.closest('.toggle-btn');
+            if (!btn) return;
+            const mode = btn.dataset.mode;
+            this.setDailyGridMode(mode);
+        });
 
+        // Modal close handlers (generic for static modals)
+        document.querySelectorAll('.modal-close').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const modal = e.target.closest('.modal');
+                if (modal) modal.style.display = 'none';
+                this.editingChallengeId = null;
+            });
+        });
+
+        // Close modal when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                e.target.style.display = 'none';
+                this.editingChallengeId = null;
+            }
+        });
 
         // Mood selector
         document.querySelectorAll('.mood-btn').forEach(btn => {
@@ -192,6 +236,31 @@ class HabitsView {
 
         // Render the content for the new tab
         this.renderCurrentTab();
+    }
+
+    /**
+     * Set display mode for daily habits grid
+     */
+    setDailyGridMode(mode) {
+        this.dailyGridMode = mode;
+
+        // Update UI buttons
+        const toggle = document.getElementById('daily-grid-mode-toggle');
+        if (toggle) {
+            toggle.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === mode);
+            });
+        }
+
+        this.renderDailyHabitsGrid();
+    }
+
+    /**
+     * Set display mode for a specific challenge grid
+     */
+    setChallengeGridMode(challengeId, mode) {
+        this.challengeGridModes[challengeId] = mode;
+        this.renderActiveChallenges();
     }
 
     /**
@@ -620,17 +689,32 @@ class HabitsView {
 
                 const cell = document.createElement('div');
                 cell.className = 'grid-cell checkbox-cell';
+
+                if (this.dailyGridMode === 'count') {
+                    cell.classList.add('count-mode');
+                    // Display count or note snippet
+                    const count = parseFloat(completion?.notes);
+                    if (!isNaN(count)) {
+                        cell.textContent = count;
+                    } else if (completion?.completed) {
+                        cell.textContent = '1'; // Default to 1 if checked but no numeric note
+                    } else if (completion?.notes) {
+                        cell.textContent = '...'; // Indicator for text notes
+                    }
+                } else {
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.checked = completion?.completed || false;
+                    checkbox.addEventListener('change', () => {
+                        this.toggleDailyHabitCompletion(habit.id, date, checkbox.checked, cell);
+                    });
+                    cell.appendChild(checkbox);
+                }
+
                 if (completion?.notes) {
                     cell.classList.add('has-note');
                     cell.title = completion.notes;
                 }
-
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.checked = completion?.completed || false;
-                checkbox.addEventListener('change', () => {
-                    this.toggleDailyHabitCompletion(habit.id, date, checkbox.checked, cell);
-                });
 
                 // Double-click to add/edit note
                 cell.addEventListener('dblclick', (e) => {
@@ -638,7 +722,6 @@ class HabitsView {
                     this.showHabitNoteModal(habit, date, completion?.notes || '');
                 });
 
-                cell.appendChild(checkbox);
                 row.appendChild(cell);
             }
 
@@ -2644,7 +2727,7 @@ class HabitsView {
             card.querySelector('.challenge-dates').textContent = `${formatDate(new Date(challenge.start_date))} - ${formatDate(new Date(challenge.end_date))}`;
 
             // Calculate progress
-            const habits = await dataService.getChallengeHabits(challenge.id);
+            const habits = await dataService.getChallengeHabits(challenge.id, true);
             const completions = await dataService.getChallengeCompletions(challenge.id, challenge.start_date, challenge.end_date);
 
             const totalSlots = this.calculateTotalChallengeSlots(challenge, habits.length);
@@ -2662,6 +2745,20 @@ class HabitsView {
 
             // Render tracking grid for this challenge
             this.renderChallengeTrackingGrid(card.querySelector('.challenge-habits-tracking'), challenge, habits, completions);
+
+            // Toggle grid mode
+            const modeToggle = card.querySelector('.challenge-grid-mode-toggle');
+            if (modeToggle) {
+                const currentMode = this.challengeGridModes[challenge.id] || 'checklist';
+                modeToggle.querySelectorAll('.toggle-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.mode === currentMode);
+                    btn.onclick = (e) => {
+                        e.stopPropagation();
+                        const newMode = btn.dataset.mode;
+                        this.setChallengeGridMode(challenge.id, newMode);
+                    };
+                });
+            }
 
             // Event listeners
             card.querySelector('.edit-challenge-btn').addEventListener('click', () => this.openEditChallengeModal(challenge));
@@ -2737,17 +2834,31 @@ class HabitsView {
                 const cell = document.createElement('div');
                 cell.className = 'challenge-check-cell';
 
+                const currentMode = this.challengeGridModes[challenge.id] || 'checklist';
+                if (currentMode === 'count') {
+                    cell.classList.add('count-mode');
+                    const count = parseFloat(completion?.notes);
+                    if (!isNaN(count)) {
+                        cell.textContent = count;
+                    } else if (completion?.completed) {
+                        cell.textContent = '1';
+                    } else if (completion?.notes) {
+                        cell.textContent = '...';
+                    }
+                } else {
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.checked = completion?.completed || false;
+                    checkbox.addEventListener('change', () => {
+                        this.toggleChallengeHabitCompletion(habit.id, challenge.id, dateStr, checkbox.checked);
+                    });
+                    cell.appendChild(checkbox);
+                }
+
                 if (completion?.notes) {
                     cell.classList.add('has-note');
                     cell.title = completion.notes;
                 }
-
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.checked = completion?.completed || false;
-                checkbox.addEventListener('change', () => {
-                    this.toggleChallengeHabitCompletion(habit.id, challenge.id, dateStr, checkbox.checked);
-                });
 
                 // Double-click to add/edit note/count
                 cell.addEventListener('dblclick', (e) => {
@@ -2755,7 +2866,6 @@ class HabitsView {
                     this.showChallengeHabitNoteModal(habit, challenge.id, dateStr, completion?.notes || '');
                 });
 
-                cell.appendChild(checkbox);
                 grid.appendChild(cell);
             }
         });
@@ -2833,34 +2943,57 @@ class HabitsView {
 
         const habitInputs = document.getElementById('challenge-habits-inputs');
         if (habitInputs) {
-            habitInputs.innerHTML = `
-                <div class="challenge-habit-input-row" style="display: flex; gap: 10px; margin-bottom: 5px;">
-                    <input type="text" class="challenge-habit-name" placeholder="Habit name (e.g., Fasting)" style="flex: 1;" />
-                    <button type="button" class="remove-habit-btn" style="background: none; border: none; color: #ff4d4f; cursor: pointer; font-size: 20px;">×</button>
-                </div>
-            `;
-            this.setupRemoveHabitButtons();
+            habitInputs.innerHTML = '';
+            this.addChallengeHabitRow();
         }
     }
 
-    /**
-     * Add another habit row in the modal
-     */
-    addChallengeHabitRow() {
+    addChallengeHabitRow(habitId = null, habitName = '') {
         const container = document.getElementById('challenge-habits-inputs');
         if (!container) return;
 
         const row = document.createElement('div');
         row.className = 'challenge-habit-input-row';
+        row.draggable = true;
+        row.dataset.habitId = habitId || '';
         row.style.display = 'flex';
         row.style.gap = '10px';
         row.style.marginBottom = '5px';
+        row.style.alignItems = 'center';
         row.innerHTML = `
-            <input type="text" class="challenge-habit-name" placeholder="Habit name" style="flex: 1;" />
+            <div class="drag-handle" title="Drag to reorder" style="cursor: grab; color: #94a3b8; font-size: 1.2rem; padding: 0 5px;">⋮⋮</div>
+            <input type="text" class="challenge-habit-name" value="${habitName}" placeholder="Habit name" style="flex: 1;" />
             <button type="button" class="remove-habit-btn" style="background: none; border: none; color: #ff4d4f; cursor: pointer; font-size: 20px;">×</button>
         `;
+
+        row.addEventListener('dragstart', (e) => {
+            row.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+
+        row.addEventListener('dragend', () => {
+            row.classList.remove('dragging');
+        });
+
         container.appendChild(row);
         this.setupRemoveHabitButtons();
+    }
+
+    /**
+     * Helper for drag and drop to find element after current mouse position
+     */
+    getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.challenge-habit-input-row:not(.dragging)')];
+
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 
     /**
@@ -2899,19 +3032,11 @@ class HabitsView {
         const habitInputs = document.getElementById('challenge-habits-inputs');
         if (habitInputs) {
             habitInputs.innerHTML = '';
-            const habits = await dataService.getChallengeHabits(challenge.id);
+            // Always fetch fresh to ensure we have the latest reordered/renamed habits
+            const habits = await dataService.getChallengeHabits(challenge.id, true);
             if (habits.length > 0) {
                 habits.forEach(h => {
-                    const row = document.createElement('div');
-                    row.className = 'challenge-habit-input-row';
-                    row.style.display = 'flex';
-                    row.style.gap = '10px';
-                    row.style.marginBottom = '5px';
-                    row.innerHTML = `
-                        <input type="text" class="challenge-habit-name" value="${h.habit_name}" placeholder="Habit name" style="flex: 1;" />
-                        <button type="button" class="remove-habit-btn" style="background: none; border: none; color: #ff4d4f; cursor: pointer; font-size: 20px;">×</button>
-                    `;
-                    habitInputs.appendChild(row);
+                    this.addChallengeHabitRow(h.id, h.habit_name);
                 });
             } else {
                 this.addChallengeHabitRow();
@@ -2929,45 +3054,62 @@ class HabitsView {
         const startDate = document.getElementById('challenge-start').value;
         const endDate = document.getElementById('challenge-end').value;
 
-        const habitNames = Array.from(document.querySelectorAll('.challenge-habit-name'))
-            .map(input => input.value.trim())
-            .filter(name => name !== '');
+        const habitData = Array.from(document.querySelectorAll('.challenge-habit-input-row'))
+            .map(row => ({
+                id: row.dataset.habitId || null,
+                name: row.querySelector('.challenge-habit-name').value.trim()
+            }))
+            .filter(h => h.name !== '');
 
-        if (habitNames.length === 0) {
+        if (habitData.length === 0) {
             if (window.showToast) window.showToast('Please add at least one habit', 'warning');
             return;
         }
 
         try {
             if (this.editingChallengeId) {
-                // UPDATE
+                // UPDATE Challenge details
                 await dataService.updateIntervalChallenge(this.editingChallengeId, {
                     title,
                     start_date: startDate,
                     end_date: endDate
                 });
 
-                // Sync habits: simpler to delete and recreate for now, or we could diff
-                // For a small number of habits, delete and recreate is safe if we don't have habit-specific references elsewhere
-                // But challenge_completions references habit_id. So we MUST not delete habits that have completions.
-                // A better diffing logic:
-                const existingHabits = await dataService.getChallengeHabits(this.editingChallengeId);
-                const existingNames = existingHabits.map(h => h.habit_name);
+                // Sync Habits
+                // Force a fresh fetch to ensure we have the latest IDs and names
+                const existingHabits = await dataService.getChallengeHabits(this.editingChallengeId, true);
+                const currentHabitIds = habitData.map(h => h.id).filter(id => id !== null);
 
-                // Habits to add
-                const toAdd = habitNames.filter(name => !existingNames.includes(name));
-                // Habits to delete (only if no completions) - or just leave them if we want to preserve history?
-                // For this simple implementation, let's just add new ones and update existing ones if name changed?
-                // Actually, let's just add new ones and notify if some couldn't be deleted?
-                // Safest: Just add missing ones. If they want to rename, it's a bit harder.
-
-                for (const name of toAdd) {
-                    await dataService.createChallengeHabit({
-                        challenge_id: this.editingChallengeId,
-                        habit_name: name,
-                        order_index: existingHabits.length
-                    });
+                // 1. Delete habits no longer in the list
+                const toDelete = existingHabits.filter(eh => !currentHabitIds.includes(eh.id));
+                for (const h of toDelete) {
+                    await dataService.deleteChallengeHabit(h.id);
                 }
+
+                // 2. Add or Update remaining habits
+                for (let i = 0; i < habitData.length; i++) {
+                    const h = habitData[i];
+                    if (h.id) {
+                        // Update existing (e.g. rename or reorder)
+                        const existing = existingHabits.find(eh => eh.id === h.id);
+                        if (existing && (existing.habit_name !== h.name || existing.order_index !== i)) {
+                            await dataService.updateChallengeHabit(h.id, {
+                                habit_name: h.name,
+                                order_index: i
+                            });
+                        }
+                    } else {
+                        // Create new
+                        await dataService.createChallengeHabit({
+                            challenge_id: this.editingChallengeId,
+                            habit_name: h.name,
+                            order_index: i
+                        });
+                    }
+                }
+
+                // Force cache refresh for this challenge's habits
+                await dataService.getChallengeHabits(this.editingChallengeId, true);
 
                 if (window.showToast) window.showToast('Challenge updated!', 'success');
             } else {
@@ -2980,10 +3122,10 @@ class HabitsView {
                 });
 
                 // 2. Create Habits
-                const habitPromises = habitNames.map((name, index) =>
+                const habitPromises = habitData.map((h, index) =>
                     dataService.createChallengeHabit({
                         challenge_id: challenge.id,
-                        habit_name: name,
+                        habit_name: h.name,
                         order_index: index
                     })
                 );

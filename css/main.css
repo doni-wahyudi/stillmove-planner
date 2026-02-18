@@ -7465,10 +7465,29 @@ select:focus-visible,
 }
 
 /* Due today styling - Requirement 3.6 */
-.card-due-date.due-today {
-    background: rgba(212, 165, 116, 0.2);
-    color: var(--warning-color);
-    font-weight: 600;
+/* Habit Input Rows in Modal */
+.challenge-habit-input-row {
+    transition: all 0.2s ease;
+}
+
+.challenge-habit-input-row.dragging {
+    opacity: 0.5;
+    background: #f1f5f9;
+    border: 2px dashed var(--primary-color);
+}
+
+.drag-handle {
+    cursor: grab;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    padding: 0 5px;
+    user-select: none;
+    font-size: 1.2rem;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
 }
 
 /* Due soon (within 3 days) styling - Requirement 3.6 */
@@ -10564,6 +10583,49 @@ select:focus-visible,
     gap: 0.75rem;
 }
 
+.grid-mode-toggle {
+    display: flex;
+    background: #f1f5f9;
+    padding: 2px;
+    border-radius: 8px;
+    gap: 2px;
+}
+
+.grid-mode-toggle .toggle-btn {
+    border: none;
+    background: transparent;
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.grid-mode-toggle .toggle-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.grid-mode-toggle .toggle-btn.active {
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.challenge-header-title-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.habits-filter {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
 .challenges-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
@@ -10639,6 +10701,19 @@ select:focus-visible,
     background: #f8fafc;
     border-radius: 4px 0 0 4px;
     margin-right: 2px;
+}
+
+.challenge-check-cell.count-mode,
+.checkbox-cell.count-mode {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.challenge-check-cell.count-mode:hover,
+.checkbox-cell.count-mode:hover {
+    background: rgba(var(--primary-rgb), 0.05);
 }
 
 .challenge-date-cell {

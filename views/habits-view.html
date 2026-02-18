@@ -44,6 +44,10 @@
                         <option value="incomplete">Incomplete Today</option>
                         <option value="streak">Has Streak</option>
                     </select>
+                    <div class="grid-mode-toggle" id="daily-grid-mode-toggle">
+                        <button class="toggle-btn active" data-mode="checklist" title="Checklist View">✅</button>
+                        <button class="toggle-btn" data-mode="count" title="Count/Note View">🔢</button>
+                    </div>
                 </div>
                 <div id="daily-habits-list" class="habits-list" role="list" aria-label="Daily habits list">
                     <!-- Habit names will be added here -->
@@ -375,7 +379,13 @@
 <template id="challenge-card-template">
     <div class="challenge-card" data-challenge-id="">
         <div class="challenge-card-header">
-            <h4 class="challenge-title"></h4>
+            <div class="challenge-header-title-group">
+                <h4 class="challenge-title"></h4>
+                <div class="grid-mode-toggle challenge-grid-mode-toggle">
+                    <button class="toggle-btn active" data-mode="checklist" title="Checklist View">✅</button>
+                    <button class="toggle-btn" data-mode="count" title="Count/Note View">🔢</button>
+                </div>
+            </div>
             <div class="challenge-actions">
                 <button class="edit-challenge-btn" title="Edit challenge">✏️</button>
                 <button class="archive-challenge-btn" title="Archive challenge">📥</button>
