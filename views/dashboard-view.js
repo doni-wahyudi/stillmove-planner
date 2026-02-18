@@ -807,6 +807,79 @@ class QuickActionsWidget extends BaseWidget {
 }
 
 /**
+ * Interval Challenges Widget - summary of active challenges
+ */
+class IntervalChallengesWidget extends BaseWidget {
+    constructor(dataService) {
+        super('challenges', 'Active Challenges');
+        this.dataService = dataService;
+        this.challenges = [];
+    }
+
+    async load() {
+        try {
+            const allChallenges = await this.dataService.getIntervalChallenges();
+            this.challenges = allChallenges.filter(c => !c.is_archived);
+
+            // Fetch habits and completions for each challenge to show progress
+            for (const challenge of this.challenges) {
+                const habits = await this.dataService.getChallengeHabits(challenge.id);
+                const completions = await this.dataService.getChallengeCompletions(
+                    challenge.id,
+                    challenge.start_date,
+                    challenge.end_date
+                );
+
+                const start = new Date(challenge.start_date);
+                const end = new Date(challenge.end_date);
+                const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                const totalSlots = days * habits.length;
+                const completedSlots = completions.filter(c => c.completed).length;
+
+                challenge.percent = totalSlots > 0 ? Math.round((completedSlots / totalSlots) * 100) : 0;
+
+                const today = new Date();
+                const diff = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+                challenge.daysLeft = diff;
+            }
+        } catch (e) {
+            console.warn('Failed to load challenges for dashboard:', e);
+        }
+    }
+
+    renderContent() {
+        if (this.challenges.length === 0) {
+            return '<div class="empty-state">No active challenges. <a href="#habits">Start one</a></div>';
+        }
+
+        let html = '<div class="challenges-summary">';
+        this.challenges.forEach(challenge => {
+            const daysText = challenge.daysLeft > 0
+                ? `${challenge.daysLeft} days left`
+                : (challenge.daysLeft === 0 ? 'Last day!' : 'Ended');
+
+            html += `
+                <div class="challenge-summary-item" onclick="window.location.hash='#habits'">
+                    <div class="challenge-summary-info">
+                        <span class="challenge-summary-title">${challenge.title}</span>
+                        <span class="challenge-summary-days">${daysText}</span>
+                    </div>
+                    <div class="progress-bar-small">
+                        <div class="progress-fill" style="width: ${challenge.percent}%"></div>
+                    </div>
+                    <div class="challenge-summary-footer">
+                        <span class="challenge-summary-percent">${challenge.percent}% complete</span>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        return html;
+    }
+}
+
+
+/**
  * Main Dashboard View Controller
  */
 class DashboardView {
@@ -851,6 +924,7 @@ class DashboardView {
         this.widgets.set('kanban', new KanbanSummaryWidget(kanbanService));
         this.widgets.set('calendar', new CalendarWidget(dataService));
         this.widgets.set('stats', new StatisticsSummaryWidget(dataService, kanbanService));
+        this.widgets.set('challenges', new IntervalChallengesWidget(dataService));
         this.widgets.set('quick-actions', new QuickActionsWidget(this.stateManager, dataService, kanbanService));
 
         // Set containers
@@ -868,7 +942,8 @@ class DashboardView {
             this.widgets.get('goals').safeLoad(),
             this.widgets.get('kanban').safeLoad(),
             this.widgets.get('calendar').safeLoad(),
-            this.widgets.get('stats').safeLoad()
+            this.widgets.get('stats').safeLoad(),
+            this.widgets.get('challenges').safeLoad()
         ];
 
         await Promise.allSettled(widgetPromises);
@@ -1102,7 +1177,8 @@ class DashboardView {
             'kanban': 'Tasks',
             'quick-actions': 'Quick Actions',
             'calendar': 'Calendar',
-            'stats': 'Statistics'
+            'stats': 'Statistics',
+            'challenges': 'Active Challenges'
         };
 
         let html = '';
@@ -1194,7 +1270,8 @@ class DashboardView {
             'kanban': { visible: true, order: 2 },
             'quick-actions': { visible: true, order: 3 },
             'calendar': { visible: true, order: 4 },
-            'stats': { visible: true, order: 5 }
+            'stats': { visible: true, order: 5 },
+            'challenges': { visible: true, order: 6 }
         };
     }
 }

@@ -22,10 +22,13 @@ class HabitsView {
         this.moodEntries = [];
         this.sleepEntries = [];
         this.waterEntries = [];
+        this.intervalChallenges = [];
+        this.challengeCompletions = [];
         this.annualGoals = []; // For linking habits to goals
 
         this.selectedMoodDate = null;
         this.draggedHabitId = null; // For drag and drop reordering
+        this.editingChallengeId = null;
     }
 
     /**
@@ -69,6 +72,9 @@ class HabitsView {
         // Add habit buttons
         document.getElementById('add-daily-habit-btn')?.addEventListener('click', () => this.addDailyHabit());
         document.getElementById('add-weekly-habit-btn')?.addEventListener('click', () => this.addWeeklyHabit());
+        document.getElementById('start-challenge-btn')?.addEventListener('click', () => this.openStartChallengeModal());
+        document.getElementById('add-challenge-habit-row-btn')?.addEventListener('click', () => this.addChallengeHabitRow());
+        document.getElementById('start-challenge-form')?.addEventListener('submit', (e) => this.handleStartChallenge(e));
 
         // Habit bundles button
         document.getElementById('habit-bundles-btn')?.addEventListener('click', () => this.openHabitBundlesModal());
@@ -214,6 +220,9 @@ class HabitsView {
             this.sleepEntries = await dataService.getSleepEntries(startDate, endDate);
             this.waterEntries = await dataService.getWaterEntries(startDate, endDate);
 
+            // Load interval challenges
+            this.intervalChallenges = await dataService.getIntervalChallenges();
+
             // Render based on current tab
             this.renderCurrentTab();
         } catch (error) {
@@ -230,6 +239,8 @@ class HabitsView {
             this.renderDailyHabits();
         } else if (this.currentTab === 'weekly-habits') {
             this.renderWeeklyHabits();
+        } else if (this.currentTab === 'challenges') {
+            this.renderChallenges();
         } else if (this.currentTab === 'wellness') {
             this.renderWellness();
         }
@@ -2250,6 +2261,97 @@ class HabitsView {
     }
 
     /**
+     * Show habit note modal for a challenge habit
+     */
+    showChallengeHabitNoteModal(habit, challengeId, date, existingNote) {
+        // Remove existing modal if any
+        const existingModal = document.getElementById('challenge-habit-note-modal');
+        if (existingModal) existingModal.remove();
+
+        const formattedDate = new Date(date).toLocaleDateString(undefined, {
+            weekday: 'short', month: 'short', day: 'numeric'
+        });
+
+        const modal = document.createElement('div');
+        modal.id = 'challenge-habit-note-modal';
+        modal.className = 'modal';
+        modal.style.display = 'flex';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 400px;">
+                <div class="modal-header">
+                    <h3>📝 Challenge Habit Note</h3>
+                    <button class="modal-close" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p style="color: var(--text-secondary); margin-bottom: 0.5rem; font-size: 0.85rem;">
+                        <strong>${habit.habit_name}</strong> • ${formattedDate}
+                    </p>
+                    <textarea id="challenge-habit-note-input" 
+                              placeholder="Enter count (e.g. 5) or some notes..."
+                              rows="4"
+                              style="width: 100%; resize: vertical;">${existingNote}</textarea>
+                    <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.5rem;">
+                        💡 Tip: Enter a number for count tracking
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary modal-close">Cancel</button>
+                    <button class="btn-primary" id="save-challenge-habit-note-btn">Save</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Focus textarea
+        modal.querySelector('#challenge-habit-note-input').focus();
+
+        // Close handlers
+        modal.querySelectorAll('.modal-close').forEach(btn => {
+            btn.addEventListener('click', () => modal.remove());
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+
+        // Save handler
+        modal.querySelector('#save-challenge-habit-note-btn').addEventListener('click', async () => {
+            const note = modal.querySelector('#challenge-habit-note-input').value.trim();
+            await this.saveChallengeHabitNote(habit.id, challengeId, date, note);
+            modal.remove();
+        });
+
+        // Enter key to save (Ctrl+Enter)
+        modal.querySelector('#challenge-habit-note-input').addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                const note = e.target.value.trim();
+                await this.saveChallengeHabitNote(habit.id, challengeId, date, note);
+                modal.remove();
+            }
+        });
+    }
+
+    /**
+     * Save challenge habit note/count
+     */
+    async saveChallengeHabitNote(habitId, challengeId, date, note) {
+        try {
+            await dataService.updateChallengeHabitNote(habitId, challengeId, date, note);
+
+            // Reload data to ensure everything is in sync (completions, stats, etc.)
+            await this.loadData();
+
+            if (window.showToast) {
+                window.showToast(note ? 'Note saved!' : 'Note removed', 'success');
+            }
+        } catch (error) {
+            console.error('Failed to save challenge habit note:', error);
+            this.showError('Failed to save note. Please try again.');
+        }
+    }
+
+    /**
      * Show error message
      */
     showError(message) {
@@ -2502,10 +2604,432 @@ class HabitsView {
         const maxEl = document.getElementById('habit-stat-max');
         const daysEl = document.getElementById('habit-stat-days');
 
-        if (totalEl) totalEl.textContent = '0';
         if (avgEl) avgEl.textContent = '0';
         if (maxEl) maxEl.textContent = '0';
         if (daysEl) daysEl.textContent = '0';
+    }
+
+    // ==================== INTERVAL CHALLENGES ====================
+
+    /**
+     * Render challenges tab
+     */
+    async renderChallenges() {
+        await this.renderActiveChallenges();
+        await this.renderArchivedChallenges();
+    }
+
+    /**
+     * Render active challenges
+     */
+    async renderActiveChallenges() {
+        const container = document.getElementById('active-challenges-list');
+        if (!container) return;
+
+        const activeChallenges = this.intervalChallenges.filter(c => !c.is_archived);
+        container.innerHTML = '';
+
+        if (activeChallenges.length === 0) {
+            container.innerHTML = '<div class="empty-state">No active challenges. Start one to begin tracking!</div>';
+            return;
+        }
+
+        const template = document.getElementById('challenge-card-template');
+
+        for (const challenge of activeChallenges) {
+            const card = template.content.cloneNode(true).querySelector('.challenge-card');
+            card.dataset.challengeId = challenge.id;
+
+            card.querySelector('.challenge-title').textContent = challenge.title;
+            card.querySelector('.challenge-dates').textContent = `${formatDate(new Date(challenge.start_date))} - ${formatDate(new Date(challenge.end_date))}`;
+
+            // Calculate progress
+            const habits = await dataService.getChallengeHabits(challenge.id);
+            const completions = await dataService.getChallengeCompletions(challenge.id, challenge.start_date, challenge.end_date);
+
+            const totalSlots = this.calculateTotalChallengeSlots(challenge, habits.length);
+            const completedSlots = completions.filter(c => c.completed).length;
+            const percent = totalSlots > 0 ? Math.round((completedSlots / totalSlots) * 100) : 0;
+
+            card.querySelector('.progress-fill').style.width = `${percent}%`;
+            card.querySelector('.progress-percent').textContent = `${percent}%`;
+
+            // Days remaining
+            const today = new Date();
+            const end = new Date(challenge.end_date);
+            const diff = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+            card.querySelector('.days-remaining').textContent = diff > 0 ? `${diff} days left` : (diff === 0 ? 'Last day!' : 'Challenge ended');
+
+            // Render tracking grid for this challenge
+            this.renderChallengeTrackingGrid(card.querySelector('.challenge-habits-tracking'), challenge, habits, completions);
+
+            // Event listeners
+            card.querySelector('.edit-challenge-btn').addEventListener('click', () => this.openEditChallengeModal(challenge));
+            card.querySelector('.archive-challenge-btn').addEventListener('click', () => this.archiveChallenge(challenge.id, true));
+            card.querySelector('.delete-challenge-btn').addEventListener('click', () => this.deleteChallenge(challenge.id));
+
+            container.appendChild(card);
+        }
+    }
+
+    /**
+     * Calculate total slots (days * habits) for a challenge
+     */
+    calculateTotalChallengeSlots(challenge, habitCount) {
+        const start = new Date(challenge.start_date);
+        const end = new Date(challenge.end_date);
+        const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        return days * habitCount;
+    }
+
+    /**
+     * Render tracking grid for a specific challenge
+     */
+    renderChallengeTrackingGrid(container, challenge, habits, completions) {
+        container.innerHTML = '';
+        if (habits.length === 0) return;
+
+        const start = new Date(challenge.start_date);
+        const end = new Date(challenge.end_date);
+        const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+
+        const grid = document.createElement('div');
+        grid.className = 'challenge-grid-mini';
+        grid.style.display = 'grid';
+        grid.style.gridTemplateColumns = `150px repeat(${days}, minmax(30px, 1fr))`;
+        grid.style.gap = '5px';
+        grid.style.marginTop = '15px';
+        grid.style.fontSize = '12px';
+
+        // Header Row: Day numbers
+        const todayStr = formatDate(new Date());
+        grid.appendChild(document.createElement('div')); // Corner cell
+
+        for (let i = 0; i < days; i++) {
+            const currentDate = new Date(start);
+            currentDate.setDate(start.getDate() + i);
+            const dateStr = formatDate(currentDate);
+
+            const dateCell = document.createElement('div');
+            dateCell.className = 'challenge-date-cell';
+            dateCell.textContent = i + 1;
+            dateCell.title = dateStr;
+            if (dateStr === todayStr) dateCell.classList.add('today');
+            grid.appendChild(dateCell);
+        }
+
+        // Habit Rows
+        habits.forEach(habit => {
+            // Habit name label cell
+            const hCell = document.createElement('div');
+            hCell.className = 'challenge-habit-row-header';
+            hCell.textContent = habit.habit_name;
+            hCell.title = habit.habit_name;
+            grid.appendChild(hCell);
+
+            // Completion cells for each day
+            for (let i = 0; i < days; i++) {
+                const currentDate = new Date(start);
+                currentDate.setDate(start.getDate() + i);
+                const dateStr = formatDate(currentDate);
+
+                const completion = completions.find(c => c.habit_id === habit.id && c.date === dateStr);
+                const cell = document.createElement('div');
+                cell.className = 'challenge-check-cell';
+
+                if (completion?.notes) {
+                    cell.classList.add('has-note');
+                    cell.title = completion.notes;
+                }
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = completion?.completed || false;
+                checkbox.addEventListener('change', () => {
+                    this.toggleChallengeHabitCompletion(habit.id, challenge.id, dateStr, checkbox.checked);
+                });
+
+                // Double-click to add/edit note/count
+                cell.addEventListener('dblclick', (e) => {
+                    e.preventDefault();
+                    this.showChallengeHabitNoteModal(habit, challenge.id, dateStr, completion?.notes || '');
+                });
+
+                cell.appendChild(checkbox);
+                grid.appendChild(cell);
+            }
+        });
+
+        container.appendChild(grid);
+    }
+
+    /**
+     * Toggle challenge habit completion
+     */
+    async toggleChallengeHabitCompletion(habitId, challengeId, date, completed) {
+        try {
+            await dataService.toggleChallengeHabitCompletion(habitId, challengeId, date, completed);
+            if (window.showToast) window.showToast('Progress updated', 'success');
+
+            // Re-render only progress (optimistic update could be better but let's re-load for now)
+            await this.loadData();
+        } catch (error) {
+            console.error('Failed to toggle challenge completion:', error);
+            if (window.showToast) window.showToast('Failed to update progress', 'error');
+        }
+    }
+
+    /**
+     * Render archived challenges
+     */
+    async renderArchivedChallenges() {
+        const container = document.getElementById('archived-challenges-list');
+        if (!container) return;
+
+        const archived = this.intervalChallenges.filter(c => c.is_archived);
+        container.innerHTML = '';
+
+        if (archived.length === 0) {
+            container.innerHTML = '<div class="empty-state-mini">No archived challenges.</div>';
+            return;
+        }
+
+        archived.forEach(challenge => {
+            const item = document.createElement('div');
+            item.className = 'archived-challenge-item';
+            item.innerHTML = `
+                <div class="archived-info">
+                    <strong>${challenge.title}</strong>
+                    <span>${challenge.start_date} to ${challenge.end_date}</span>
+                </div>
+                <div class="archived-actions">
+                    <button class="restore-btn" title="Restore challenge">📤</button>
+                    <button class="delete-btn" title="Delete permanently">×</button>
+                </div>
+            `;
+
+            item.querySelector('.restore-btn').addEventListener('click', () => this.archiveChallenge(challenge.id, false));
+            item.querySelector('.delete-btn').addEventListener('click', () => this.deleteChallenge(challenge.id));
+
+            container.appendChild(item);
+        });
+    }
+
+    /**
+     * Open start challenge modal
+     */
+    openStartChallengeModal() {
+        const modal = document.getElementById('start-challenge-modal');
+        if (modal) modal.style.display = 'block';
+
+        // Reset form
+        document.getElementById('start-challenge-form')?.reset();
+        this.editingChallengeId = null;
+
+        const modalTitle = document.querySelector('#start-challenge-modal h3');
+        const submitBtn = document.querySelector('#start-challenge-modal .btn-primary[type="submit"]');
+        if (modalTitle) modalTitle.textContent = '🚀 Start New Interval Challenge';
+        if (submitBtn) submitBtn.textContent = 'Start Challenge';
+
+        const habitInputs = document.getElementById('challenge-habits-inputs');
+        if (habitInputs) {
+            habitInputs.innerHTML = `
+                <div class="challenge-habit-input-row" style="display: flex; gap: 10px; margin-bottom: 5px;">
+                    <input type="text" class="challenge-habit-name" placeholder="Habit name (e.g., Fasting)" style="flex: 1;" />
+                    <button type="button" class="remove-habit-btn" style="background: none; border: none; color: #ff4d4f; cursor: pointer; font-size: 20px;">×</button>
+                </div>
+            `;
+            this.setupRemoveHabitButtons();
+        }
+    }
+
+    /**
+     * Add another habit row in the modal
+     */
+    addChallengeHabitRow() {
+        const container = document.getElementById('challenge-habits-inputs');
+        if (!container) return;
+
+        const row = document.createElement('div');
+        row.className = 'challenge-habit-input-row';
+        row.style.display = 'flex';
+        row.style.gap = '10px';
+        row.style.marginBottom = '5px';
+        row.innerHTML = `
+            <input type="text" class="challenge-habit-name" placeholder="Habit name" style="flex: 1;" />
+            <button type="button" class="remove-habit-btn" style="background: none; border: none; color: #ff4d4f; cursor: pointer; font-size: 20px;">×</button>
+        `;
+        container.appendChild(row);
+        this.setupRemoveHabitButtons();
+    }
+
+    /**
+     * Setup remove buttons for habit rows
+     */
+    setupRemoveHabitButtons() {
+        document.querySelectorAll('.remove-habit-btn').forEach(btn => {
+            btn.onclick = () => {
+                const rows = document.querySelectorAll('.challenge-habit-input-row');
+                if (rows.length > 1) {
+                    btn.closest('.challenge-habit-input-row').remove();
+                }
+            };
+        });
+    }
+
+    /**
+     * Open edit challenge modal
+     */
+    async openEditChallengeModal(challenge) {
+        this.editingChallengeId = challenge.id;
+        const modal = document.getElementById('start-challenge-modal');
+        if (modal) modal.style.display = 'block';
+
+        const modalTitle = document.querySelector('#start-challenge-modal h3');
+        const submitBtn = document.querySelector('#start-challenge-modal .btn-primary[type="submit"]');
+        if (modalTitle) modalTitle.textContent = '✏️ Edit Interval Challenge';
+        if (submitBtn) submitBtn.textContent = 'Save Changes';
+
+        // Populate fields
+        document.getElementById('challenge-title').value = challenge.title;
+        document.getElementById('challenge-start').value = challenge.start_date;
+        document.getElementById('challenge-end').value = challenge.end_date;
+
+        // Load and populate habits
+        const habitInputs = document.getElementById('challenge-habits-inputs');
+        if (habitInputs) {
+            habitInputs.innerHTML = '';
+            const habits = await dataService.getChallengeHabits(challenge.id);
+            if (habits.length > 0) {
+                habits.forEach(h => {
+                    const row = document.createElement('div');
+                    row.className = 'challenge-habit-input-row';
+                    row.style.display = 'flex';
+                    row.style.gap = '10px';
+                    row.style.marginBottom = '5px';
+                    row.innerHTML = `
+                        <input type="text" class="challenge-habit-name" value="${h.habit_name}" placeholder="Habit name" style="flex: 1;" />
+                        <button type="button" class="remove-habit-btn" style="background: none; border: none; color: #ff4d4f; cursor: pointer; font-size: 20px;">×</button>
+                    `;
+                    habitInputs.appendChild(row);
+                });
+            } else {
+                this.addChallengeHabitRow();
+            }
+            this.setupRemoveHabitButtons();
+        }
+    }
+
+    /**
+     * Handle start challenge form submission
+     */
+    async handleStartChallenge(e) {
+        e.preventDefault();
+        const title = document.getElementById('challenge-title').value;
+        const startDate = document.getElementById('challenge-start').value;
+        const endDate = document.getElementById('challenge-end').value;
+
+        const habitNames = Array.from(document.querySelectorAll('.challenge-habit-name'))
+            .map(input => input.value.trim())
+            .filter(name => name !== '');
+
+        if (habitNames.length === 0) {
+            if (window.showToast) window.showToast('Please add at least one habit', 'warning');
+            return;
+        }
+
+        try {
+            if (this.editingChallengeId) {
+                // UPDATE
+                await dataService.updateIntervalChallenge(this.editingChallengeId, {
+                    title,
+                    start_date: startDate,
+                    end_date: endDate
+                });
+
+                // Sync habits: simpler to delete and recreate for now, or we could diff
+                // For a small number of habits, delete and recreate is safe if we don't have habit-specific references elsewhere
+                // But challenge_completions references habit_id. So we MUST not delete habits that have completions.
+                // A better diffing logic:
+                const existingHabits = await dataService.getChallengeHabits(this.editingChallengeId);
+                const existingNames = existingHabits.map(h => h.habit_name);
+
+                // Habits to add
+                const toAdd = habitNames.filter(name => !existingNames.includes(name));
+                // Habits to delete (only if no completions) - or just leave them if we want to preserve history?
+                // For this simple implementation, let's just add new ones and update existing ones if name changed?
+                // Actually, let's just add new ones and notify if some couldn't be deleted?
+                // Safest: Just add missing ones. If they want to rename, it's a bit harder.
+
+                for (const name of toAdd) {
+                    await dataService.createChallengeHabit({
+                        challenge_id: this.editingChallengeId,
+                        habit_name: name,
+                        order_index: existingHabits.length
+                    });
+                }
+
+                if (window.showToast) window.showToast('Challenge updated!', 'success');
+            } else {
+                // CREATE
+                // 1. Create Challenge
+                const challenge = await dataService.createIntervalChallenge({
+                    title,
+                    start_date: startDate,
+                    end_date: endDate
+                });
+
+                // 2. Create Habits
+                const habitPromises = habitNames.map((name, index) =>
+                    dataService.createChallengeHabit({
+                        challenge_id: challenge.id,
+                        habit_name: name,
+                        order_index: index
+                    })
+                );
+                await Promise.all(habitPromises);
+
+                if (window.showToast) window.showToast('Challenge started!', 'success');
+            }
+
+            // Close modal
+            document.getElementById('start-challenge-modal').style.display = 'none';
+            this.editingChallengeId = null;
+
+            // Refresh
+            await this.loadData();
+        } catch (error) {
+            console.error('Failed to handle challenge form:', error);
+            if (window.showToast) window.showToast('Error saving challenge', 'error');
+        }
+    }
+
+    /**
+     * Archive/Restore challenge
+     */
+    async archiveChallenge(challengeId, archived) {
+        try {
+            await dataService.archiveIntervalChallenge(challengeId, archived);
+            if (window.showToast) window.showToast(archived ? 'Challenge archived' : 'Challenge restored', 'success');
+            await this.loadData();
+        } catch (error) {
+            console.error('Failed to update challenge status:', error);
+        }
+    }
+
+    /**
+     * Delete challenge permanantly
+     */
+    async deleteChallenge(challengeId) {
+        if (!confirm('Are you sure you want to delete this challenge permanently? All progress will be lost.')) return;
+
+        try {
+            await dataService.deleteIntervalChallenge(challengeId);
+            if (window.showToast) window.showToast('Challenge deleted', 'success');
+            await this.loadData();
+        } catch (error) {
+            console.error('Failed to delete challenge:', error);
+        }
     }
 }
 
