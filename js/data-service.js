@@ -1846,16 +1846,15 @@ class DataService {
                 .from('interval_challenges')
                 .update(updates)
                 .eq('id', id)
-                .select()
-                .single();
+                .select();
 
             if (error) throw error;
 
-            if (this.cacheEnabled && data) {
-                await cacheService.put(STORES.intervalChallenges, data);
+            if (this.cacheEnabled && data && data.length > 0) {
+                await cacheService.put(STORES.intervalChallenges, data[0]);
             }
 
-            return data;
+            return data ? data[0] : null;
         } catch (error) {
             this.handleError(error, 'updateIntervalChallenge');
         }
@@ -1897,9 +1896,9 @@ class DataService {
      * @param {string} challengeId - Challenge ID
      * @returns {Promise<Array>} Array of habits
      */
-    async getChallengeHabits(challengeId) {
+    async getChallengeHabits(challengeId, forceRefresh = false) {
         try {
-            if (this.cacheEnabled) {
+            if (this.cacheEnabled && !forceRefresh) {
                 const cached = await cacheService.getAll(STORES.challengeHabits);
                 const filtered = cached.filter(h => h.challenge_id === challengeId);
                 if (filtered.length > 0) {
@@ -1955,6 +1954,31 @@ class DataService {
             return data;
         } catch (error) {
             this.handleError(error, 'createChallengeHabit');
+        }
+    }
+
+    /**
+     * Update a challenge habit
+     * @param {string} id - Habit ID
+     * @param {Object} updates - Updates (e.g., habit_name)
+     */
+    async updateChallengeHabit(id, updates) {
+        try {
+            const { data, error } = await this.supabase
+                .from('challenge_habits')
+                .update(updates)
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+
+            if (this.cacheEnabled && data && data.length > 0) {
+                await cacheService.put(STORES.challengeHabits, data[0]);
+            }
+
+            return data ? data[0] : null;
+        } catch (error) {
+            this.handleError(error, 'updateChallengeHabit');
         }
     }
 
