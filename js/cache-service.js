@@ -35,6 +35,9 @@ const CACHE_TTL = {
   attachments: 30 * 60 * 1000,          // 30 minutes - attachment metadata only
   comments: 5 * 60 * 1000,              // 5 minutes - comments change frequently
   activityLog: 5 * 60 * 1000,           // 5 minutes - activity log entries
+  intervalChallenges: 12 * 60 * 60 * 1000, // 12 hours
+  challengeHabits: 12 * 60 * 60 * 1000,    // 12 hours
+  challengeCompletions: 5 * 60 * 1000,      // 5 minutes
   default: 10 * 60 * 1000               // 10 minutes default
 };
 
@@ -66,7 +69,10 @@ const STORES = {
   checklistItems: 'checklist_items',
   attachments: 'attachments',           // Metadata only, not file contents
   comments: 'comments',
-  activityLog: 'activity_log'
+  activityLog: 'activity_log',
+  intervalChallenges: 'interval_challenges',
+  challengeHabits: 'challenge_habits',
+  challengeCompletions: 'challenge_completions'
 };
 
 class CacheService {
@@ -75,11 +81,11 @@ class CacheService {
     this.isOnline = navigator.onLine;
     this.syncInProgress = false;
     this.cacheMetadata = this.loadCacheMetadata();
-    
+
     // Listen for online/offline events
     window.addEventListener('online', () => this.handleOnline());
     window.addEventListener('offline', () => this.handleOffline());
-    
+
     // Listen for service worker messages
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', (event) => {
@@ -122,10 +128,10 @@ class CacheService {
   isCacheFresh(storeName) {
     const lastUpdated = this.cacheMetadata[storeName];
     if (!lastUpdated) return false;
-    
+
     const ttl = CACHE_TTL[storeName] || CACHE_TTL.default;
     const age = Date.now() - lastUpdated;
-    
+
     return age < ttl;
   }
 
@@ -137,11 +143,11 @@ class CacheService {
   getCacheAge(storeName) {
     const lastUpdated = this.cacheMetadata[storeName];
     if (!lastUpdated) return 'never cached';
-    
+
     const age = Date.now() - lastUpdated;
     const minutes = Math.floor(age / 60000);
     const hours = Math.floor(minutes / 60);
-    
+
     if (hours > 0) return `${hours}h ${minutes % 60}m ago`;
     if (minutes > 0) return `${minutes}m ago`;
     return 'just now';
@@ -183,7 +189,7 @@ class CacheService {
       console.log('[Cache] Cannot force refresh while offline');
       return false;
     }
-    
+
     this.invalidateCache(storeName);
     console.log(`[Cache] Force refresh triggered for ${storeName}`);
     return true;
@@ -209,7 +215,7 @@ class CacheService {
 
       request.onupgradeneeded = (event) => {
         const db = event.target.result;
-        
+
         // Create object stores for each data type
         Object.values(STORES).forEach((storeName) => {
           if (!db.objectStoreNames.contains(storeName)) {
@@ -227,7 +233,7 @@ class CacheService {
    */
   async getAll(storeName) {
     if (!this.db) await this.init();
-    
+
     return new Promise((resolve, reject) => {
       try {
         // Check if the store exists before creating transaction
@@ -252,7 +258,7 @@ class CacheService {
           }).catch(reject);
           return;
         }
-        
+
         const transaction = this.db.transaction(storeName, 'readonly');
         const store = transaction.objectStore(storeName);
         const request = store.getAll();
@@ -273,7 +279,7 @@ class CacheService {
    */
   async get(storeName, id) {
     if (!this.db) await this.init();
-    
+
     return new Promise((resolve, reject) => {
       try {
         // Check if the store exists
@@ -282,7 +288,7 @@ class CacheService {
           resolve(null);
           return;
         }
-        
+
         const transaction = this.db.transaction(storeName, 'readonly');
         const store = transaction.objectStore(storeName);
         const request = store.get(id);
@@ -301,7 +307,7 @@ class CacheService {
    */
   async put(storeName, item) {
     if (!this.db) await this.init();
-    
+
     return new Promise((resolve, reject) => {
       try {
         if (!this.db.objectStoreNames.contains(storeName)) {
@@ -309,7 +315,7 @@ class CacheService {
           resolve(null);
           return;
         }
-        
+
         const transaction = this.db.transaction(storeName, 'readwrite');
         const store = transaction.objectStore(storeName);
         const request = store.put(item);
@@ -329,7 +335,7 @@ class CacheService {
   async putAll(storeName, items) {
     if (!this.db) await this.init();
     if (!items || items.length === 0) return;
-    
+
     return new Promise((resolve, reject) => {
       try {
         if (!this.db.objectStoreNames.contains(storeName)) {
@@ -337,10 +343,10 @@ class CacheService {
           resolve();
           return;
         }
-        
+
         const transaction = this.db.transaction(storeName, 'readwrite');
         const store = transaction.objectStore(storeName);
-        
+
         items.forEach((item) => {
           if (item && item.id) {
             store.put(item);
@@ -364,7 +370,7 @@ class CacheService {
    */
   async delete(storeName, id) {
     if (!this.db) await this.init();
-    
+
     return new Promise((resolve, reject) => {
       const transaction = this.db.transaction(storeName, 'readwrite');
       const store = transaction.objectStore(storeName);
@@ -380,7 +386,7 @@ class CacheService {
    */
   async clear(storeName) {
     if (!this.db) await this.init();
-    
+
     return new Promise((resolve, reject) => {
       const transaction = this.db.transaction(storeName, 'readwrite');
       const store = transaction.objectStore(storeName);
@@ -439,7 +445,7 @@ class CacheService {
     console.log('[Cache] Back online');
     this.isOnline = true;
     this.syncWithServer();
-    
+
     if (window.Toast) {
       window.Toast.success('Back online - syncing data...');
     }
@@ -451,7 +457,7 @@ class CacheService {
   handleOffline() {
     console.log('[Cache] Gone offline');
     this.isOnline = false;
-    
+
     if (window.Toast) {
       window.Toast.warning('You are offline. Changes will sync when back online.');
     }
@@ -462,19 +468,19 @@ class CacheService {
    */
   async syncWithServer() {
     if (this.syncInProgress || !this.isOnline) return;
-    
+
     this.syncInProgress = true;
     console.log('[Cache] Starting sync...');
 
     try {
       const pending = await this.getPendingSync();
-      
+
       if (pending.length > 0) {
         console.log(`[Cache] Processing ${pending.length} pending operations`);
-        
+
         // Import dataService dynamically to avoid circular dependency
         const { default: dataService } = await import('./data-service.js');
-        
+
         for (const op of pending) {
           try {
             await this.processPendingOperation(dataService, op);

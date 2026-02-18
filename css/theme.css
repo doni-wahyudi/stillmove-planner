@@ -6320,11 +6320,13 @@ body #fab-container {
    HABIT NOTES INDICATOR
    ============================================================ */
 
-.checkbox-cell.has-note {
+.checkbox-cell.has-note,
+.challenge-check-cell.has-note {
     position: relative;
 }
 
-.checkbox-cell.has-note::before {
+.checkbox-cell.has-note::before,
+.challenge-check-cell.has-note::before {
     content: '📝';
     position: absolute;
     top: -2px;
@@ -6335,13 +6337,16 @@ body #fab-container {
 }
 
 /* Tooltip for note preview on hover */
-.checkbox-cell.has-note[title] {
+.checkbox-cell.has-note[title],
+.challenge-check-cell.has-note[title] {
     cursor: help;
 }
 
 /* Mobile: show note indicator differently */
 @media (max-width: 768px) {
-    .checkbox-cell.has-note::before {
+
+    .checkbox-cell.has-note::before,
+    .challenge-check-cell.has-note::before {
         font-size: 0.5rem;
         top: -1px;
         right: -1px;

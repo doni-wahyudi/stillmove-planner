@@ -15,7 +15,10 @@ const TABLE_TO_STORE = {
     'time_blocks': STORES.timeBlocks,
     'categories': STORES.categories,
     'reading_list': STORES.readingList,
-    'user_profiles': STORES.userProfile
+    'user_profiles': STORES.userProfile,
+    'interval_challenges': STORES.intervalChallenges,
+    'challenge_habits': STORES.challengeHabits,
+    'challenge_completions': STORES.challengeCompletions
 };
 
 class DataService {
@@ -1752,6 +1755,348 @@ class DataService {
             if (error) throw error;
         } catch (error) {
             this.handleError(error, 'deleteActionPlan');
+        }
+    }
+
+    // ==================== INTERVAL CHALLENGES ====================
+
+    /**
+     * Get all interval challenges for the current user
+     * @param {boolean} includeArchived - Whether to include archived challenges
+     * @returns {Promise<Array>} Array of challenges
+     */
+    async getIntervalChallenges(includeArchived = true) {
+        try {
+            // Try cache first
+            if (this.cacheEnabled) {
+                const cached = await cacheService.getAll(STORES.intervalChallenges);
+                if (cached && cached.length > 0) {
+                    if (cacheService.online) {
+                        this.syncInBackground(STORES.intervalChallenges, async () => {
+                            const { data } = await this.supabase.from('interval_challenges').select('*').order('created_at', { ascending: false });
+                            return data;
+                        });
+                    }
+                    const filtered = includeArchived ? cached : cached.filter(c => !c.is_archived);
+                    return filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                }
+            }
+
+            let query = this.supabase.from('interval_challenges').select('*').order('created_at', { ascending: false });
+            if (!includeArchived) {
+                query = query.eq('is_archived', false);
+            }
+
+            const { data, error } = await query;
+            if (error) throw error;
+
+            if (this.cacheEnabled && data) {
+                await cacheService.putAll(STORES.intervalChallenges, data);
+            }
+
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getIntervalChallenges');
+        }
+    }
+
+    /**
+     * Create a new interval challenge
+     * @param {Object} challenge - Challenge data
+     * @returns {Promise<Object>} Created challenge
+     */
+    async createIntervalChallenge(challenge) {
+        try {
+            const { data: { user } } = await this.supabase.auth.getUser();
+            if (!user) throw new Error('User not authenticated');
+
+            const newChallenge = {
+                ...challenge,
+                user_id: user.id,
+                is_archived: false
+            };
+
+            const { data, error } = await this.supabase
+                .from('interval_challenges')
+                .insert([newChallenge])
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            if (this.cacheEnabled && data) {
+                await cacheService.put(STORES.intervalChallenges, data);
+            }
+
+            return data;
+        } catch (error) {
+            this.handleError(error, 'createIntervalChallenge');
+        }
+    }
+
+    /**
+     * Update an interval challenge
+     * @param {string} id - Challenge ID
+     * @param {Object} updates - Fields to update
+     * @returns {Promise<Object>} Updated challenge
+     */
+    async updateIntervalChallenge(id, updates) {
+        try {
+            const { data, error } = await this.supabase
+                .from('interval_challenges')
+                .update(updates)
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            if (this.cacheEnabled && data) {
+                await cacheService.put(STORES.intervalChallenges, data);
+            }
+
+            return data;
+        } catch (error) {
+            this.handleError(error, 'updateIntervalChallenge');
+        }
+    }
+
+    /**
+     * Delete an interval challenge
+     * @param {string} id - Challenge ID
+     * @returns {Promise<void>}
+     */
+    async deleteIntervalChallenge(id) {
+        try {
+            const { error } = await this.supabase
+                .from('interval_challenges')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            if (this.cacheEnabled) {
+                await cacheService.delete(STORES.intervalChallenges, id);
+            }
+        } catch (error) {
+            this.handleError(error, 'deleteIntervalChallenge');
+        }
+    }
+
+    /**
+     * Archive or unarchive a challenge
+     * @param {string} id - Challenge ID
+     * @param {boolean} archived - Archived status
+     */
+    async archiveIntervalChallenge(id, archived = true) {
+        return this.updateIntervalChallenge(id, { is_archived: archived });
+    }
+
+    /**
+     * Get habits for a specific challenge
+     * @param {string} challengeId - Challenge ID
+     * @returns {Promise<Array>} Array of habits
+     */
+    async getChallengeHabits(challengeId) {
+        try {
+            if (this.cacheEnabled) {
+                const cached = await cacheService.getAll(STORES.challengeHabits);
+                const filtered = cached.filter(h => h.challenge_id === challengeId);
+                if (filtered.length > 0) {
+                    if (cacheService.online) {
+                        this.syncInBackground(STORES.challengeHabits, async () => {
+                            const { data } = await this.supabase.from('challenge_habits').select('*').eq('challenge_id', challengeId).order('order_index');
+                            return data;
+                        });
+                    }
+                    return filtered.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
+                }
+            }
+
+            const { data, error } = await this.supabase
+                .from('challenge_habits')
+                .select('*')
+                .eq('challenge_id', challengeId)
+                .order('order_index');
+
+            if (error) throw error;
+
+            if (this.cacheEnabled && data) {
+                await cacheService.putAll(STORES.challengeHabits, data);
+            }
+
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getChallengeHabits');
+        }
+    }
+
+    /**
+     * Create a challenge habit
+     * @param {Object} habit - Habit data
+     */
+    async createChallengeHabit(habit) {
+        try {
+            const { data: { user } } = await this.supabase.auth.getUser();
+            const newHabit = { ...habit, user_id: user.id };
+
+            const { data, error } = await this.supabase
+                .from('challenge_habits')
+                .insert([newHabit])
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            if (this.cacheEnabled && data) {
+                await cacheService.put(STORES.challengeHabits, data);
+            }
+
+            return data;
+        } catch (error) {
+            this.handleError(error, 'createChallengeHabit');
+        }
+    }
+
+    /**
+     * Delete a challenge habit
+     * @param {string} id - Habit ID
+     */
+    async deleteChallengeHabit(id) {
+        try {
+            const { error } = await this.supabase
+                .from('challenge_habits')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            if (this.cacheEnabled) {
+                await cacheService.delete(STORES.challengeHabits, id);
+            }
+        } catch (error) {
+            this.handleError(error, 'deleteChallengeHabit');
+        }
+    }
+
+    /**
+     * Delete all habits for a specific challenge
+     * @param {string} challengeId - Challenge ID
+     */
+    async deleteChallengeHabits(challengeId) {
+        try {
+            const { error } = await this.supabase
+                .from('challenge_habits')
+                .delete()
+                .eq('challenge_id', challengeId);
+
+            if (error) throw error;
+
+            if (this.cacheEnabled) {
+                const cached = await cacheService.getAll(STORES.challengeHabits);
+                const toDelete = cached.filter(h => h.challenge_id === challengeId).map(h => h.id);
+                for (const id of toDelete) {
+                    await cacheService.delete(STORES.challengeHabits, id);
+                }
+            }
+        } catch (error) {
+            this.handleError(error, 'deleteChallengeHabits');
+        }
+    }
+
+    /**
+     * Get completions for a challenge in a date range
+     */
+    async getChallengeCompletions(challengeId, startDate, endDate) {
+        try {
+            const { data, error } = await this.supabase
+                .from('challenge_completions')
+                .select('*')
+                .eq('challenge_id', challengeId)
+                .gte('date', startDate)
+                .lte('date', endDate);
+
+            if (error) throw error;
+
+            if (this.cacheEnabled && data) {
+                await cacheService.putAll(STORES.challengeCompletions, data);
+            }
+
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getChallengeCompletions');
+        }
+    }
+
+    /**
+     * Toggle completion for a challenge habit
+     */
+    async toggleChallengeHabitCompletion(habitId, challengeId, date, completed, countValue = null, notes = null) {
+        try {
+            const { data: { user } } = await this.supabase.auth.getUser();
+
+            const completion = {
+                habit_id: habitId,
+                challenge_id: challengeId,
+                user_id: user.id,
+                date,
+                completed,
+                count_value: countValue,
+                notes
+            };
+
+            const { data, error } = await this.supabase
+                .from('challenge_completions')
+                .upsert([completion], { onConflict: 'habit_id,date' })
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            if (this.cacheEnabled && data) {
+                await cacheService.put(STORES.challengeCompletions, data);
+            }
+
+            return data;
+        } catch (error) {
+            this.handleError(error, 'toggleChallengeHabitCompletion');
+        }
+    }
+
+    /**
+     * Update note/count for a challenge habit completion
+     */
+    async updateChallengeHabitNote(habitId, challengeId, date, notes) {
+        try {
+            const { data: { user } } = await this.supabase.auth.getUser();
+            if (!user) throw new Error('User not authenticated');
+
+            // Parse count from notes if possible
+            const countValue = parseFloat(notes);
+            const hasCount = !isNaN(countValue);
+
+            const { data, error } = await this.supabase
+                .from('challenge_completions')
+                .upsert([{
+                    habit_id: habitId,
+                    challenge_id: challengeId,
+                    date,
+                    notes,
+                    count_value: hasCount ? countValue : null,
+                    completed: hasCount && countValue > 0 ? true : undefined, // Leave unchanged if not numeric
+                    user_id: user.id
+                }], { onConflict: 'habit_id,date' })
+                .select();
+
+            if (error) throw error;
+
+            if (this.cacheEnabled && data && data.length > 0) {
+                await cacheService.put(STORES.challengeCompletions, data[0]);
+            }
+
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'updateChallengeHabitNote');
         }
     }
 
