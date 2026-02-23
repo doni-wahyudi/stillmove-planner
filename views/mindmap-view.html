@@ -1,0 +1,251 @@
+<div class="mindmap-container" id="mindmap-container">
+    <!-- Floating Toolbar -->
+    <div class="mindmap-toolbar" id="mindmap-toolbar">
+        <div class="tool-group" role="group" aria-label="Undo/Redo">
+            <button class="tool-btn" id="mm-undo-btn" aria-label="Undo" title="Undo (Ctrl+Z)" disabled>
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path
+                        d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"
+                        fill="currentColor" />
+                </svg>
+            </button>
+            <button class="tool-btn" id="mm-redo-btn" aria-label="Redo" title="Redo (Ctrl+Shift+Z)" disabled>
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path
+                        d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"
+                        fill="currentColor" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="toolbar-divider" aria-hidden="true"></div>
+
+        <div class="tool-group" role="group" aria-label="Node tools">
+            <button class="tool-btn" id="mm-add-node-btn" aria-label="Add node" title="Add node (double-click)">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor" />
+                </svg>
+                <span class="tool-label">Add</span>
+            </button>
+            <button class="tool-btn" id="mm-add-child-btn" aria-label="Add child node" title="Add child (Tab)" disabled>
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path d="M19 15l-6 6-1.42-1.42L15.17 16H4V4h2v10h9.17l-3.59-3.58L13 9l6 6z" fill="currentColor" />
+                </svg>
+                <span class="tool-label">Child</span>
+            </button>
+            <button class="tool-btn" id="mm-delete-node-btn" aria-label="Delete selected" title="Delete (Del)" disabled>
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                        fill="currentColor" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="toolbar-divider" aria-hidden="true"></div>
+
+        <div class="tool-group" role="group" aria-label="Layout">
+            <button class="tool-btn" id="mm-auto-layout-btn" aria-label="Auto layout" title="Auto-arrange nodes">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path
+                        d="M22 11V3h-7v3H9V3H2v8h7V8h2v10h4v3h7v-8h-7v3h-2V8h2v3h7zM7 9H4V5h3v4zm10 6h3v4h-3v-4zm0-10h3v4h-3V5z"
+                        fill="currentColor" />
+                </svg>
+                <span class="tool-label">Layout</span>
+            </button>
+            <button class="tool-btn" id="mm-center-btn" aria-label="Center view" title="Center view">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="currentColor" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="toolbar-divider" aria-hidden="true"></div>
+
+        <div class="tool-group" role="group" aria-label="Zoom">
+            <button class="tool-btn" id="mm-zoom-out-btn" aria-label="Zoom out">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path
+                        d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM6 8h6v2H6V8z"
+                        fill="currentColor" />
+                </svg>
+            </button>
+            <span class="zoom-level" id="mm-zoom-level">100%</span>
+            <button class="tool-btn" id="mm-zoom-in-btn" aria-label="Zoom in">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path
+                        d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM12 10h-2v2H8v-2H6V8h2V6h2v2h2v2z"
+                        fill="currentColor" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="toolbar-divider" aria-hidden="true"></div>
+
+        <div class="tool-group" role="group" aria-label="Export">
+            <button class="tool-btn" id="mm-export-png-btn" aria-label="Export PNG" title="Export as PNG">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" fill="currentColor" />
+                </svg>
+                <span class="tool-label">PNG</span>
+            </button>
+            <button class="tool-btn" id="mm-export-svg-btn" aria-label="Export SVG" title="Export as SVG">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path
+                        d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"
+                        fill="currentColor" />
+                </svg>
+                <span class="tool-label">SVG</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="mindmap-search-bar" id="mm-search-bar">
+        <svg viewBox="0 0 24 24" width="16" height="16" class="mm-search-icon">
+            <path
+                d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
+                fill="currentColor" />
+        </svg>
+        <input type="text" id="mm-search-input" placeholder="Search nodes... (Ctrl+F)" autocomplete="off">
+        <button id="mm-search-clear" class="mm-search-clear" hidden>&times;</button>
+    </div>
+
+    <!-- SVG Canvas -->
+    <svg class="mindmap-svg" id="mindmap-svg" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <marker id="mm-arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="var(--text-secondary, #666)" />
+            </marker>
+            <pattern id="mm-grid-small" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="var(--border-color, #e5e7eb)" stroke-width="0.5"
+                    opacity="0.3" />
+            </pattern>
+            <pattern id="mm-grid-large" width="100" height="100" patternUnits="userSpaceOnUse">
+                <rect width="100" height="100" fill="url(#mm-grid-small)" />
+                <path d="M 100 0 L 0 0 0 100" fill="none" stroke="var(--border-color, #e5e7eb)" stroke-width="1"
+                    opacity="0.3" />
+            </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#mm-grid-large)" id="mm-grid-bg" />
+        <g id="mm-viewport">
+            <g id="mm-edges-layer"></g>
+            <g id="mm-nodes-layer"></g>
+        </g>
+    </svg>
+
+    <!-- Drop Indicator for Re-parenting -->
+    <div class="mm-drop-indicator" id="mm-drop-indicator" hidden></div>
+
+    <!-- Empty State -->
+    <div class="mindmap-empty-state" id="mindmap-empty-state">
+        <div class="empty-state-content">
+            <svg viewBox="0 0 24 24" width="64" height="64" aria-hidden="true">
+                <path
+                    d="M22 11V3h-7v3H9V3H2v8h7V8h2v10h4v3h7v-8h-7v3h-2V8h2v3h7zM7 9H4V5h3v4zm10 6h3v4h-3v-4zm0-10h3v4h-3V5z"
+                    fill="currentColor" />
+            </svg>
+            <h3>No Mindmap Selected</h3>
+            <p>Select a mindmap from the sidebar or create a new one to start brainstorming.</p>
+            <button class="btn btn-primary" id="mm-empty-new-btn">Create New Mindmap</button>
+        </div>
+    </div>
+
+    <!-- Title Bar -->
+    <div class="mindmap-title-bar" id="mindmap-title-bar" hidden>
+        <input type="text" id="mindmap-title-input" class="canvas-title-input" placeholder="Untitled Mindmap"
+            aria-label="Mindmap title">
+        <span class="save-indicator" id="mm-save-indicator">Saved</span>
+    </div>
+
+    <!-- Notes Panel (slide-out from right) -->
+    <div class="mm-notes-panel" id="mm-notes-panel" hidden>
+        <div class="mm-notes-header">
+            <h4>📝 Node Notes</h4>
+            <button class="mm-notes-close" id="mm-notes-close">&times;</button>
+        </div>
+        <div class="mm-notes-node-label" id="mm-notes-node-label"></div>
+        <textarea id="mm-notes-textarea" class="mm-notes-textarea" placeholder="Add notes for this node..."></textarea>
+    </div>
+
+    <!-- Context Menu -->
+    <div class="mindmap-context-menu" id="mindmap-context-menu" hidden>
+        <button class="context-menu-item" data-action="edit">
+            <svg viewBox="0 0 24 24" width="16" height="16">
+                <path
+                    d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
+                    fill="currentColor" />
+            </svg>
+            Rename
+        </button>
+        <button class="context-menu-item" data-action="emoji">
+            <svg viewBox="0 0 24 24" width="16" height="16">
+                <path
+                    d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"
+                    fill="currentColor" />
+            </svg>
+            Emoji
+        </button>
+        <div class="context-menu-emoji-picker" id="mm-emoji-picker" hidden>
+            <span class="emoji-item" data-emoji="💡">💡</span>
+            <span class="emoji-item" data-emoji="⭐">⭐</span>
+            <span class="emoji-item" data-emoji="🎯">🎯</span>
+            <span class="emoji-item" data-emoji="🔥">🔥</span>
+            <span class="emoji-item" data-emoji="✅">✅</span>
+            <span class="emoji-item" data-emoji="❌">❌</span>
+            <span class="emoji-item" data-emoji="⚠️">⚠️</span>
+            <span class="emoji-item" data-emoji="📌">📌</span>
+            <span class="emoji-item" data-emoji="🚀">🚀</span>
+            <span class="emoji-item" data-emoji="💬">💬</span>
+            <span class="emoji-item" data-emoji="📝">📝</span>
+            <span class="emoji-item" data-emoji="🔗">🔗</span>
+            <span class="emoji-item" data-emoji="❓">❓</span>
+            <span class="emoji-item" data-emoji="🏷️">🏷️</span>
+            <span class="emoji-item" data-emoji="">✖</span>
+        </div>
+        <button class="context-menu-item" data-action="notes">
+            <svg viewBox="0 0 24 24" width="16" height="16">
+                <path d="M3 18h12v-2H3v2zM3 6v2h18V6H3zm0 7h18v-2H3v2z" fill="currentColor" />
+            </svg>
+            Notes
+        </button>
+        <button class="context-menu-item" data-action="add-child">
+            <svg viewBox="0 0 24 24" width="16" height="16">
+                <path d="M19 15l-6 6-1.42-1.42L15.17 16H4V4h2v10h9.17l-3.59-3.58L13 9l6 6z" fill="currentColor" />
+            </svg>
+            Add Child
+        </button>
+        <div class="context-menu-divider"></div>
+        <button class="context-menu-item" data-action="color">
+            <svg viewBox="0 0 24 24" width="16" height="16">
+                <path
+                    d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-1-.01-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"
+                    fill="currentColor" />
+            </svg>
+            Color
+        </button>
+        <div class="context-menu-color-picker" data-action="color-picker" hidden>
+            <button class="color-dot" data-color="#6366f1" style="background:#6366f1" title="Indigo"></button>
+            <button class="color-dot" data-color="#ec4899" style="background:#ec4899" title="Pink"></button>
+            <button class="color-dot" data-color="#10b981" style="background:#10b981" title="Emerald"></button>
+            <button class="color-dot" data-color="#f59e0b" style="background:#f59e0b" title="Amber"></button>
+            <button class="color-dot" data-color="#3b82f6" style="background:#3b82f6" title="Blue"></button>
+            <button class="color-dot" data-color="#ef4444" style="background:#ef4444" title="Red"></button>
+            <button class="color-dot" data-color="#8b5cf6" style="background:#8b5cf6" title="Violet"></button>
+            <button class="color-dot" data-color="#64748b" style="background:#64748b" title="Slate"></button>
+        </div>
+        <button class="context-menu-item" data-action="collapse">
+            <svg viewBox="0 0 24 24" width="16" height="16">
+                <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z" fill="currentColor" />
+            </svg>
+            Collapse/Expand
+        </button>
+        <div class="context-menu-divider"></div>
+        <button class="context-menu-item context-menu-danger" data-action="delete">
+            <svg viewBox="0 0 24 24" width="16" height="16">
+                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                    fill="currentColor" />
+            </svg>
+            Delete
+        </button>
+    </div>
+</div>

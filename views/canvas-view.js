@@ -12,8 +12,9 @@ import UndoManager from '../js/undo-manager.js';
 import ToolManager from '../js/tool-manager.js';
 import PointerEventHandler from '../js/pointer-event-handler.js';
 import CanvasRenderer from '../js/canvas-renderer.js';
+import MindmapEngine from '../js/mindmap-engine.js';
+import { FlowchartEngine } from '../js/flowchart-engine.js';
 import dataService from '../js/data-service.js';
-
 /**
  * CanvasView controller class
  */
@@ -31,40 +32,64 @@ class CanvasView {
     constructor(stateManager) {
         /** @type {Object} Application state manager */
         this.stateManager = stateManager;
-        
+
         /** @type {Array<Object>} List of canvas documents */
         this.documents = [];
-        
+
         /** @type {Object|null} Currently open document */
         this.currentDocument = null;
-        
+
         /** @type {StrokeManager|null} Stroke manager instance */
         this.strokeManager = null;
-        
+
         /** @type {UndoManager|null} Undo manager instance */
         this.undoManager = null;
 
         /** @type {ToolManager|null} Tool manager instance */
         this.toolManager = null;
-        
+
         /** @type {PointerEventHandler|null} Pointer event handler */
         this.pointerHandler = null;
-        
+
         /** @type {CanvasRenderer|null} Canvas renderer */
         this.renderer = null;
-        
+
         /** @type {HTMLElement|null} Container element */
         this.container = null;
-        
+
         /** @type {number|null} Auto-save timeout ID */
         this.autoSaveTimeout = null;
-        
+
         /** @type {boolean} Whether there are unsaved changes */
         this.hasUnsavedChanges = false;
-        
+
         /** @type {string|null} ID of document pending deletion */
         this.pendingDeleteId = null;
-        
+
+        /** @type {string} Current mode: 'draw' or 'mindmap' */
+        this.currentMode = 'draw';
+
+        /** @type {MindmapEngine|null} Mindmap engine instance */
+        this.mindmapEngine = null;
+
+        /** @type {Array<Object>} List of mindmap documents */
+        this.mindmapDocuments = [];
+
+        /** @type {Object|null} Currently open mindmap */
+        this.currentMindmapDoc = null;
+
+        /** @type {string} Current search query for document list */
+        this.searchQuery = '';
+
+        /** @type {FlowchartEngine|null} Flowchart engine instance */
+        this.flowchartEngine = null;
+
+        /** @type {Array<Object>} List of flowchart documents */
+        this.flowchartDocuments = [];
+
+        /** @type {Object|null} Currently open flowchart */
+        this.currentFlowchartDoc = null;
+
         // Bind methods
         this._handleStrokeStart = this._handleStrokeStart.bind(this);
         this._handleStrokeMove = this._handleStrokeMove.bind(this);
@@ -80,22 +105,34 @@ class CanvasView {
      */
     async init(container) {
         this.container = container;
-        
+
         // Load HTML template
         await this._loadTemplate();
-        
+
+        // Load mindmap template alongside
+        await this._loadMindmapTemplate();
+
+        // Load flowchart template
+        await this._loadFlowchartTemplate();
+
         // Cache DOM references
         this._cacheDOMReferences();
-        
+
         // Initialize managers
         this._initializeManagers();
-        
+
+        // Initialize mindmap engine
+        this._initMindmapEngine();
+
+        // Initialize flowchart engine
+        this._initFlowchartEngine();
+
         // Setup event listeners
         this._setupEventListeners();
-        
+
         // Load document list
         await this._loadDocuments();
-        
+
         // Setup resize observer
         this._setupResizeObserver();
     }
@@ -116,6 +153,207 @@ class CanvasView {
     }
 
     /**
+     * Load the mindmap HTML template and inject it into the canvas main area
+     * @private
+     */
+    async _loadMindmapTemplate() {
+        try {
+            const response = await fetch('views/mindmap-view.html');
+            const html = await response.text();
+            // Insert mindmap container into canvas-main, initially hidden
+            const canvasMain = this.container.querySelector('.canvas-main');
+            if (canvasMain) {
+                const wrapper = document.createElement('div');
+                wrapper.id = 'mindmap-mode-wrapper';
+                wrapper.style.display = 'none';
+                wrapper.innerHTML = html;
+                canvasMain.appendChild(wrapper);
+            }
+        } catch (error) {
+            console.error('CanvasView: Failed to load mindmap template', error);
+        }
+    }
+
+    /**
+     * Load the flowchart HTML template
+     * @private
+     */
+    async _loadFlowchartTemplate() {
+        try {
+            const response = await fetch('views/flowchart-view.html');
+            const html = await response.text();
+            const flowchartWrapper = this.container.querySelector('#flowchart-workspace');
+            if (flowchartWrapper) {
+                flowchartWrapper.innerHTML = html;
+            }
+        } catch (error) {
+            console.error('CanvasView: Failed to load flowchart template', error);
+        }
+    }
+
+    /**
+     * Initialize the mindmap engine
+     * @private
+     */
+    _initMindmapEngine() {
+        this.mindmapEngine = new MindmapEngine();
+        this.mindmapEngine.init();
+
+        // Listen for mindmap events
+        document.addEventListener('mindmap-create-new', () => this._createNewMindmap());
+        document.addEventListener('mindmap-title-changed', (e) => {
+            const { id, title } = e.detail;
+            const doc = this.mindmapDocuments.find(d => d.id === id);
+            if (doc) {
+                doc.title = title;
+                this._renderDocumentList();
+            }
+        });
+    }
+
+    /**
+     * Initialize the flowchart engine
+     * @private
+     */
+    _initFlowchartEngine() {
+        const svg = document.getElementById('flowchart-svg');
+        const container = document.getElementById('flowchart-container');
+        const toolbar = document.getElementById('flowchart-toolbar');
+
+        if (svg && container && toolbar) {
+            this.flowchartEngine = new FlowchartEngine(svg, container, toolbar);
+        }
+
+        // Toolbar bindings
+        const fcTools = document.querySelectorAll('#flowchart-toolbar .tool-btn[data-tool]');
+        fcTools.forEach(btn => {
+            btn.addEventListener('click', () => {
+                fcTools.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.flowchartEngine?.setTool(btn.dataset.tool);
+            });
+        });
+
+        document.getElementById('fc-empty-new-btn')?.addEventListener('click', () => this._createNewFlowchart());
+
+        document.getElementById('fc-zoom-in-btn')?.addEventListener('click', () => {
+            if (this.flowchartEngine) {
+                this.flowchartEngine._zoom(1.2, { x: window.innerWidth / 2, y: window.innerHeight / 2 });
+            }
+        });
+        document.getElementById('fc-zoom-out-btn')?.addEventListener('click', () => {
+            if (this.flowchartEngine) {
+                this.flowchartEngine._zoom(0.8, { x: window.innerWidth / 2, y: window.innerHeight / 2 });
+            }
+        });
+
+        document.getElementById('fc-delete-btn')?.addEventListener('click', () => {
+            if (this.flowchartEngine) {
+                this.flowchartEngine._deleteSelected();
+            }
+        });
+
+        document.getElementById('fc-tidy-btn')?.addEventListener('click', () => {
+            if (this.flowchartEngine) {
+                this.flowchartEngine.autoLayout();
+            }
+        });
+
+        document.getElementById('fc-line-style')?.addEventListener('change', (e) => {
+            if (this.flowchartEngine) {
+                this.flowchartEngine.updateSelectedEdges({ style: e.target.value });
+            }
+        });
+
+        document.getElementById('fc-arrow-type')?.addEventListener('change', (e) => {
+            if (this.flowchartEngine) {
+                this.flowchartEngine.updateSelectedEdges({ arrow_type: e.target.value });
+            }
+        });
+
+        // Current Color State
+        let currentFcColor = '#000000';
+        let currentFcOpacity = 100;
+
+        const updateFcColor = () => {
+            if (!this.flowchartEngine) return;
+            let finalColor;
+            if (currentFcColor === 'transparent') {
+                finalColor = 'transparent';
+            } else {
+                // Convert hex to rgba based on opacity
+                const hex = currentFcColor.replace('#', '');
+                const r = parseInt(hex.substring(0, 2), 16);
+                const g = parseInt(hex.substring(2, 4), 16);
+                const b = parseInt(hex.substring(4, 6), 16);
+                const a = currentFcOpacity / 100;
+                finalColor = `rgba(${r}, ${g}, ${b}, ${a})`;
+            }
+            this.flowchartEngine.updateSelectedNodes({ color: finalColor });
+        };
+
+        // Color Picker Logic
+        const fcColorPreview = document.getElementById('fc-color-preview');
+        const fcColorDropdown = document.getElementById('fc-color-dropdown');
+        const fcColorSwatch = document.getElementById('fc-color-swatch');
+
+        fcColorPreview?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fcColorDropdown?.toggleAttribute('hidden');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (fcColorDropdown && !fcColorDropdown.contains(e.target) && e.target !== fcColorPreview) {
+                fcColorDropdown.setAttribute('hidden', '');
+            }
+        });
+
+        document.querySelectorAll('.color-preset').forEach(btn => {
+            // Re-bind only inside flowchart container if needed, or rely on closest
+            btn.addEventListener('click', (e) => {
+                if (!e.target.closest('#flowchart-toolbar')) return;
+                currentFcColor = e.target.dataset.color;
+                if (fcColorSwatch) {
+                    fcColorSwatch.style.backgroundColor = currentFcColor;
+                }
+                updateFcColor();
+                fcColorDropdown?.setAttribute('hidden', '');
+            });
+        });
+
+        const fcCustomColorInput = document.getElementById('custom-color-input'); // need specific ID or selector inside flowchart later
+
+        // Opacity Slider
+        const fcOpacitySlider = document.getElementById('fc-opacity-slider');
+        const fcOpacityValue = document.getElementById('fc-opacity-value');
+
+        fcOpacitySlider?.addEventListener('input', (e) => {
+            currentFcOpacity = parseInt(e.target.value);
+            if (fcOpacityValue) {
+                fcOpacityValue.textContent = `${currentFcOpacity}%`;
+            }
+            updateFcColor();
+        });
+
+        const fcFontColorInput = document.getElementById('fc-font-color-input');
+        fcFontColorInput?.addEventListener('input', (e) => {
+            if (this.flowchartEngine) {
+                this.flowchartEngine.updateSelectedNodes({ text_color: e.target.value });
+            }
+        });
+
+        const titleInput = document.getElementById('flowchart-title-input');
+        titleInput?.addEventListener('change', () => {
+            if (this.currentFlowchartDoc && this.flowchartEngine) {
+                const newTitle = titleInput.value.trim() || 'Untitled Flowchart';
+                this.currentFlowchartDoc.title = newTitle;
+                dataService.updateFlowchart(this.currentFlowchartDoc.id, { title: newTitle });
+                this._renderDocumentList();
+            }
+        });
+    }
+
+    /**
      * Cache DOM element references
      * @private
      */
@@ -124,11 +362,13 @@ class CanvasView {
         this.staticCanvas = document.getElementById('static-canvas');
         this.activeCanvas = document.getElementById('active-canvas');
         this.canvasContainer = document.getElementById('canvas-container');
-        
+
         // Sidebar
         this.documentList = document.getElementById('document-list');
         this.newCanvasBtn = document.getElementById('new-canvas-btn');
-        
+        this.sidebarSearchInput = document.getElementById('sidebar-search-input');
+        this.docCountBadge = document.getElementById('doc-count-badge');
+
         // Toolbar
         this.toolButtons = document.querySelectorAll('.tool-btn[data-tool]');
         this.colorPreview = document.getElementById('color-preview');
@@ -142,16 +382,16 @@ class CanvasView {
         this.redoBtn = document.getElementById('redo-btn');
         this.clearBtn = document.getElementById('clear-btn');
         this.exportBtn = document.getElementById('export-btn');
-        
+
         // Title bar
         this.titleBar = document.getElementById('canvas-title-bar');
         this.titleInput = document.getElementById('canvas-title-input');
         this.saveIndicator = document.getElementById('save-indicator');
-        
+
         // Empty state
         this.emptyState = document.getElementById('canvas-empty-state');
         this.emptyNewCanvasBtn = document.getElementById('empty-new-canvas-btn');
-        
+
         // Modals
         this.clearModal = document.getElementById('clear-confirm-modal');
         this.deleteModal = document.getElementById('delete-confirm-modal');
@@ -164,22 +404,22 @@ class CanvasView {
     _initializeManagers() {
         // Initialize stroke manager
         this.strokeManager = new StrokeManager(this.staticCanvas, this.activeCanvas);
-        
+
         // Initialize undo manager
         this.undoManager = new UndoManager();
         this.undoManager.setStateChangeCallback((state) => {
             this._updateUndoRedoButtons(state);
         });
-        
+
         // Initialize tool manager
         this.toolManager = new ToolManager();
         this.toolManager.setStateChangeCallback((state) => {
             this._updateToolUI(state);
         });
-        
+
         // Initialize renderer
         this.renderer = new CanvasRenderer(this.staticCanvas, this.activeCanvas);
-        
+
         // Initialize pointer handler
         this.pointerHandler = new PointerEventHandler(this.activeCanvas, {
             onStrokeStart: this._handleStrokeStart,
@@ -194,10 +434,29 @@ class CanvasView {
      * @private
      */
     _setupEventListeners() {
+        // Mode toggle
+        const modeToggle = document.getElementById('canvas-mode-toggle');
+        modeToggle?.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const mode = btn.dataset.mode;
+                if (mode !== this.currentMode) {
+                    this._switchMode(mode);
+                }
+            });
+        });
+
         // New canvas buttons
-        this.newCanvasBtn?.addEventListener('click', () => this._createNewDocument());
+        this.newCanvasBtn?.addEventListener('click', () => {
+            if (this.currentMode === 'mindmap') {
+                this._createNewMindmap();
+            } else if (this.currentMode === 'flowchart') {
+                this._createNewFlowchart();
+            } else {
+                this._createNewDocument();
+            }
+        });
         this.emptyNewCanvasBtn?.addEventListener('click', () => this._createNewDocument());
-        
+
         // Tool buttons
         this.toolButtons.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -206,7 +465,7 @@ class CanvasView {
                 this._updateToolButtonStates(tool);
             });
         });
-        
+
         // Color picker
         this.colorPreview?.addEventListener('click', () => this._toggleColorDropdown());
         this.colorPresets.forEach(preset => {
@@ -221,22 +480,22 @@ class CanvasView {
             this.toolManager.setColor(e.target.value);
             this._updateColorSwatch(e.target.value);
         });
-        
+
         // Width slider
         this.widthSlider?.addEventListener('input', (e) => {
             const width = parseInt(e.target.value, 10);
             this.toolManager.setWidth(width);
             this.widthValue.textContent = width;
         });
-        
+
         // Undo/Redo
         this.undoBtn?.addEventListener('click', () => this._undo());
         this.redoBtn?.addEventListener('click', () => this._redo());
-        
+
         // Clear/Export
         this.clearBtn?.addEventListener('click', () => this._showClearModal());
         this.exportBtn?.addEventListener('click', () => this._exportToPNG());
-        
+
         // Title input - update on change (blur) and input (real-time)
         this.titleInput?.addEventListener('change', () => this._updateDocumentTitle());
         this.titleInput?.addEventListener('input', () => {
@@ -245,20 +504,20 @@ class CanvasView {
                 this.currentDocument.title = this.titleInput.value.trim() || 'Untitled Canvas';
             }
         });
-        
+
         // Modal buttons
         const clearCancelBtn = document.getElementById('clear-cancel-btn');
         const clearConfirmBtn = document.getElementById('clear-confirm-btn');
         const deleteCancelBtn = document.getElementById('delete-cancel-btn');
         const deleteConfirmBtn = document.getElementById('delete-confirm-btn');
-        
+
         console.log('CanvasView: Setting up modal buttons', {
             clearCancelBtn: !!clearCancelBtn,
             clearConfirmBtn: !!clearConfirmBtn,
             deleteCancelBtn: !!deleteCancelBtn,
             deleteConfirmBtn: !!deleteConfirmBtn
         });
-        
+
         clearCancelBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
             console.log('CanvasView: Clear cancel clicked');
@@ -279,14 +538,20 @@ class CanvasView {
             console.log('CanvasView: Delete confirm clicked');
             this._confirmDelete();
         });
-        
+
+        // Sidebar search
+        this.sidebarSearchInput?.addEventListener('input', (e) => {
+            this.searchQuery = e.target.value.toLowerCase().trim();
+            this._renderDocumentList();
+        });
+
         // Modal backdrop click to close
         this.clearModal?.querySelector('.modal-backdrop')?.addEventListener('click', () => this._hideClearModal());
         this.deleteModal?.querySelector('.modal-backdrop')?.addEventListener('click', () => this._hideDeleteModal());
-        
+
         // Keyboard shortcuts
         document.addEventListener('keydown', this._handleKeyDown);
-        
+
         // Click outside color dropdown to close
         document.addEventListener('click', (e) => {
             if (!this.colorPreview?.contains(e.target) && !this.colorDropdown?.contains(e.target)) {
@@ -301,10 +566,10 @@ class CanvasView {
      */
     _setupResizeObserver() {
         if (!this.canvasContainer) return;
-        
+
         const resizeObserver = new ResizeObserver(this._handleResize);
         resizeObserver.observe(this.canvasContainer);
-        
+
         // Initial resize
         this._handleResize();
     }
@@ -315,11 +580,11 @@ class CanvasView {
      */
     _handleResize() {
         if (!this.canvasContainer || !this.staticCanvas || !this.activeCanvas) return;
-        
+
         const rect = this.canvasContainer.getBoundingClientRect();
         const width = Math.floor(rect.width);
         const height = Math.floor(rect.height);
-        
+
         if (width > 0 && height > 0) {
             this.renderer.setSize(width, height);
             this.strokeManager.renderAll();
@@ -347,14 +612,14 @@ class CanvasView {
                 console.warn('CanvasView: No user ID available');
                 return;
             }
-            
+
             // Use data service to fetch documents (RLS handles user filtering)
             if (dataService?.getCanvasDocuments) {
                 this.documents = await dataService.getCanvasDocuments();
             } else {
                 this.documents = [];
             }
-            
+
             this._renderDocumentList();
         } catch (error) {
             console.error('CanvasView: Failed to load documents', error);
@@ -369,26 +634,45 @@ class CanvasView {
      */
     _renderDocumentList() {
         if (!this.documentList) return;
-        
-        if (this.documents.length === 0) {
+
+        // Choose documents based on mode
+        if (this.currentMode === 'mindmap') {
+            this._renderMindmapDocumentList();
+            return;
+        } else if (this.currentMode === 'flowchart') {
+            this._renderFlowchartDocumentList();
+            return;
+        }
+
+        // Filter documents based on search query
+        const filteredDocs = this.documents.filter(doc =>
+            (doc.title || 'Untitled').toLowerCase().includes(this.searchQuery)
+        );
+
+        // Update count badge
+        if (this.docCountBadge) {
+            this.docCountBadge.textContent = filteredDocs.length;
+        }
+
+        if (filteredDocs.length === 0) {
             this.documentList.innerHTML = `
                 <div class="document-list-empty">
-                    <p>No canvas documents yet.</p>
+                    <p>${this.searchQuery ? 'No documents match your search.' : 'No canvas documents yet.'}</p>
                 </div>
             `;
             return;
         }
-        
-        this.documentList.innerHTML = this.documents.map(doc => `
+
+        this.documentList.innerHTML = filteredDocs.map(doc => `
             <div class="document-item ${doc.id === this.currentDocument?.id ? 'active' : ''}" 
                  data-id="${doc.id}" 
                  role="listitem"
                  tabindex="0">
                 <div class="document-thumbnail">
-                    ${doc.thumbnail_url 
-                        ? `<img src="${doc.thumbnail_url}" alt="" loading="lazy">`
-                        : '<div class="thumbnail-placeholder"></div>'
-                    }
+                    ${doc.thumbnail_url
+                ? `<img src="${doc.thumbnail_url}" alt="" loading="lazy">`
+                : '<div class="thumbnail-placeholder"></div>'
+            }
                 </div>
                 <div class="document-info">
                     <span class="document-title" data-id="${doc.id}">${this._escapeHtml(doc.title || 'Untitled')}</span>
@@ -405,7 +689,7 @@ class CanvasView {
                 </div>
             </div>
         `).join('');
-        
+
         // Add click handlers
         this.documentList.querySelectorAll('.document-item').forEach(item => {
             item.addEventListener('click', (e) => {
@@ -414,14 +698,14 @@ class CanvasView {
                 }
             });
         });
-        
+
         this.documentList.querySelectorAll('.document-delete-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this._showDeleteModal(btn.dataset.id);
             });
         });
-        
+
         // Add edit button handlers
         this.documentList.querySelectorAll('.document-edit-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -429,7 +713,7 @@ class CanvasView {
                 this._startInlineEdit(btn.dataset.id);
             });
         });
-        
+
         // Add inline edit input handlers
         this.documentList.querySelectorAll('.document-title-input').forEach(input => {
             input.addEventListener('blur', (e) => {
@@ -446,7 +730,7 @@ class CanvasView {
             });
         });
     }
-    
+
     /**
      * Start inline editing of document title
      * @param {string} documentId - Document ID
@@ -455,10 +739,10 @@ class CanvasView {
     _startInlineEdit(documentId) {
         const item = this.documentList.querySelector(`.document-item[data-id="${documentId}"]`);
         if (!item) return;
-        
+
         const titleSpan = item.querySelector('.document-title');
         const titleInput = item.querySelector('.document-title-input');
-        
+
         if (titleSpan && titleInput) {
             titleSpan.hidden = true;
             titleInput.hidden = false;
@@ -466,7 +750,7 @@ class CanvasView {
             titleInput.select();
         }
     }
-    
+
     /**
      * Finish inline editing and save
      * @param {string} documentId - Document ID
@@ -476,12 +760,12 @@ class CanvasView {
     async _finishInlineEdit(documentId, newTitle) {
         const doc = this.documents.find(d => d.id === documentId);
         if (!doc) return;
-        
+
         const trimmedTitle = newTitle.trim() || 'Untitled Canvas';
-        
+
         // Update local document
         doc.title = trimmedTitle;
-        
+
         // Update current document if it's the same
         if (this.currentDocument?.id === documentId) {
             this.currentDocument.title = trimmedTitle;
@@ -489,7 +773,7 @@ class CanvasView {
                 this.titleInput.value = trimmedTitle;
             }
         }
-        
+
         // Save to server
         try {
             if (dataService?.updateCanvasDocument) {
@@ -498,11 +782,11 @@ class CanvasView {
         } catch (error) {
             console.error('CanvasView: Failed to update title', error);
         }
-        
+
         // Re-render list to show updated title
         this._renderDocumentList();
     }
-    
+
     /**
      * Cancel inline editing
      * @param {string} documentId - Document ID
@@ -511,13 +795,13 @@ class CanvasView {
     _cancelInlineEdit(documentId) {
         const doc = this.documents.find(d => d.id === documentId);
         if (!doc) return;
-        
+
         const item = this.documentList.querySelector(`.document-item[data-id="${documentId}"]`);
         if (!item) return;
-        
+
         const titleSpan = item.querySelector('.document-title');
         const titleInput = item.querySelector('.document-title-input');
-        
+
         if (titleSpan && titleInput) {
             titleInput.value = doc.title || 'Untitled';
             titleInput.hidden = true;
@@ -538,28 +822,28 @@ class CanvasView {
             return;
         }
         console.log('CanvasView: Found document:', doc.title);
-        
+
         // Save current document if needed
         if (this.hasUnsavedChanges && this.currentDocument) {
             await this._saveCurrentDocument();
         }
-        
+
         this.currentDocument = doc;
-        
+
         // Load stroke data
         if (doc.stroke_data) {
             this.strokeManager.fromJSON(doc.stroke_data);
         } else {
             this.strokeManager.clear();
         }
-        
+
         // Reset undo history
         this.undoManager.clear();
-        
+
         // Update UI
         this._updateDocumentUI();
         this._renderDocumentList();
-        
+
         // Attach pointer handler
         this.pointerHandler.attach();
     }
@@ -575,13 +859,13 @@ class CanvasView {
                 console.warn('CanvasView: No user ID available');
                 return;
             }
-            
+
             const newDoc = {
                 title: 'Untitled Canvas',
                 stroke_data: { version: 1, strokes: [] },
                 thumbnail_url: null
             };
-            
+
             if (dataService?.createCanvasDocument) {
                 const created = await dataService.createCanvasDocument(newDoc);
                 this.documents.unshift(created);
@@ -599,7 +883,7 @@ class CanvasView {
     _updateDocumentUI() {
         const hasDocument = !!this.currentDocument;
         console.log('CanvasView: _updateDocumentUI called, hasDocument:', hasDocument, 'currentDocument:', this.currentDocument?.id);
-        
+
         // Show/hide empty state
         if (this.emptyState) {
             this.emptyState.hidden = hasDocument;
@@ -607,19 +891,19 @@ class CanvasView {
         } else {
             console.warn('CanvasView: emptyState element not found');
         }
-        
+
         // Show/hide title bar
         if (this.titleBar) {
             this.titleBar.hidden = !hasDocument;
         } else {
             console.warn('CanvasView: titleBar element not found');
         }
-        
+
         // Update title input
         if (this.titleInput && this.currentDocument) {
             this.titleInput.value = this.currentDocument.title || '';
         }
-        
+
         // Enable/disable canvas
         if (this.staticCanvas) {
             this.staticCanvas.style.display = hasDocument ? 'block' : 'none';
@@ -640,7 +924,7 @@ class CanvasView {
      */
     _handleStrokeStart(point) {
         if (!this.currentDocument) return;
-        
+
         if (this.toolManager.isEraser()) {
             // Eraser mode - find and highlight strokes
             this._handleEraserStart(point);
@@ -658,7 +942,7 @@ class CanvasView {
      */
     _handleStrokeMove(point) {
         if (!this.currentDocument) return;
-        
+
         if (this.toolManager.isEraser()) {
             this._handleEraserMove(point);
         } else {
@@ -675,7 +959,7 @@ class CanvasView {
      */
     _handleStrokeEnd(point, event, cancelled = false) {
         if (!this.currentDocument) return;
-        
+
         if (this.toolManager.isEraser()) {
             this._handleEraserEnd();
         } else if (!cancelled) {
@@ -699,7 +983,7 @@ class CanvasView {
         if (this.toolManager.isEraser()) {
             this.renderer.clearActiveCanvas();
             this.renderer.renderEraserCursor(point.x, point.y, this.toolManager.getEffectiveWidth());
-            
+
             const hitStrokes = this.strokeManager.getStrokesAtPoint(point.x, point.y);
             if (hitStrokes.length > 0) {
                 this.renderer.highlightStrokes(hitStrokes);
@@ -724,12 +1008,12 @@ class CanvasView {
      */
     _handleEraserMove(point) {
         if (!this._eraserPath) return;
-        
+
         this._eraserPath.push(point);
-        
+
         // Find strokes along path
         const hitStrokes = this.strokeManager.getStrokesAlongPath(this._eraserPath);
-        
+
         // Remove hit strokes
         for (const stroke of hitStrokes) {
             if (!this._erasedStrokes.find(s => s.id === stroke.id)) {
@@ -737,7 +1021,7 @@ class CanvasView {
                 this._erasedStrokes.push(stroke);
             }
         }
-        
+
         // Update eraser cursor
         this.renderer.clearActiveCanvas();
         this.renderer.renderEraserCursor(point.x, point.y, this.toolManager.getEffectiveWidth());
@@ -752,7 +1036,7 @@ class CanvasView {
             this.undoManager.push({ type: 'remove', strokes: this._erasedStrokes });
             this._scheduleAutoSave();
         }
-        
+
         this._eraserPath = null;
         this._erasedStrokes = [];
         this.renderer.clearActiveCanvas();
@@ -765,7 +1049,7 @@ class CanvasView {
     _undo() {
         const action = this.undoManager.undo();
         if (!action) return;
-        
+
         if (action.type === 'add') {
             // Remove added strokes
             for (const stroke of action.strokes) {
@@ -782,7 +1066,7 @@ class CanvasView {
                 this.strokeManager.addStroke(stroke);
             }
         }
-        
+
         this._scheduleAutoSave();
     }
 
@@ -793,7 +1077,7 @@ class CanvasView {
     _redo() {
         const action = this.undoManager.redo();
         if (!action) return;
-        
+
         if (action.type === 'add') {
             // Re-add strokes
             for (const stroke of action.strokes) {
@@ -808,7 +1092,7 @@ class CanvasView {
             // Re-clear all strokes
             this.strokeManager.clear();
         }
-        
+
         this._scheduleAutoSave();
     }
 
@@ -819,11 +1103,11 @@ class CanvasView {
      */
     _handleKeyDown(event) {
         // Only handle if canvas view is active
-        if (!this.container?.contains(document.activeElement) && 
+        if (!this.container?.contains(document.activeElement) &&
             document.activeElement !== document.body) {
             return;
         }
-        
+
         if (event.ctrlKey || event.metaKey) {
             if (event.key === 'z' && !event.shiftKey) {
                 event.preventDefault();
@@ -842,11 +1126,11 @@ class CanvasView {
     _scheduleAutoSave() {
         this.hasUnsavedChanges = true;
         this._updateSaveIndicator('Saving...');
-        
+
         if (this.autoSaveTimeout) {
             clearTimeout(this.autoSaveTimeout);
         }
-        
+
         this.autoSaveTimeout = setTimeout(() => {
             this._saveCurrentDocument();
         }, CanvasView.AUTO_SAVE_DELAY);
@@ -858,32 +1142,32 @@ class CanvasView {
      */
     async _saveCurrentDocument() {
         if (!this.currentDocument) return;
-        
+
         try {
             const strokeData = this.strokeManager.toJSON();
             const thumbnail = this.renderer.generateThumbnail();
-            
+
             const updates = {
                 stroke_data: strokeData,
                 thumbnail_url: thumbnail,
                 updated_at: new Date().toISOString()
             };
-            
+
             if (dataService?.updateCanvasDocument) {
                 await dataService.updateCanvasDocument(this.currentDocument.id, updates);
-                
+
                 // Update local document
                 Object.assign(this.currentDocument, updates);
-                
+
                 // Update document list
                 const index = this.documents.findIndex(d => d.id === this.currentDocument.id);
                 if (index !== -1) {
                     this.documents[index] = this.currentDocument;
                 }
-                
+
                 this._renderDocumentList();
             }
-            
+
             this.hasUnsavedChanges = false;
             this._updateSaveIndicator('Saved');
         } catch (error) {
@@ -898,10 +1182,10 @@ class CanvasView {
      */
     async _updateDocumentTitle() {
         if (!this.currentDocument || !this.titleInput) return;
-        
+
         const newTitle = this.titleInput.value.trim() || 'Untitled Canvas';
         this.currentDocument.title = newTitle;
-        
+
         this._scheduleAutoSave();
     }
 
@@ -931,12 +1215,12 @@ class CanvasView {
      */
     _confirmClear() {
         const clearedStrokes = this.strokeManager.clear();
-        
+
         if (clearedStrokes.length > 0) {
             this.undoManager.push({ type: 'clear', strokes: clearedStrokes });
             this._scheduleAutoSave();
         }
-        
+
         this._hideClearModal();
     }
 
@@ -973,15 +1257,15 @@ class CanvasView {
      */
     async _confirmDelete() {
         if (!this.pendingDeleteId) return;
-        
+
         try {
             if (dataService?.deleteCanvasDocument) {
                 await dataService.deleteCanvasDocument(this.pendingDeleteId);
             }
-            
+
             // Remove from local list
             this.documents = this.documents.filter(d => d.id !== this.pendingDeleteId);
-            
+
             // Clear current document if it was deleted
             if (this.currentDocument?.id === this.pendingDeleteId) {
                 this.currentDocument = null;
@@ -990,12 +1274,12 @@ class CanvasView {
                 this.pointerHandler.detach();
                 this._updateDocumentUI();
             }
-            
+
             this._renderDocumentList();
         } catch (error) {
             console.error('CanvasView: Failed to delete document', error);
         }
-        
+
         this._hideDeleteModal();
     }
 
@@ -1005,10 +1289,10 @@ class CanvasView {
      */
     _exportToPNG() {
         if (!this.currentDocument) return;
-        
+
         const dataUrl = this.renderer.exportToPNG();
         if (!dataUrl) return;
-        
+
         // Create download link
         const link = document.createElement('a');
         const title = this.currentDocument.title || 'canvas';
@@ -1087,7 +1371,7 @@ class CanvasView {
     _updateToolUI(state) {
         this._updateToolButtonStates(state.tool);
         this._updateColorSwatch(state.color);
-        
+
         if (this.widthSlider) {
             this.widthSlider.value = state.baseWidth;
         }
@@ -1116,8 +1400,8 @@ class CanvasView {
     _formatDate(dateStr) {
         if (!dateStr) return '';
         const date = new Date(dateStr);
-        return date.toLocaleDateString(undefined, { 
-            month: 'short', 
+        return date.toLocaleDateString(undefined, {
+            month: 'short',
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
@@ -1144,15 +1428,349 @@ class CanvasView {
         if (this.autoSaveTimeout) {
             clearTimeout(this.autoSaveTimeout);
         }
-        
+
         // Detach pointer handler
         this.pointerHandler?.detach();
-        
+
         // Dispose renderer
         this.renderer?.dispose();
-        
+
+        // Dispose mindmap engine
+        this.mindmapEngine?.dispose();
+
+        // Dispose flowchart engine
+        this.flowchartEngine?.dispose();
+
         // Remove keyboard listener
         document.removeEventListener('keydown', this._handleKeyDown);
+    }
+
+    // ========================================================================
+    // MODE SWITCHING
+    // ========================================================================
+
+    /**
+     * Switch between draw and mindmap modes
+     * @param {string} mode - 'draw' or 'mindmap'
+     * @private
+     */
+    async _switchMode(mode) {
+        this.currentMode = mode;
+
+        // Update toggle buttons
+        document.querySelectorAll('#canvas-mode-toggle .mode-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.mode === mode);
+        });
+
+        // Draw mode elements
+        const drawElements = this.container.querySelectorAll(
+            '.canvas-toolbar, .canvas-container, .canvas-title-bar'
+        );
+        // Mindmap mode wrapper
+        const mindmapWrapper = document.getElementById('mindmap-mode-wrapper');
+        // Flowchart mode wrapper
+        const flowchartWrapper = document.getElementById('flowchart-workspace');
+
+        if (mode === 'mindmap') {
+            drawElements.forEach(el => el.style.display = 'none');
+            if (mindmapWrapper) mindmapWrapper.style.display = 'block';
+            if (flowchartWrapper) flowchartWrapper.style.display = 'none';
+
+            // Load mindmap documents
+            await this._loadMindmapDocuments();
+
+            // Show/hide empty state
+            if (!this.currentMindmapDoc) {
+                this.mindmapEngine.clear();
+            }
+        } else if (mode === 'flowchart') {
+            drawElements.forEach(el => el.style.display = 'none');
+            if (mindmapWrapper) mindmapWrapper.style.display = 'none';
+            if (flowchartWrapper) flowchartWrapper.style.display = 'flex'; // flex for canvas layout
+
+            // Load flowchart documents
+            await this._loadFlowchartDocuments();
+
+            // Clear engine if no document is selected
+            if (!this.currentFlowchartDoc && this.flowchartEngine) {
+                this.flowchartEngine.clear();
+                const emptyState = document.getElementById('flowchart-empty-state');
+                const titleBar = document.getElementById('flowchart-title-bar');
+                if (emptyState) emptyState.hidden = false;
+                if (titleBar) titleBar.hidden = true;
+            }
+        } else {
+            drawElements.forEach(el => el.style.display = '');
+            if (mindmapWrapper) mindmapWrapper.style.display = 'none';
+            if (flowchartWrapper) flowchartWrapper.style.display = 'none';
+
+            // Re-render draw document list
+            this._renderDocumentList();
+            this._updateDocumentUI();
+        }
+    }
+
+    // ========================================================================
+    // MINDMAP DOCUMENT MANAGEMENT
+    // ========================================================================
+
+    /**
+     * Load mindmap documents from data service
+     * @private
+     */
+    async _loadMindmapDocuments() {
+        try {
+            this.mindmapDocuments = await dataService.getMindmaps();
+            this._renderDocumentList();
+        } catch (error) {
+            console.error('CanvasView: Failed to load mindmap documents', error);
+            this.mindmapDocuments = [];
+            this._renderDocumentList();
+        }
+    }
+
+    /**
+     * Create a new mindmap document
+     * @private
+     */
+    async _createNewMindmap() {
+        try {
+            const created = await dataService.createMindmap({
+                title: 'Untitled Mindmap',
+                viewport: { x: 0, y: 0, zoom: 1 }
+            });
+
+            if (created) {
+                this.mindmapDocuments.unshift(created);
+                await this._selectMindmapDocument(created.id);
+            }
+        } catch (error) {
+            console.error('CanvasView: Failed to create mindmap', error);
+        }
+    }
+
+    /**
+     * Select and load a mindmap document
+     * @param {string} id - Mindmap document ID
+     * @private
+     */
+    async _selectMindmapDocument(id) {
+        const doc = this.mindmapDocuments.find(d => d.id === id);
+        if (!doc) return;
+
+        this.currentMindmapDoc = doc;
+        await this.mindmapEngine.loadMindmap(doc);
+        this._renderDocumentList();
+    }
+
+    /**
+     * Delete a mindmap document
+     * @param {string} id - Mindmap document ID
+     * @private
+     */
+    async _deleteMindmapDocument(id) {
+        try {
+            await dataService.deleteMindmap(id);
+            this.mindmapDocuments = this.mindmapDocuments.filter(d => d.id !== id);
+            if (this.currentMindmapDoc?.id === id) {
+                this.currentMindmapDoc = null;
+                this.mindmapEngine.clear();
+            }
+            this._renderDocumentList();
+        } catch (error) {
+            console.error('CanvasView: Failed to delete mindmap', error);
+        }
+    }
+
+    /**
+     * Render mindmap documents in the sidebar
+     * @private
+     */
+    _renderMindmapDocumentList() {
+        if (!this.documentList) return;
+
+        // Filter mindmaps based on search query
+        const filteredMindmaps = this.mindmapDocuments.filter(doc =>
+            (doc.title || 'Untitled').toLowerCase().includes(this.searchQuery)
+        );
+
+        // Update count badge
+        if (this.docCountBadge) {
+            this.docCountBadge.textContent = filteredMindmaps.length;
+        }
+
+        if (filteredMindmaps.length === 0) {
+            this.documentList.innerHTML = `
+                <div class="document-list-empty">
+                    <p>${this.searchQuery ? 'No mindmaps match your search.' : 'No mindmaps yet.'}</p>
+                </div>
+            `;
+            return;
+        }
+
+        this.documentList.innerHTML = filteredMindmaps.map(doc => `
+            <div class="document-item ${doc.id === this.currentMindmapDoc?.id ? 'active' : ''}" 
+                 data-id="${doc.id}" 
+                 role="listitem"
+                 tabindex="0">
+                <div class="document-thumbnail">
+                    <div class="thumbnail-placeholder mm-thumbnail">🧠</div>
+                </div>
+                <div class="document-info">
+                    <span class="document-title">${this._escapeHtml(doc.title || 'Untitled')}</span>
+                    <span class="document-date">${this._formatDate(doc.updated_at)}</span>
+                </div>
+                <div class="document-actions">
+                    <button class="document-delete-btn" data-id="${doc.id}" aria-label="Delete mindmap">
+                        <svg viewBox="0 0 24 24" width="14" height="14"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/></svg>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+        // Click handlers
+        this.documentList.querySelectorAll('.document-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                if (!e.target.closest('.document-delete-btn')) {
+                    this._selectMindmapDocument(item.dataset.id);
+                }
+            });
+        });
+
+        this.documentList.querySelectorAll('.document-delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm('Delete this mindmap? This action cannot be undone.')) {
+                    this._deleteMindmapDocument(btn.dataset.id);
+                }
+            });
+        });
+    }
+
+    // ========================================================================
+    // FLOWCHART DOCUMENT MANAGEMENT
+    // ========================================================================
+
+    async _loadFlowchartDocuments() {
+        try {
+            this.flowchartDocuments = await dataService.getFlowcharts();
+            this._renderDocumentList();
+        } catch (error) {
+            console.error('CanvasView: Failed to load flowchart documents', error);
+            this.flowchartDocuments = [];
+            this._renderDocumentList();
+        }
+    }
+
+    async _createNewFlowchart() {
+        try {
+            const created = await dataService.createFlowchart({
+                title: 'Untitled Flowchart',
+                viewport: { x: 0, y: 0, zoom: 1 }
+            });
+
+            if (created) {
+                this.flowchartDocuments.unshift(created);
+                await this._selectFlowchartDocument(created.id);
+            }
+        } catch (error) {
+            console.error('CanvasView: Failed to create flowchart', error);
+        }
+    }
+
+    async _selectFlowchartDocument(id) {
+        const doc = this.flowchartDocuments.find(d => d.id === id);
+        if (!doc) return;
+
+        this.currentFlowchartDoc = doc;
+
+        // Update UI logic
+        const emptyState = document.getElementById('flowchart-empty-state');
+        const titleBar = document.getElementById('flowchart-title-bar');
+        const titleInput = document.getElementById('flowchart-title-input');
+
+        if (emptyState) emptyState.hidden = true;
+        if (titleBar) titleBar.hidden = false;
+        if (titleInput) titleInput.value = doc.title || 'Untitled Flowchart';
+
+        await this.flowchartEngine.loadFlowchart(doc);
+        this._renderDocumentList();
+    }
+
+    async _deleteFlowchartDocument(id) {
+        try {
+            await dataService.deleteFlowchart(id);
+            this.flowchartDocuments = this.flowchartDocuments.filter(d => d.id !== id);
+            if (this.currentFlowchartDoc?.id === id) {
+                this.currentFlowchartDoc = null;
+                this.flowchartEngine.clear();
+                const emptyState = document.getElementById('flowchart-empty-state');
+                const titleBar = document.getElementById('flowchart-title-bar');
+                if (emptyState) emptyState.hidden = false;
+                if (titleBar) titleBar.hidden = true;
+            }
+            this._renderDocumentList();
+        } catch (error) {
+            console.error('CanvasView: Failed to delete flowchart', error);
+        }
+    }
+
+    _renderFlowchartDocumentList() {
+        if (!this.documentList) return;
+
+        const filteredFlowcharts = this.flowchartDocuments.filter(doc =>
+            (doc.title || 'Untitled').toLowerCase().includes(this.searchQuery)
+        );
+
+        if (this.docCountBadge) {
+            this.docCountBadge.textContent = filteredFlowcharts.length;
+        }
+
+        if (filteredFlowcharts.length === 0) {
+            this.documentList.innerHTML = `
+                <div class="document-list-empty">
+                    <p>${this.searchQuery ? 'No flowcharts match your search.' : 'No flowcharts yet.'}</p>
+                </div>
+            `;
+            return;
+        }
+
+        this.documentList.innerHTML = filteredFlowcharts.map(doc => `
+            <div class="document-item ${doc.id === this.currentFlowchartDoc?.id ? 'active' : ''}" 
+                 data-id="${doc.id}" 
+                 role="listitem"
+                 tabindex="0">
+                <div class="document-thumbnail">
+                    <div class="thumbnail-placeholder fc-thumbnail">🔲</div>
+                </div>
+                <div class="document-info">
+                    <span class="document-title">${this._escapeHtml(doc.title || 'Untitled')}</span>
+                    <span class="document-date">${this._formatDate(doc.updated_at)}</span>
+                </div>
+                <div class="document-actions">
+                    <button class="document-delete-btn" data-id="${doc.id}" aria-label="Delete flowchart">
+                        <svg viewBox="0 0 24 24" width="14" height="14"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/></svg>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+        this.documentList.querySelectorAll('.document-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                if (!e.target.closest('.document-delete-btn')) {
+                    this._selectFlowchartDocument(item.dataset.id);
+                }
+            });
+        });
+
+        this.documentList.querySelectorAll('.document-delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (confirm('Delete this flowchart? This action cannot be undone.')) {
+                    this._deleteFlowchartDocument(btn.dataset.id);
+                }
+            });
+        });
     }
 }
 

@@ -4412,6 +4412,419 @@ class DataService {
             this.handleError(error, 'getKanbanActivityLogRange');
         }
     }
+
+    // ========================================================================
+    // MINDMAPS
+    // ========================================================================
+
+    /**
+     * Get all mindmaps for the current user
+     */
+    async getMindmaps() {
+        try {
+            const { data, error } = await this.supabase
+                .from('mindmaps')
+                .select('*')
+                .order('updated_at', { ascending: false });
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getMindmaps');
+        }
+    }
+
+    /**
+     * Create a new mindmap
+     */
+    async createMindmap(mindmapData) {
+        try {
+            const { data: { user } } = await this.supabase.auth.getUser();
+            if (!user) throw new Error('User not authenticated');
+
+            const { data, error } = await this.supabase
+                .from('mindmaps')
+                .insert({ ...mindmapData, user_id: user.id })
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            this.handleError(error, 'createMindmap');
+        }
+    }
+
+    /**
+     * Update a mindmap
+     */
+    async updateMindmap(id, updates) {
+        try {
+            const { data, error } = await this.supabase
+                .from('mindmaps')
+                .update(updates)
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+            return data ? data[0] : null;
+        } catch (error) {
+            this.handleError(error, 'updateMindmap');
+        }
+    }
+
+    /**
+     * Delete a mindmap (cascades to nodes)
+     */
+    async deleteMindmap(id) {
+        try {
+            const { error } = await this.supabase
+                .from('mindmaps')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            this.handleError(error, 'deleteMindmap');
+        }
+    }
+
+    // ========================================================================
+    // MINDMAP NODES
+    // ========================================================================
+
+    /**
+     * Get all nodes for a mindmap
+     */
+    async getMindmapNodes(mindmapId) {
+        try {
+            const { data, error } = await this.supabase
+                .from('mindmap_nodes')
+                .select('*')
+                .eq('mindmap_id', mindmapId)
+                .order('order_index');
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getMindmapNodes');
+        }
+    }
+
+    /**
+     * Create a mindmap node
+     */
+    async createMindmapNode(nodeData) {
+        try {
+            const { data, error } = await this.supabase
+                .from('mindmap_nodes')
+                .insert(nodeData)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            this.handleError(error, 'createMindmapNode');
+        }
+    }
+
+    /**
+     * Update a mindmap node
+     */
+    async updateMindmapNode(id, updates) {
+        try {
+            const { data, error } = await this.supabase
+                .from('mindmap_nodes')
+                .update(updates)
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+            return data ? data[0] : null;
+        } catch (error) {
+            this.handleError(error, 'updateMindmapNode');
+        }
+    }
+
+    /**
+     * Delete a mindmap node
+     */
+    async deleteMindmapNode(id) {
+        try {
+            const { error } = await this.supabase
+                .from('mindmap_nodes')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            this.handleError(error, 'deleteMindmapNode');
+        }
+    }
+
+    /**
+     * Batch update mindmap node positions (for drag operations)
+     */
+    async batchUpdateMindmapNodes(updates) {
+        try {
+            const promises = updates.map(({ id, ...fields }) =>
+                this.supabase
+                    .from('mindmap_nodes')
+                    .update(fields)
+                    .eq('id', id)
+            );
+            const results = await Promise.all(promises);
+
+            for (const { error } of results) {
+                if (error) throw error;
+            }
+            return true;
+        } catch (error) {
+            this.handleError(error, 'batchUpdateMindmapNodes');
+        }
+    }
+
+    // ========================================================================
+    // FLOWCHARTS
+    // ========================================================================
+
+    /**
+     * Get all flowcharts for the current user
+     */
+    async getFlowcharts() {
+        try {
+            const { data, error } = await this.supabase
+                .from('flowcharts')
+                .select('*')
+                .order('updated_at', { ascending: false });
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getFlowcharts');
+        }
+    }
+
+    /**
+     * Create a new flowchart
+     */
+    async createFlowchart(flowchartData) {
+        try {
+            const { data: { user } } = await this.supabase.auth.getUser();
+            if (!user) throw new Error('User not authenticated');
+
+            const { data, error } = await this.supabase
+                .from('flowcharts')
+                .insert({ ...flowchartData, user_id: user.id })
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            this.handleError(error, 'createFlowchart');
+        }
+    }
+
+    /**
+     * Update a flowchart
+     */
+    async updateFlowchart(id, updates) {
+        try {
+            const { data, error } = await this.supabase
+                .from('flowcharts')
+                .update(updates)
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+            return data ? data[0] : null;
+        } catch (error) {
+            this.handleError(error, 'updateFlowchart');
+        }
+    }
+
+    /**
+     * Delete a flowchart (cascades to nodes/edges)
+     */
+    async deleteFlowchart(id) {
+        try {
+            const { error } = await this.supabase
+                .from('flowcharts')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            this.handleError(error, 'deleteFlowchart');
+        }
+    }
+
+    // ========================================================================
+    // FLOWCHART NODES
+    // ========================================================================
+
+    async getFlowchartNodes(flowchartId) {
+        try {
+            const { data, error } = await this.supabase
+                .from('flowchart_nodes')
+                .select('*')
+                .eq('flowchart_id', flowchartId)
+                .order('created_at');
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getFlowchartNodes');
+        }
+    }
+
+    async createFlowchartNode(nodeData) {
+        try {
+            const { data, error } = await this.supabase
+                .from('flowchart_nodes')
+                .insert(nodeData)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            this.handleError(error, 'createFlowchartNode');
+        }
+    }
+
+    async updateFlowchartNode(id, updates) {
+        try {
+            const { data, error } = await this.supabase
+                .from('flowchart_nodes')
+                .update(updates)
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+            return data ? data[0] : null;
+        } catch (error) {
+            this.handleError(error, 'updateFlowchartNode');
+        }
+    }
+
+    async deleteFlowchartNode(id) {
+        try {
+            const { error } = await this.supabase
+                .from('flowchart_nodes')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            this.handleError(error, 'deleteFlowchartNode');
+        }
+    }
+
+    async batchUpdateFlowchartNodes(updates) {
+        try {
+            const promises = updates.map(({ id, ...fields }) =>
+                this.supabase
+                    .from('flowchart_nodes')
+                    .update(fields)
+                    .eq('id', id)
+            );
+            const results = await Promise.all(promises);
+            for (const { error } of results) {
+                if (error) throw error;
+            }
+            return true;
+        } catch (error) {
+            this.handleError(error, 'batchUpdateFlowchartNodes');
+        }
+    }
+
+    // ========================================================================
+    // FLOWCHART EDGES
+    // ========================================================================
+
+    async getFlowchartEdges(flowchartId) {
+        try {
+            const { data, error } = await this.supabase
+                .from('flowchart_edges')
+                .select('*')
+                .eq('flowchart_id', flowchartId)
+                .order('created_at');
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getFlowchartEdges');
+        }
+    }
+
+    async createFlowchartEdge(edgeData) {
+        try {
+            const { data, error } = await this.supabase
+                .from('flowchart_edges')
+                .insert(edgeData)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            this.handleError(error, 'createFlowchartEdge');
+        }
+    }
+
+    async updateFlowchartEdge(id, updates) {
+        try {
+            const { data, error } = await this.supabase
+                .from('flowchart_edges')
+                .update(updates)
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+            return data ? data[0] : null;
+        } catch (error) {
+            this.handleError(error, 'updateFlowchartEdge');
+        }
+    }
+
+    async deleteFlowchartEdge(id) {
+        try {
+            const { error } = await this.supabase
+                .from('flowchart_edges')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            this.handleError(error, 'deleteFlowchartEdge');
+        }
+    }
+
+    async batchUpdateFlowchartEdges(updates) {
+        try {
+            const promises = updates.map(({ id, ...fields }) =>
+                this.supabase
+                    .from('flowchart_edges')
+                    .update(fields)
+                    .eq('id', id)
+            );
+            const results = await Promise.all(promises);
+            for (const { error } of results) {
+                if (error) throw error;
+            }
+            return true;
+        } catch (error) {
+            this.handleError(error, 'batchUpdateFlowchartEdges');
+        }
+    }
 }
 
 // Create and export a singleton instance

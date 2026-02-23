@@ -1,0 +1,227 @@
+<div class="flowchart-container" id="flowchart-container">
+    <!-- Floating Toolbar -->
+    <div class="flowchart-toolbar" id="flowchart-toolbar">
+        <div class="tool-group" role="group" aria-label="Selection Tool">
+            <button class="tool-btn active" data-tool="select" aria-label="Select tool" title="Select (V)">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path d="M7 2l12 11.2-5.8.5 3.3 7.3-2.25.9-3.2-7.4-4.4 5V2z" fill="currentColor" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="toolbar-divider" aria-hidden="true"></div>
+
+        <div class="tool-group" role="group" aria-label="Shapes">
+            <button class="tool-btn" data-tool="rectangle" aria-label="Rectangle" title="Process / Action">
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                    <rect x="4" y="6" width="16" height="12" fill="none" stroke="currentColor" stroke-width="2" />
+                </svg>
+            </button>
+            <button class="tool-btn" data-tool="diamond" aria-label="Diamond" title="Decision">
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M12 2l10 10-10 10L2 12z" fill="none" stroke="currentColor" stroke-width="2" />
+                </svg>
+            </button>
+            <button class="tool-btn" data-tool="capsule" aria-label="Capsule" title="Start / End">
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                    <rect x="3" y="6" width="18" height="12" rx="6" fill="none" stroke="currentColor"
+                        stroke-width="2" />
+                </svg>
+            </button>
+            <button class="tool-btn" data-tool="parallelogram" aria-label="Parallelogram" title="Input / Output">
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M6 6h14l-4 12H2z" fill="none" stroke="currentColor" stroke-width="2" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="toolbar-divider" aria-hidden="true"></div>
+
+        <div class="tool-group" role="group" aria-label="Actions">
+            <button class="tool-btn" id="fc-tidy-btn" aria-label="Tidy Up" title="Tidy Up Layout">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path d="M3 15h18v-2H3v2zm0 4h18v-2H3v2zm0-8h18V9H3v2zm0-6v2h18V5H3z" fill="currentColor" />
+                </svg>
+            </button>
+            <button class="tool-btn" id="fc-delete-btn" aria-label="Delete selected" title="Delete (Del)">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                        fill="currentColor" />
+                </svg>
+            </button>
+            <button class="tool-btn" id="fc-undo-btn" aria-label="Undo" title="Undo (Ctrl+Z)">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path
+                        d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"
+                        fill="currentColor" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="toolbar-divider" aria-hidden="true"></div>
+
+        <!-- Color Picker -->
+        <div class="tool-group" role="group" aria-label="Color selection">
+            <div class="color-picker-wrapper">
+                <button class="color-preview" id="fc-color-preview" aria-label="Current color" aria-haspopup="true">
+                    <span class="color-swatch" id="fc-color-swatch"
+                        style="background-color: transparent; border: 1px dashed #94a3b8;"></span>
+                </button>
+                <div class="color-dropdown" id="fc-color-dropdown" role="listbox" aria-label="Color presets" hidden>
+                    <div class="color-presets">
+                        <button class="color-preset" data-color="transparent"
+                            style="background-color: transparent; border: 1px dashed #94a3b8;" title="No Fill"
+                            aria-label="Transparent"></button>
+                        <button class="color-preset" data-color="#000000" style="background-color: #000000;"
+                            aria-label="Black"></button>
+                        <button class="color-preset" data-color="#ffffff" style="background-color: #ffffff;"
+                            aria-label="White"></button>
+                        <button class="color-preset" data-color="#ff0000" style="background-color: #ff0000;"
+                            aria-label="Red"></button>
+                        <button class="color-preset" data-color="#00ff00" style="background-color: #00ff00;"
+                            aria-label="Green"></button>
+                        <button class="color-preset" data-color="#0000ff" style="background-color: #0000ff;"
+                            aria-label="Blue"></button>
+                        <button class="color-preset" data-color="#ffff00" style="background-color: #ffff00;"
+                            aria-label="Yellow"></button>
+                        <button class="color-preset" data-color="#ff00ff" style="background-color: #ff00ff;"
+                            aria-label="Magenta"></button>
+                        <button class="color-preset" data-color="#00ffff" style="background-color: #00ffff;"
+                            aria-label="Cyan"></button>
+                        <button class="color-preset" data-color="#ff8000" style="background-color: #ff8000;"
+                            aria-label="Orange"></button>
+                        <button class="color-preset" data-color="#8000ff" style="background-color: #8000ff;"
+                            aria-label="Purple"></button>
+                        <button class="color-preset" data-color="#808080" style="background-color: #808080;"
+                            aria-label="Gray"></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="toolbar-divider" aria-hidden="true"></div>
+
+        <!-- Transparency Slider -->
+        <div class="tool-group width-group" role="group" aria-label="Transparency">
+            <label for="fc-opacity-slider" class="width-label" style="font-size: 11px;">Opacity:</label>
+            <input type="range" id="fc-opacity-slider" min="0" max="100" value="100" class="width-slider"
+                aria-label="Opacity percentage" style="width: 60px;">
+            <span class="width-value" id="fc-opacity-value" style="font-size: 11px;">100%</span>
+        </div>
+
+        <div class="toolbar-divider" aria-hidden="true"></div>
+
+        <div class="tool-group" role="group" aria-label="Edge Styles"
+            style="display: flex; gap: 4px; align-items: center;">
+            <select id="fc-line-style" class="tool-btn"
+                style="width: auto; padding: 4px; background: transparent; border: 1px solid transparent; border-radius: 4px; color: var(--text-color, #f8fafc); cursor:pointer;"
+                title="Line Style">
+                <option value="orthogonal">Orthogonal</option>
+                <option value="straight">Straight</option>
+            </select>
+            <select id="fc-arrow-type" class="tool-btn"
+                style="width: auto; padding: 4px; background: transparent; border: 1px solid transparent; border-radius: 4px; color: var(--text-color, #f8fafc); cursor:pointer;"
+                title="Arrow Type">
+                <option value="forward">Standard Arrow</option>
+                <option value="both">Two-Way Arrow</option>
+                <option value="none">Line Only</option>
+            </select>
+        </div>
+
+        <div class="toolbar-divider" aria-hidden="true"></div>
+
+        <!-- Font Color Picker -->
+        <div class="tool-group" role="group" aria-label="Font Color" style="display: flex; align-items: center;">
+            <label for="fc-font-color-input" class="width-label" style="font-size: 11px; margin-right: 4px;"
+                title="Font Color">A</label>
+            <input type="color" id="fc-font-color-input" class="tool-btn" title="Font Color" value="#0f172a"
+                style="padding: 0; width: 24px; height: 24px; background: none; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;">
+        </div>
+
+        <div class="toolbar-divider" aria-hidden="true"></div>
+
+        <div class="tool-group" role="group" aria-label="Zoom">
+            <button class="tool-btn" id="fc-zoom-out-btn" aria-label="Zoom out">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path
+                        d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM6 8h6v2H6V8z"
+                        fill="currentColor" />
+                </svg>
+            </button>
+            <span class="zoom-level" id="fc-zoom-level">100%</span>
+            <button class="tool-btn" id="fc-zoom-in-btn" aria-label="Zoom in">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path
+                        d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zM12 10h-2v2H8v-2H6V8h2V6h2v2h2v2z"
+                        fill="currentColor" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- SVG Canvas -->
+    <svg class="flowchart-svg" id="flowchart-svg" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <marker id="fc-arrowhead-default" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
+            </marker>
+            <marker id="fc-arrowhead-selected" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6" />
+            </marker>
+            <marker id="fc-arrowhead-start-default" markerWidth="10" markerHeight="7" refX="9" refY="3.5"
+                orient="auto-start-reverse">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
+            </marker>
+            <marker id="fc-arrowhead-start-selected" markerWidth="10" markerHeight="7" refX="9" refY="3.5"
+                orient="auto-start-reverse">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6" />
+            </marker>
+
+            <pattern id="fc-grid-small" width="10" height="10" patternUnits="userSpaceOnUse">
+                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="var(--border-color, #e5e7eb)" stroke-width="0.5"
+                    opacity="0.5" />
+            </pattern>
+            <pattern id="fc-grid-large" width="100" height="100" patternUnits="userSpaceOnUse">
+                <rect width="100" height="100" fill="url(#fc-grid-small)" />
+                <path d="M 100 0 L 0 0 0 100" fill="none" stroke="var(--border-color, #e5e7eb)" stroke-width="1"
+                    opacity="0.5" />
+            </pattern>
+        </defs>
+
+        <rect width="100%" height="100%" fill="url(#fc-grid-large)" id="fc-grid-bg" />
+
+        <g id="fc-viewport">
+            <g id="fc-edges-layer"></g>
+            <g id="fc-nodes-layer"></g>
+        </g>
+    </svg>
+
+    <!-- Empty State -->
+    <div class="flowchart-empty-state" id="flowchart-empty-state">
+        <div class="empty-state-content">
+            <svg viewBox="0 0 24 24" width="64" height="64" aria-hidden="true"
+                style="color: #94a3b8; margin-bottom: 16px;">
+                <path
+                    d="M22 11V3h-7v3H9V3H2v8h7V8h2v10h4v3h7v-8h-7v3h-2V8h2v3h7zM7 9H4V5h3v4zm10 6h3v4h-3v-4zm0-10h3v4h-3V5z"
+                    fill="currentColor" />
+            </svg>
+            <h3>No Flowchart Selected</h3>
+            <p>Select a flowchart from the sidebar or create a new one to start diagramming.</p>
+            <button class="btn btn-primary" id="fc-empty-new-btn">Create New Flowchart</button>
+        </div>
+    </div>
+
+    <!-- Inline Text Editor -->
+    <div id="fc-inline-editor" class="fc-inline-editor" style="display: none; position: absolute; z-index: 100;">
+        <textarea id="fc-inline-textarea" rows="1"
+            style="width: 100%; height: 100%; resize: none; overflow: hidden; background: transparent; border: none; outline: 2px solid #3b82f6; border-radius: 4px; padding: 4px; font-family: inherit; font-size: 14px; text-align: center; color: #0f172a; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></textarea>
+    </div>
+</div>
+
+<!-- Title Bar -->
+<div class="flowchart-title-bar" id="flowchart-title-bar" hidden>
+    <input type="text" id="flowchart-title-input" class="canvas-title-input" placeholder="Untitled Flowchart"
+        aria-label="Flowchart title">
+    <span class="save-indicator" id="fc-save-indicator">Saved</span>
+</div>
+</div>
