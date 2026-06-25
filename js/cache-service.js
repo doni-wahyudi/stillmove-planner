@@ -4,7 +4,7 @@
  */
 
 const DB_NAME = 'DailyPlannerCache';
-const DB_VERSION = 4; // Incremented to add kanban card enhancement stores (checklist, attachments, comments, activity log)
+const DB_VERSION = 5; // Incremented to 5 to add sub-profiles store
 const SYNC_KEY = 'stillmove_last_sync';
 const CACHE_METADATA_KEY = 'stillmove_cache_metadata';
 
@@ -17,6 +17,7 @@ const CACHE_TTL = {
   categories: 24 * 60 * 60 * 1000,      // 24 hours - categories rarely change
   readingList: 12 * 60 * 60 * 1000,     // 12 hours
   userProfile: 24 * 60 * 60 * 1000,     // 24 hours
+  subProfiles: 24 * 60 * 60 * 1000,     // 24 hours
   weeklyGoals: 12 * 60 * 60 * 1000,     // 12 hours
   weeklyHabits: 12 * 60 * 60 * 1000,    // 12 hours
   weeklyHabitLogs: 5 * 60 * 1000,       // 5 minutes
@@ -50,6 +51,7 @@ const STORES = {
   categories: 'categories',
   readingList: 'reading_list',
   userProfile: 'user_profile',
+  subProfiles: 'sub_profiles',
   pendingSync: 'pending_sync',
   // Additional stores
   weeklyGoals: 'weekly_goals',
@@ -248,7 +250,17 @@ class CacheService {
               const transaction = this.db.transaction(storeName, 'readonly');
               const store = transaction.objectStore(storeName);
               const request = store.getAll();
-              request.onsuccess = () => resolve(request.result || []);
+              request.onsuccess = () => {
+                let result = request.result || [];
+                // Apply profile isolation filtering if not a global store
+                if (storeName !== STORES.subProfiles && storeName !== STORES.userProfile && storeName !== STORES.pendingSync) {
+                  const activeProfileId = localStorage.getItem('stillmove_active_profile_id');
+                  if (activeProfileId) {
+                    result = result.filter(item => item.profile_id === activeProfileId);
+                  }
+                }
+                resolve(result);
+              };
               request.onerror = () => reject(request.error);
             } else {
               // Store still doesn't exist, return empty array
@@ -263,7 +275,17 @@ class CacheService {
         const store = transaction.objectStore(storeName);
         const request = store.getAll();
 
-        request.onsuccess = () => resolve(request.result || []);
+        request.onsuccess = () => {
+          let result = request.result || [];
+          // Apply profile isolation filtering if not a global store
+          if (storeName !== STORES.subProfiles && storeName !== STORES.userProfile && storeName !== STORES.pendingSync) {
+            const activeProfileId = localStorage.getItem('stillmove_active_profile_id');
+            if (activeProfileId) {
+              result = result.filter(item => item.profile_id === activeProfileId);
+            }
+          }
+          resolve(result);
+        };
         request.onerror = () => reject(request.error);
       } catch (error) {
         console.error(`[Cache] Error in getAll for ${storeName}:`, error);
@@ -308,6 +330,14 @@ class CacheService {
   async put(storeName, item) {
     if (!this.db) await this.init();
 
+    // Auto-inject active profile ID if not a global store and not present
+    if (item && !item.profile_id && storeName !== STORES.subProfiles && storeName !== STORES.userProfile && storeName !== STORES.pendingSync) {
+      const activeProfileId = localStorage.getItem('stillmove_active_profile_id');
+      if (activeProfileId) {
+        item.profile_id = activeProfileId;
+      }
+    }
+
     return new Promise((resolve, reject) => {
       try {
         if (!this.db.objectStoreNames.contains(storeName)) {
@@ -335,6 +365,16 @@ class CacheService {
   async putAll(storeName, items) {
     if (!this.db) await this.init();
     if (!items || items.length === 0) return;
+
+    // Inject active profile ID
+    const activeProfileId = localStorage.getItem('stillmove_active_profile_id');
+    if (activeProfileId && storeName !== STORES.subProfiles && storeName !== STORES.userProfile && storeName !== STORES.pendingSync) {
+      items.forEach(item => {
+        if (item && !item.profile_id) {
+          item.profile_id = activeProfileId;
+        }
+      });
+    }
 
     return new Promise((resolve, reject) => {
       try {

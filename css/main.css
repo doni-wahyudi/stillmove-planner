@@ -395,6 +395,93 @@ select:focus-visible,
     display: none;
 }
 
+/* Sub-Profile UI Enhancements */
+.user-menu-btn::before {
+    display: none !important;
+}
+
+.user-profile-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.2);
+    font-size: 1.1rem;
+    overflow: hidden;
+}
+
+.profile-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background-color: var(--border-color);
+    margin: var(--spacing-xs) 0;
+}
+
+.profile-switcher-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.profile-switcher-header {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    padding: var(--spacing-xs) var(--spacing-md);
+    letter-spacing: 0.05em;
+}
+
+.profile-switcher-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: background-color var(--transition-base);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.profile-switcher-item:hover {
+    background-color: var(--background-color);
+}
+
+.profile-switcher-item.active {
+    font-weight: 600;
+    background-color: rgba(166, 124, 82, 0.1);
+}
+
+.profile-avatar-img-sm {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.profile-avatar-emoji-sm {
+    font-size: 1rem;
+}
+
+.profile-name-text {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.active-check {
+    color: #4caf50;
+    font-weight: bold;
+}
+
 /* Main Content */
 .main-content {
     flex: 1;
@@ -11700,4 +11787,81 @@ select:focus-visible,
 .fc-edge text,
 .fc-edge g rect {
     pointer-events: none !important;
+}
+
+/* Settings Profiles List Styles */
+.settings-profiles-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.profile-list-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    transition: all 0.3s ease;
+}
+
+.profile-list-item.active {
+    border-color: #a67c52;
+    box-shadow: 0 0 0 2px rgba(166, 124, 82, 0.2);
+}
+
+.profile-avatar-container {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    font-size: 1.8rem;
+}
+
+.profile-avatar-img-md {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-info-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.profile-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.active-badge {
+    align-self: flex-start;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background-color: #4caf50;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 20px;
+    text-transform: uppercase;
+}
+
+.profile-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.no-profiles {
+    color: var(--text-secondary);
+    font-style: italic;
 }

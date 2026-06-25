@@ -118,11 +118,13 @@
             <div class="user-menu">
                 <button id="user-menu-btn" class="user-menu-btn" aria-haspopup="true" aria-expanded="false"
                     aria-label="User menu">
-                    <span id="user-email" aria-live="polite"></span>
+                    <span id="user-profile-avatar" class="user-profile-avatar">👤</span>
+                    <span id="user-profile-name" class="user-profile-name" aria-live="polite">Loading...</span>
                 </button>
                 <div id="user-dropdown" class="user-dropdown hidden" role="menu" aria-label="User menu options">
-                    <a href="#profile" role="menuitem" aria-label="View profile">Profile</a>
-                    <a href="#settings" data-view="settings" role="menuitem" aria-label="Open settings">Settings</a>
+                    <div id="profile-switcher-list" class="profile-switcher-list"></div>
+                    <div class="dropdown-divider"></div>
+                    <a href="#settings" data-view="settings" role="menuitem" aria-label="Open settings">Manage Profiles</a>
                     <button id="sign-out-btn" role="menuitem" aria-label="Sign out of application">Sign Out</button>
                 </div>
             </div>

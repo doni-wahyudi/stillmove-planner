@@ -16,6 +16,7 @@ const TABLE_TO_STORE = {
     'categories': STORES.categories,
     'reading_list': STORES.readingList,
     'user_profiles': STORES.userProfile,
+    'sub_profiles': STORES.subProfiles,
     'interval_challenges': STORES.intervalChallenges,
     'challenge_habits': STORES.challengeHabits,
     'challenge_completions': STORES.challengeCompletions
@@ -4823,6 +4824,185 @@ class DataService {
             return true;
         } catch (error) {
             this.handleError(error, 'batchUpdateFlowchartEdges');
+        }
+    }
+
+    // ==================== SUB-PROFILES ====================
+
+    /**
+     * Get all sub-profiles for the logged in user
+     * @returns {Promise<Array>} List of sub-profiles
+     */
+    async getSubProfiles() {
+        const fetchFn = async () => {
+            const { data, error } = await this.supabase
+                .from('sub_profiles')
+                .select('*')
+                .order('created_at');
+
+            if (error) throw error;
+            return data || [];
+        };
+
+        try {
+            if (this.cacheEnabled) {
+                const cached = await cacheService.getAll(STORES.subProfiles);
+                if (cached && cached.length > 0) {
+                    if (cacheService.online) {
+                        this.syncInBackground(STORES.subProfiles, fetchFn);
+                    }
+                    return cached;
+                }
+            }
+
+            const data = await fetchFn();
+            if (this.cacheEnabled && data) {
+                await cacheService.putAll(STORES.subProfiles, data);
+            }
+            return data;
+        } catch (error) {
+            this.handleError(error, 'getSubProfiles');
+        }
+    }
+
+    /**
+     * Create a new sub-profile
+     * @param {Object} profileData - { name, emoji, avatar_data }
+     * @returns {Promise<Object>} Created profile
+     */
+    async createSubProfile(profileData) {
+        try {
+            const { data: { user } } = await this.supabase.auth.getUser();
+            if (!user) throw new Error('User not authenticated');
+
+            const profileWithUser = { ...profileData, user_id: user.id };
+
+            if (!cacheService.online) {
+                const tempProfile = {
+                    ...profileWithUser,
+                    id: `temp_${Date.now()}`,
+                    created_at: new Date().toISOString()
+                };
+                await cacheService.put(STORES.subProfiles, tempProfile);
+                await cacheService.addPendingSync({
+                    type: 'create',
+                    store: 'sub_profiles',
+                    data: profileWithUser
+                });
+                return tempProfile;
+            }
+
+            const { data, error } = await this.supabase
+                .from('sub_profiles')
+                .insert([profileWithUser])
+                .select();
+
+            if (error) throw error;
+
+            if (this.cacheEnabled && data[0]) {
+                await cacheService.put(STORES.subProfiles, data[0]);
+            }
+
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'createSubProfile');
+        }
+    }
+
+    /**
+     * Update a sub-profile (rename, emoji, avatar)
+     * @param {string} id - Profile ID
+     * @param {Object} updates - Updates object
+     * @returns {Promise<Object>} Updated profile
+     */
+    async updateSubProfile(id, updates) {
+        try {
+            if (this.cacheEnabled) {
+                const cached = await cacheService.get(STORES.subProfiles, id);
+                if (cached) {
+                    await cacheService.put(STORES.subProfiles, { ...cached, ...updates });
+                }
+            }
+
+            if (!cacheService.online) {
+                await cacheService.addPendingSync({
+                    type: 'update',
+                    store: 'sub_profiles',
+                    itemId: id,
+                    data: updates
+                });
+                return await cacheService.get(STORES.subProfiles, id);
+            }
+
+            const { data, error } = await this.supabase
+                .from('sub_profiles')
+                .update(updates)
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'updateSubProfile');
+        }
+    }
+
+    /**
+     * Delete a sub-profile
+     * @param {string} id - Profile ID
+     * @returns {Promise<void>}
+     */
+    async deleteSubProfile(id) {
+        try {
+            if (this.cacheEnabled) {
+                await cacheService.delete(STORES.subProfiles, id);
+            }
+
+            if (!cacheService.online) {
+                await cacheService.addPendingSync({
+                    type: 'delete',
+                    store: 'sub_profiles',
+                    itemId: id
+                });
+                return;
+            }
+
+            const { error } = await this.supabase
+                .from('sub_profiles')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+        } catch (error) {
+            this.handleError(error, 'deleteSubProfile');
+        }
+    }
+
+    /**
+     * Set active profile for the user
+     * @param {string} profileId - The profile ID to activate
+     * @returns {Promise<void>}
+     */
+    async setActiveProfile(profileId) {
+        try {
+            const { data: { user } } = await this.supabase.auth.getUser();
+            if (!user) throw new Error('User not authenticated');
+
+            // Save active profile ID locally first
+            localStorage.setItem('stillmove_active_profile_id', profileId);
+
+            // Invalidate cache for all stores to force refresh for the new profile
+            cacheService.invalidateAllCaches();
+
+            if (cacheService.online) {
+                // Update in database (profiles table)
+                await this.supabase
+                    .from('profiles')
+                    .update({ active_profile_id: profileId })
+                    .eq('id', user.id);
+            }
+        } catch (error) {
+            this.handleError(error, 'setActiveProfile');
         }
     }
 }
