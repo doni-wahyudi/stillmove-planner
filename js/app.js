@@ -5,6 +5,7 @@ import authService from './auth-service.js';
 import { ErrorHandler } from './error-handler.js';
 import cacheService from './cache-service.js';
 import performanceMonitor from './performance-monitor.js';
+import dataService from './data-service.js';
 
 /**
  * Application State Manager
@@ -15,7 +16,9 @@ class StateManager {
             auth: {
                 user: null,
                 session: null,
-                isAuthenticated: false
+                isAuthenticated: false,
+                profiles: [],
+                activeProfile: null
             },
             navigation: {
                 currentView: APP_CONFIG.defaultView,
@@ -589,14 +592,13 @@ class App {
                 this.stateManager.setState('auth', {
                     user: session.user,
                     session: session,
-                    isAuthenticated: true
+                    isAuthenticated: true,
+                    profiles: [],
+                    activeProfile: null
                 });
 
-                // Update UI with user email
-                const userEmailEl = document.getElementById('user-email');
-                if (userEmailEl) {
-                    userEmailEl.textContent = session.user.email;
-                }
+                // Load and initialize sub-profiles
+                await this.initProfiles();
 
                 // Setup auth state change listener
                 this.setupAuthStateListener();
@@ -612,7 +614,7 @@ class App {
     }
 
     setupAuthStateListener() {
-        authService.onAuthStateChange((event, session) => {
+        authService.onAuthStateChange(async (event, session) => {
             console.log('Auth state changed in app:', event);
 
             if (event === 'SIGNED_OUT') {
@@ -620,12 +622,18 @@ class App {
                 this.stateManager.setState('auth', {
                     user: null,
                     session: null,
-                    isAuthenticated: false
+                    isAuthenticated: false,
+                    profiles: [],
+                    activeProfile: null
                 });
+                // Clear active profile ID from local storage
+                localStorage.removeItem('stillmove_active_profile_id');
                 window.location.href = 'auth.html';
             } else if (event === 'TOKEN_REFRESHED' && session) {
                 // Update session in state
+                const currentAuth = this.stateManager.getState('auth');
                 this.stateManager.setState('auth', {
+                    ...currentAuth,
                     user: session.user,
                     session: session,
                     isAuthenticated: true
@@ -635,14 +643,13 @@ class App {
                 this.stateManager.setState('auth', {
                     user: session.user,
                     session: session,
-                    isAuthenticated: true
+                    isAuthenticated: true,
+                    profiles: [],
+                    activeProfile: null
                 });
 
-                // Update UI
-                const userEmailEl = document.getElementById('user-email');
-                if (userEmailEl) {
-                    userEmailEl.textContent = session.user.email;
-                }
+                // Load and initialize sub-profiles
+                await this.initProfiles();
             }
         });
     }
@@ -1976,6 +1983,185 @@ class App {
                 '💾 Remember to backup your data! Go to Settings → Export to save a copy.',
                 8000
             );
+        }
+    }
+
+    /**
+     * Load, initialize, and verify sub-profiles for the logged in user
+     */
+    async initProfiles() {
+        try {
+            // Fetch all sub-profiles
+            let subProfiles = await dataService.getSubProfiles();
+            
+            // If no sub-profiles exist, we should create a default "Personal" one
+            if (!subProfiles || subProfiles.length === 0) {
+                console.log('No sub-profiles found, creating default Personal profile...');
+                const defaultProfile = await dataService.createSubProfile({
+                    name: 'Personal',
+                    emoji: '👤'
+                });
+                subProfiles = [defaultProfile];
+            }
+
+            // Get active profile ID from local storage
+            let activeProfileId = localStorage.getItem('stillmove_active_profile_id');
+            let activeProfile = subProfiles.find(p => p.id === activeProfileId);
+
+            // If not found in local storage, check profiles table in Supabase
+            if (!activeProfile && isSupabaseConfigured() && cacheService.online) {
+                const { data: profileData, error } = await this.supabase
+                    .from('profiles')
+                    .select('active_profile_id')
+                    .eq('id', this.stateManager.getState('auth').user.id)
+                    .single();
+
+                if (!error && profileData && profileData.active_profile_id) {
+                    activeProfileId = profileData.active_profile_id;
+                    activeProfile = subProfiles.find(p => p.id === activeProfileId);
+                }
+            }
+
+            // If still not found, default to the first profile in list
+            if (!activeProfile) {
+                activeProfile = subProfiles[0];
+                activeProfileId = activeProfile.id;
+            }
+
+            // Set active profile ID in local storage
+            localStorage.setItem('stillmove_active_profile_id', activeProfileId);
+
+            // Update StateManager
+            const currentAuth = this.stateManager.getState('auth');
+            this.stateManager.setState('auth', {
+                ...currentAuth,
+                profiles: subProfiles,
+                activeProfile: activeProfile
+            });
+
+            // Update UI with active profile picture or emoji
+            this.updateProfileUI(activeProfile);
+
+            console.log('Profiles initialized, active profile:', activeProfile.name);
+        } catch (error) {
+            console.error('Error initializing profiles:', error);
+            // Fallback default state
+            const fallbackProfile = { id: 'default', name: 'Personal', emoji: '👤' };
+            localStorage.setItem('stillmove_active_profile_id', 'default');
+            const currentAuth = this.stateManager.getState('auth');
+            this.stateManager.setState('auth', {
+                ...currentAuth,
+                profiles: [fallbackProfile],
+                activeProfile: fallbackProfile
+            });
+            this.updateProfileUI(fallbackProfile);
+        }
+    }
+
+    /**
+     * Update navigation header user profile display
+     */
+    updateProfileUI(activeProfile) {
+        const avatarEl = document.getElementById('user-profile-avatar');
+        const nameEl = document.getElementById('user-profile-name');
+
+        if (nameEl) {
+            nameEl.textContent = activeProfile.name;
+        }
+
+        if (avatarEl) {
+            if (activeProfile.avatar_data) {
+                avatarEl.innerHTML = `<img src="${activeProfile.avatar_data}" alt="${activeProfile.name}" class="profile-avatar-img">`;
+            } else {
+                avatarEl.innerHTML = activeProfile.emoji || '👤';
+            }
+        }
+
+        // Re-render the switcher list
+        this.renderProfileSwitcherList();
+    }
+
+    /**
+     * Render list of other profiles for quick switcher dropdown
+     */
+    renderProfileSwitcherList() {
+        const listEl = document.getElementById('profile-switcher-list');
+        if (!listEl) return;
+
+        const authState = this.stateManager.getState('auth');
+        const profiles = authState.profiles || [];
+        const activeProfile = authState.activeProfile;
+
+        if (profiles.length <= 1) {
+            listEl.innerHTML = '';
+            return;
+        }
+
+        listEl.innerHTML = `
+            <div class="profile-switcher-header">Switch Profile</div>
+            ${profiles.map(p => {
+                const isActive = activeProfile && activeProfile.id === p.id;
+                const avatarHTML = p.avatar_data 
+                    ? `<img src="${p.avatar_data}" alt="${p.name}" class="profile-avatar-img-sm">`
+                    : `<span class="profile-avatar-emoji-sm">${p.emoji || '👤'}</span>`;
+                
+                return `
+                    <div class="profile-switcher-item ${isActive ? 'active' : ''}" data-profile-id="${p.id}">
+                        ${avatarHTML}
+                        <span class="profile-name-text">${p.name}</span>
+                        ${isActive ? '<span class="active-check">✓</span>' : ''}
+                    </div>
+                `;
+            }).join('')}
+        `;
+
+        // Add click listeners to switcher items
+        listEl.querySelectorAll('.profile-switcher-item').forEach(item => {
+            item.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const profileId = item.dataset.profileId;
+                if (activeProfile && activeProfile.id === profileId) return;
+
+                // Close dropdown
+                const userDropdown = document.getElementById('user-dropdown');
+                if (userDropdown) userDropdown.classList.add('hidden');
+
+                // Switch profile
+                await this.switchProfile(profileId);
+            });
+        });
+    }
+
+    /**
+     * Switch active profile, clear local cache partitions, and reload current view
+     */
+    async switchProfile(profileId) {
+        try {
+            // Show loading state
+            const spinner = document.getElementById('loading-spinner');
+            if (spinner) spinner.classList.remove('hidden');
+
+            await dataService.setActiveProfile(profileId);
+
+            // Re-initialize profiles state
+            await this.initProfiles();
+
+            // Reload the current view to update it with the new profile's data
+            const currentView = this.stateManager.getState('navigation').currentView;
+            this.router.renderView(currentView);
+
+            // Hide spinner and toast success
+            if (spinner) spinner.classList.add('hidden');
+            if (window.Toast) {
+                window.Toast.success(`Switched to profile: ${this.stateManager.getState('auth').activeProfile.name}`);
+            }
+        } catch (error) {
+            console.error('Error switching profile:', error);
+            const spinner = document.getElementById('loading-spinner');
+            if (spinner) spinner.classList.add('hidden');
+            if (window.Toast) {
+                window.Toast.error('Failed to switch profile');
+            }
         }
     }
 }

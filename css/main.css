@@ -395,6 +395,93 @@ select:focus-visible,
     display: none;
 }
 
+/* Sub-Profile UI Enhancements */
+.user-menu-btn::before {
+    display: none !important;
+}
+
+.user-profile-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.2);
+    font-size: 1.1rem;
+    overflow: hidden;
+}
+
+.profile-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background-color: var(--border-color);
+    margin: var(--spacing-xs) 0;
+}
+
+.profile-switcher-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.profile-switcher-header {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    padding: var(--spacing-xs) var(--spacing-md);
+    letter-spacing: 0.05em;
+}
+
+.profile-switcher-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: background-color var(--transition-base);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.profile-switcher-item:hover {
+    background-color: var(--background-color);
+}
+
+.profile-switcher-item.active {
+    font-weight: 600;
+    background-color: rgba(166, 124, 82, 0.1);
+}
+
+.profile-avatar-img-sm {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.profile-avatar-emoji-sm {
+    font-size: 1rem;
+}
+
+.profile-name-text {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.active-check {
+    color: #4caf50;
+    font-weight: bold;
+}
+
 /* Main Content */
 .main-content {
     flex: 1;
@@ -6524,21 +6611,23 @@ select:focus-visible,
 
 /* Sidebar */
 .canvas-sidebar {
-    width: 280px;
-    min-width: 280px;
+    width: 300px;
+    min-width: 300px;
     background: var(--bg-secondary);
     border-radius: var(--radius-lg);
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .sidebar-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--spacing-md);
-    border-bottom: 1px solid var(--border-color);
+    padding: 12px 14px;
+    gap: 10px;
 }
 
 .sidebar-header h2 {
@@ -6546,10 +6635,99 @@ select:focus-visible,
     margin: 0;
 }
 
+/* Sidebar Search */
+.sidebar-search {
+    display: flex;
+    align-items: center;
+    margin: 0 14px 8px;
+    padding: 7px 10px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    gap: 8px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.sidebar-search:focus-within {
+    border-color: var(--primary, #6366f1);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.sidebar-search-icon {
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    opacity: 0.5;
+}
+
+.sidebar-search-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 13px;
+    color: var(--text-primary);
+    width: 100%;
+    font-family: inherit;
+}
+
+.sidebar-search-input::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+
+/* Section Label */
+.sidebar-section-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 16px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+.doc-count-badge {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 1px 7px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    min-width: 16px;
+    text-align: center;
+}
+
+/* New Button */
+.sidebar-new-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--primary, #6366f1);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.sidebar-new-btn:hover {
+    background: var(--primary, #6366f1);
+    color: white;
+    border-color: var(--primary, #6366f1);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    transform: scale(1.05);
+}
+
 .document-list {
     flex: 1;
     overflow-y: auto;
-    padding: var(--spacing-sm);
+    padding: 4px 8px 8px;
 }
 
 .document-list-empty {
@@ -6561,29 +6739,34 @@ select:focus-visible,
 .document-item {
     display: flex;
     align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-sm);
-    border-radius: var(--radius-md);
+    gap: 10px;
+    padding: 10px 10px;
+    border-radius: 10px;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.2s ease;
     position: relative;
+    margin-bottom: 2px;
 }
 
 .document-item:hover {
     background: var(--bg-hover);
+    transform: translateX(2px);
 }
 
 .document-item.active {
-    background: var(--primary-light);
+    background: var(--primary-light, rgba(99, 102, 241, 0.08));
+    border-left: 3px solid var(--primary, #6366f1);
+    padding-left: 7px;
 }
 
 .document-thumbnail {
-    width: 48px;
-    height: 36px;
-    border-radius: var(--radius-sm);
+    width: 44px;
+    height: 34px;
+    border-radius: 6px;
     overflow: hidden;
     background: var(--bg-primary);
     flex-shrink: 0;
+    border: 1px solid var(--border-color);
 }
 
 .document-thumbnail img {
@@ -6608,6 +6791,7 @@ select:focus-visible,
 
 .document-title {
     font-weight: 500;
+    font-size: 13px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -6629,8 +6813,9 @@ select:focus-visible,
 }
 
 .document-date {
-    font-size: var(--font-size-sm);
+    font-size: 11px;
     color: var(--text-secondary);
+    opacity: 0.7;
 }
 
 .document-actions {
@@ -6646,12 +6831,12 @@ select:focus-visible,
 
 .document-edit-btn,
 .document-delete-btn {
-    padding: var(--spacing-xs);
+    padding: 4px;
     background: none;
     border: none;
     cursor: pointer;
     color: var(--text-secondary);
-    border-radius: var(--radius-sm);
+    border-radius: 4px;
     transition: color 0.2s, background-color 0.2s;
 }
 
@@ -6684,6 +6869,61 @@ select:focus-visible,
     margin-bottom: var(--spacing-md);
     flex-wrap: wrap;
 }
+
+/* ===== MODE TOGGLE ===== */
+.canvas-mode-toggle {
+    display: flex;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+    border: 1px solid var(--border-color);
+    flex: 1;
+}
+
+.canvas-mode-toggle .mode-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    letter-spacing: 0.2px;
+}
+
+.canvas-mode-toggle .mode-btn svg {
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.canvas-mode-toggle .mode-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.canvas-mode-toggle .mode-btn:hover svg {
+    opacity: 1;
+}
+
+.canvas-mode-toggle .mode-btn.active {
+    background: var(--primary, #6366f1);
+    color: white;
+    box-shadow: 0 1px 4px rgba(99, 102, 241, 0.25);
+}
+
+.canvas-mode-toggle .mode-btn.active svg {
+    opacity: 1;
+}
+
 
 .tool-group {
     display: flex;
@@ -7031,6 +7271,596 @@ select:focus-visible,
     display: flex;
     gap: var(--spacing-md, 16px);
     justify-content: flex-end;
+}
+
+/* ============================================================
+   MINDMAP STYLES
+   ============================================================ */
+
+/* Mode Toggle */
+.canvas-mode-toggle {
+    display: flex;
+    background: var(--bg-primary);
+    border-radius: var(--radius-md);
+    padding: 2px;
+    gap: 2px;
+}
+
+.canvas-mode-toggle .mode-btn {
+    padding: 6px 14px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.canvas-mode-toggle .mode-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.canvas-mode-toggle .mode-btn.active {
+    background: var(--primary, #6366f1);
+    color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+/* Mindmap mode wrapper */
+#mindmap-mode-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Mindmap Container */
+.mindmap-container {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+}
+
+/* SVG */
+.mindmap-svg {
+    width: 100%;
+    height: 100%;
+    min-height: calc(100vh - 200px);
+    cursor: grab;
+    user-select: none;
+}
+
+.mindmap-svg:active {
+    cursor: grabbing;
+}
+
+/* Nodes */
+.mm-node {
+    cursor: pointer;
+    transition: filter 0.15s ease;
+}
+
+.mm-node:hover .mm-node-bg {
+    filter: brightness(1.1);
+}
+
+.mm-node--selected .mm-node-bg {
+    stroke: var(--text-primary);
+    stroke-width: 2.5;
+    stroke-dasharray: none;
+}
+
+.mm-node-bg {
+    transition: filter 0.15s ease;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12));
+}
+
+.mm-node-label {
+    font-size: 14px;
+    font-family: Inter, system-ui, -apple-system, sans-serif;
+    font-weight: 500;
+    pointer-events: none;
+}
+
+/* Collapse button */
+.mm-collapse-btn {
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.mm-collapse-btn:hover {
+    transform: scale(1.2);
+}
+
+.mm-collapse-sign {
+    pointer-events: none;
+}
+
+/* Edges */
+.mm-edge {
+    fill: none;
+    stroke-width: 2;
+    opacity: 0.6;
+    transition: opacity 0.15s ease;
+}
+
+.mm-edge:hover {
+    opacity: 1;
+    stroke-width: 3;
+}
+
+/* Floating Toolbar */
+.mindmap-toolbar {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.08);
+    z-index: 10;
+    backdrop-filter: blur(12px);
+}
+
+.mindmap-toolbar .tool-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.mindmap-toolbar .tool-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.mindmap-toolbar .tool-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.mindmap-toolbar .tool-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.mindmap-toolbar .tool-btn:disabled:hover {
+    background: transparent;
+}
+
+.mindmap-toolbar .tool-label {
+    display: inline;
+}
+
+.mindmap-toolbar .toolbar-divider {
+    width: 1px;
+    height: 20px;
+    background: var(--border-color);
+    margin: 0 4px;
+}
+
+.mindmap-toolbar .zoom-level {
+    font-size: 12px;
+    color: var(--text-secondary);
+    min-width: 38px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Title Bar */
+.mindmap-title-bar {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+}
+
+.mindmap-title-bar[hidden] {
+    display: none;
+}
+
+.mindmap-title-bar .canvas-title-input {
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    max-width: 220px;
+}
+
+.mindmap-title-bar .canvas-title-input:focus {
+    border-color: var(--primary);
+    background: var(--bg-primary);
+    outline: none;
+}
+
+.mindmap-title-bar .save-indicator {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.mindmap-title-bar .save-indicator.saved {
+    opacity: 1;
+}
+
+/* Empty State */
+.mindmap-empty-state {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    background: var(--bg-primary);
+}
+
+.mindmap-empty-state[hidden] {
+    display: none;
+}
+
+.mindmap-empty-state .empty-state-content {
+    text-align: center;
+    max-width: 320px;
+    color: var(--text-secondary);
+}
+
+.mindmap-empty-state .empty-state-content svg {
+    color: var(--text-tertiary);
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.mindmap-empty-state .empty-state-content h3 {
+    margin: 0 0 8px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.mindmap-empty-state .empty-state-content p {
+    margin: 0 0 20px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Context Menu */
+.mindmap-context-menu {
+    position: fixed;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color);
+    padding: 6px;
+    min-width: 180px;
+    z-index: 100;
+}
+
+.mindmap-context-menu[hidden] {
+    display: none;
+}
+
+.context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 13px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.1s ease;
+}
+
+.context-menu-item:hover {
+    background: var(--bg-hover);
+}
+
+.context-menu-item.context-menu-danger {
+    color: var(--danger, #ef4444);
+}
+
+.context-menu-item.context-menu-danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.context-menu-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 4px 8px;
+}
+
+/* Color Picker in Context Menu */
+.context-menu-color-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 12px;
+}
+
+.context-menu-color-picker[hidden] {
+    display: none;
+}
+
+.color-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.color-dot:hover {
+    transform: scale(1.15);
+    border-color: var(--text-primary);
+}
+
+/* Mindmap thumbnail in sidebar */
+.mm-thumbnail {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    background: var(--bg-hover) !important;
+}
+
+/* Inline edit */
+.mm-inline-edit {
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    text-align: center;
+    font-size: 14px;
+    font-family: Inter, system-ui, -apple-system, sans-serif;
+}
+
+.mm-edit-fo {
+    overflow: visible;
+}
+
+/* Inline color bar (below selected node in SVG) */
+.mm-color-bar {
+    pointer-events: all;
+}
+
+.mm-color-bar-bg {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08));
+}
+
+.mm-color-dot {
+    cursor: pointer;
+    transition: transform 0.12s ease, r 0.12s ease;
+}
+
+.mm-color-dot:hover {
+    filter: brightness(1.15);
+}
+
+/* Mindmap thumbnail in sidebar */
+.mm-thumbnail {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    background: var(--bg-hover) !important;
+}
+
+
+/* Search bar */
+.mindmap-search-bar {
+    display: flex;
+    align-items: center;
+    margin-left: 8px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 2px 6px;
+    gap: 4px;
+}
+
+.mindmap-search-bar input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #fff;
+    font-size: 12px;
+    width: 120px;
+}
+
+.mindmap-search-bar input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.mindmap-search-clear {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0 2px;
+}
+
+.mindmap-search-clear:hover {
+    color: #fff;
+}
+
+/* Notes panel */
+.mm-notes-panel {
+    position: absolute;
+    right: 16px;
+    top: 60px;
+    width: 300px;
+    max-height: 350px;
+    background: var(--card-bg, #1e1e2e);
+    border: 1px solid var(--border-color, #333);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    z-index: 120;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.mm-notes-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-color, #333);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary, #e0e0e0);
+}
+
+.mm-notes-header button {
+    background: none;
+    border: none;
+    color: var(--text-secondary, #888);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0;
+}
+
+.mm-notes-header button:hover {
+    color: var(--text-primary, #e0e0e0);
+}
+
+.mm-notes-textarea {
+    flex: 1;
+    padding: 10px 14px;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary, #e0e0e0);
+    font-size: 13px;
+    line-height: 1.5;
+    resize: none;
+    min-height: 150px;
+    font-family: inherit;
+}
+
+.mm-notes-textarea::placeholder {
+    color: var(--text-secondary, #666);
+}
+
+/* Emoji picker in context menu */
+.mm-emoji-picker {
+    padding: 6px 8px;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 2px;
+}
+
+.emoji-item {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    text-align: center;
+    transition: background 0.15s;
+}
+
+.emoji-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Multi-select glow */
+.mm-node--multi .mm-node-bg {
+    filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.5));
+}
+
+/* Drop target animation */
+.mm-node--drop-target .mm-node-bg {
+    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.6));
+    animation: mm-drop-pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes mm-drop-pulse {
+
+    0%,
+    100% {
+        filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.4));
+    }
+
+    50% {
+        filter: drop-shadow(0 0 12px rgba(16, 185, 129, 0.8));
+    }
+}
+
+/* Toolbar separator */
+.mm-toolbar-sep {
+    width: 1px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.2);
+    margin: 0 4px;
+}
+
+/* Responsive for mindmap toolbar */
+@media (max-width: 768px) {
+    .mindmap-toolbar {
+        top: 8px;
+        padding: 4px 6px;
+        gap: 2px;
+    }
+
+    .mindmap-toolbar .tool-label {
+        display: none;
+    }
+
+    .mindmap-toolbar .tool-btn {
+        padding: 6px 8px;
+    }
+
+    .mindmap-title-bar {
+        bottom: 8px;
+        left: 8px;
+    }
+
+    .mm-notes-panel {
+        right: 8px;
+        width: calc(100vw - 32px);
+    }
+
+    .mm-search-bar input {
+        width: 80px;
+    }
 }
 
 /* ============================================================
@@ -10846,4 +11676,192 @@ select:focus-visible,
     border-radius: 12px;
     border: 2px dashed #e2e8f0;
     font-size: 0.9rem;
+}
+
+/* ==========================================================================
+ * FLOWCHART VIEW
+ * ========================================================================== */
+
+.flowchart-container {
+    width: 100%;
+    height: 100%;
+    background: #f8fafc;
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+    /* Prevent text selection while panning/dragging */
+}
+
+/* Floating Toolbar */
+.flowchart-toolbar {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border-radius: 12px;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    z-index: 10;
+    border: 1px solid #e2e8f0;
+}
+
+.flowchart-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: default;
+    background-color: transparent;
+}
+
+.fc-node {
+    cursor: pointer;
+}
+
+.fc-shape {
+    transition: filter 0.2s ease;
+}
+
+.fc-handle {
+    cursor: crosshair;
+    transition: transform 0.1s, fill 0.1s;
+}
+
+.fc-handle:hover {
+    transform: scale(1.3);
+    fill: #eff6ff;
+}
+
+.fc-edge-bg {
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.fc-edge-bg:hover {
+    stroke: rgba(59, 130, 246, 0.1);
+}
+
+.flowchart-empty-state {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+}
+
+.flowchart-empty-state h3 {
+    margin-bottom: 0.5rem;
+}
+
+.flowchart-empty-state p {
+    color: #64748b;
+    margin-bottom: 1.5rem;
+    max-width: 300px;
+}
+
+.flowchart-empty-state .btn {
+    pointer-events: auto;
+}
+
+.flowchart-title-bar {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 10;
+    border: 1px solid #e2e8f0;
+}
+
+.fc-node foreignObject,
+.fc-node-text,
+.fc-edge text,
+.fc-edge g rect {
+    pointer-events: none !important;
+}
+
+/* Settings Profiles List Styles */
+.settings-profiles-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.profile-list-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    transition: all 0.3s ease;
+}
+
+.profile-list-item.active {
+    border-color: #a67c52;
+    box-shadow: 0 0 0 2px rgba(166, 124, 82, 0.2);
+}
+
+.profile-avatar-container {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    font-size: 1.8rem;
+}
+
+.profile-avatar-img-md {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-info-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.profile-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.active-badge {
+    align-self: flex-start;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background-color: #4caf50;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 20px;
+    text-transform: uppercase;
+}
+
+.profile-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.no-profiles {
+    color: var(--text-secondary);
+    font-style: italic;
 }

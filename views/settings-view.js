@@ -36,6 +36,7 @@ class SettingsView {
         await this.render();
         this.attachEventListeners();
         await this.loadProfile();
+        await this.loadProfilesTab();
     }
 
     /**
@@ -128,6 +129,12 @@ class SettingsView {
         const saveDisplayBtn = document.getElementById('save-display-btn');
         if (saveDisplayBtn) {
             saveDisplayBtn.addEventListener('click', () => this.handleSaveDisplaySettings());
+        }
+
+        // Add Profile button
+        const addProfileBtn = document.getElementById('add-profile-btn');
+        if (addProfileBtn) {
+            addProfileBtn.addEventListener('click', () => this.handleAddProfile());
         }
     }
 
@@ -900,6 +907,258 @@ class SettingsView {
             console.error('Sign out failed:', error);
             showToast('Failed to sign out', 'error');
         }
+    }
+
+    /**
+     * Load sub-profiles into profiles tab list
+     */
+    async loadProfilesTab() {
+        const listEl = document.getElementById('settings-profiles-list');
+        if (!listEl) return;
+
+        try {
+            const profiles = await dataService.getSubProfiles();
+            const activeProfileId = localStorage.getItem('stillmove_active_profile_id');
+
+            if (!profiles || profiles.length === 0) {
+                listEl.innerHTML = '<p class="no-profiles">No profiles found.</p>';
+                return;
+            }
+
+            listEl.innerHTML = profiles.map(p => {
+                const isActive = p.id === activeProfileId;
+                const avatarHTML = p.avatar_data 
+                    ? `<img src="${p.avatar_data}" alt="${p.name}" class="profile-avatar-img-md">`
+                    : `<span class="profile-avatar-emoji-md">${p.emoji || '👤'}</span>`;
+                
+                return `
+                    <div class="profile-list-item ${isActive ? 'active' : ''}" data-profile-id="${p.id}">
+                        <div class="profile-avatar-container">
+                            ${avatarHTML}
+                        </div>
+                        <div class="profile-info-container">
+                            <span class="profile-name">${p.name}</span>
+                            ${isActive ? '<span class="active-badge">Active</span>' : ''}
+                        </div>
+                        <div class="profile-actions">
+                            <button class="btn btn-secondary btn-sm rename-profile-btn" data-profile-id="${p.id}" data-name="${p.name}" data-emoji="${p.emoji || '👤'}">✏️ Rename</button>
+                            <button class="btn btn-secondary btn-sm upload-avatar-btn" data-profile-id="${p.id}">📷 Photo</button>
+                            ${!isActive ? `<button class="btn btn-warning btn-sm delete-profile-btn" data-profile-id="${p.id}" data-name="${p.name}">🗑️ Delete</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Attach listeners to items
+            listEl.querySelectorAll('.rename-profile-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = btn.dataset.profileId;
+                    const name = btn.dataset.name;
+                    const emoji = btn.dataset.emoji;
+                    this.showRenameProfileModal(id, name, emoji);
+                });
+            });
+
+            listEl.querySelectorAll('.upload-avatar-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = btn.dataset.profileId;
+                    this.triggerAvatarUpload(id);
+                });
+            });
+
+            listEl.querySelectorAll('.delete-profile-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = btn.dataset.profileId;
+                    const name = btn.dataset.name;
+                    this.handleDeleteProfile(id, name);
+                });
+            });
+
+        } catch (error) {
+            console.error('Error loading profiles tab:', error);
+            listEl.innerHTML = '<p class="status-message error">Failed to load profiles</p>';
+        }
+    }
+
+    showRenameProfileModal(id, currentName, currentEmoji) {
+        if (!window.Modal) return;
+
+        window.Modal.show({
+            title: 'Rename Profile',
+            content: `
+                <div class="form-group">
+                    <label for="rename-profile-name">Profile Name</label>
+                    <input type="text" id="rename-profile-name" class="form-input" value="${currentName}" placeholder="Profile Name">
+                </div>
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="rename-profile-emoji">Profile Emoji</label>
+                    <select id="rename-profile-emoji" class="form-select">
+                        <option value="👤" ${currentEmoji === '👤' ? 'selected' : ''}>👤 Default</option>
+                        <option value="💼" ${currentEmoji === '💼' ? 'selected' : ''}>💼 Work</option>
+                        <option value="🏠" ${currentEmoji === '🏠' ? 'selected' : ''}>🏠 Personal</option>
+                        <option value="🎓" ${currentEmoji === '🎓' ? 'selected' : ''}>🎓 Study</option>
+                        <option value="🏋️" ${currentEmoji === '🏋️' ? 'selected' : ''}>🏋️ Health</option>
+                        <option value="🎨" ${currentEmoji === '🎨' ? 'selected' : ''}>🎨 Creative</option>
+                        <option value="🚀" ${currentEmoji === '🚀' ? 'selected' : ''}>🚀 Project</option>
+                    </select>
+                </div>
+            `,
+            buttons: [
+                {
+                    text: 'Cancel',
+                    className: 'btn-secondary',
+                    onClick: () => window.Modal.close()
+                },
+                {
+                    text: 'Save',
+                    className: 'btn-primary',
+                    primary: true,
+                    onClick: async () => {
+                        const newName = document.getElementById('rename-profile-name').value.trim();
+                        const newEmoji = document.getElementById('rename-profile-emoji').value;
+                        if (!newName) {
+                            showToast('Profile name is required', 'warning');
+                            return;
+                        }
+                        try {
+                            await dataService.updateSubProfile(id, { name: newName, emoji: newEmoji });
+                            window.Modal.close();
+                            showToast('Profile updated', 'success');
+                            
+                            // Re-render UI
+                            await this.loadProfilesTab();
+                            
+                            // Update navigation UI if it's the active profile
+                            const activeProfileId = localStorage.getItem('stillmove_active_profile_id');
+                            if (id === activeProfileId) {
+                                window.location.reload();
+                            }
+                        } catch (err) {
+                            showToast('Failed to update profile', 'error');
+                        }
+                    }
+                }
+            ]
+        });
+    }
+
+    triggerAvatarUpload(profileId) {
+        // Create a temporary file input
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.style.display = 'none';
+
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Check file size (limit to 1MB for base64 storage)
+            if (file.size > 1024 * 1024) {
+                showToast('Image size should be less than 1MB', 'warning');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const base64Data = event.target.result;
+                try {
+                    await dataService.updateSubProfile(profileId, { avatar_data: base64Data });
+                    showToast('Profile photo updated successfully', 'success');
+                    
+                    // Re-render UI
+                    await this.loadProfilesTab();
+                    
+                    // Reload window to update navigation if it's the active profile
+                    const activeProfileId = localStorage.getItem('stillmove_active_profile_id');
+                    if (profileId === activeProfileId) {
+                        window.location.reload();
+                    }
+                } catch (err) {
+                    showToast('Failed to update profile photo', 'error');
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+
+        document.body.appendChild(fileInput);
+        fileInput.click();
+        document.body.removeChild(fileInput);
+    }
+
+    async handleDeleteProfile(id, name) {
+        if (!confirm(`Are you sure you want to delete the profile "${name}"? This will permanently delete all goals, habits, and schedules associated with this profile. This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            await dataService.deleteSubProfile(id);
+            showToast('Profile deleted successfully', 'success');
+            await this.loadProfilesTab();
+        } catch (error) {
+            console.error('Failed to delete profile:', error);
+            showToast('Failed to delete profile', 'error');
+        }
+    }
+
+    handleAddProfile() {
+        if (!window.Modal) return;
+
+        window.Modal.show({
+            title: 'Create New Profile',
+            content: `
+                <div class="form-group">
+                    <label for="new-profile-name">Profile Name</label>
+                    <input type="text" id="new-profile-name" class="form-input" placeholder="e.g. Work, Gym, Study">
+                </div>
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="new-profile-emoji">Profile Emoji</label>
+                    <select id="new-profile-emoji" class="form-select">
+                        <option value="👤">👤 Default</option>
+                        <option value="💼">💼 Work</option>
+                        <option value="🏠">🏠 Personal</option>
+                        <option value="🎓">🎓 Study</option>
+                        <option value="🏋️">🏋️ Health</option>
+                        <option value="🎨">🎨 Creative</option>
+                        <option value="🚀">🚀 Project</option>
+                    </select>
+                </div>
+            `,
+            buttons: [
+                {
+                    text: 'Cancel',
+                    className: 'btn-secondary',
+                    onClick: () => window.Modal.close()
+                },
+                {
+                    text: 'Create',
+                    className: 'btn-primary',
+                    primary: true,
+                    onClick: async () => {
+                        const name = document.getElementById('new-profile-name').value.trim();
+                        const emoji = document.getElementById('new-profile-emoji').value;
+                        if (!name) {
+                            showToast('Profile name is required', 'warning');
+                            return;
+                        }
+                        try {
+                            const newProfile = await dataService.createSubProfile({ name, emoji });
+                            window.Modal.close();
+                            showToast('Profile created successfully', 'success');
+                            await this.loadProfilesTab();
+                            
+                            // Automatically switch to the newly created profile
+                            if (confirm(`Would you like to switch to your new profile "${name}" now?`)) {
+                                await dataService.setActiveProfile(newProfile.id);
+                                window.location.reload();
+                            }
+                        } catch (err) {
+                            showToast('Failed to create profile', 'error');
+                        }
+                    }
+                }
+            ]
+        });
     }
 
     /**

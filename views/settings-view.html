@@ -7,7 +7,8 @@
     <div class="settings-tabs">
         <button class="settings-tab active" data-tab="general">⚙️ General</button>
         <button class="settings-tab" data-tab="ai">✨ AI</button>
-        <button class="settings-tab" data-tab="profile">👤 Profile</button>
+        <button class="settings-tab" data-tab="profiles">👥 Profiles</button>
+        <button class="settings-tab" data-tab="profile">👤 Account</button>
         <button class="settings-tab" data-tab="data">💾 Data</button>
     </div>
 
@@ -157,6 +158,22 @@
                         <div id="ai-status" class="status-message"></div>
                     </div>
                 </div>
+            </section>
+        </div>
+
+        <!-- Profiles Tab -->
+        <div class="settings-tab-content" id="tab-profiles">
+            <section class="settings-section">
+                <h3>Manage Profiles</h3>
+                <p>Create, rename, or delete separate profiles. Each profile has entirely isolated habits, goals, and dashboard data.</p>
+                
+                <div id="settings-profiles-list" class="settings-profiles-list">
+                    <!-- Loaded dynamically via JS -->
+                </div>
+
+                <button id="add-profile-btn" class="btn btn-primary" style="margin-top: 1.5rem;">
+                    ➕ Create New Profile
+                </button>
             </section>
         </div>
 

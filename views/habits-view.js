@@ -678,9 +678,31 @@ class HabitsView {
             const row = document.createElement('div');
             row.className = 'habits-grid-row';
 
+            // Calculate percentage
+            let completedDays = 0;
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = `${this.currentYear}-${String(this.currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const completion = this.dailyHabitCompletions.find(c => c.habit_id === habit.id && c.date === date);
+                if (completion && completion.completed) {
+                    completedDays++;
+                }
+            }
+            const percentage = Math.round((completedDays / daysInMonth) * 100);
+
+            let pColor = 'var(--text-color-muted)';
+            if (percentage >= 80) pColor = 'var(--success-color)';
+            else if (percentage >= 50) pColor = 'var(--warning-color)';
+            else if (percentage > 0) pColor = 'var(--danger-color)';
+
             const nameCell = document.createElement('div');
             nameCell.className = 'grid-cell habit-name-cell';
-            nameCell.textContent = habit.habit_name || 'Unnamed';
+            nameCell.innerHTML = `
+                <span class="habit-name-text" style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${habit.habit_name || 'Unnamed'}</span>
+                <span class="habit-grid-percent" style="font-size: 0.8em; color: ${pColor}; font-weight: bold; margin-left: 8px;">${percentage}%</span>
+            `;
+            nameCell.style.display = 'flex';
+            nameCell.style.justifyContent = 'space-between';
+            nameCell.style.alignItems = 'center';
             row.appendChild(nameCell);
 
             for (let day = 1; day <= daysInMonth; day++) {
@@ -2578,23 +2600,40 @@ class HabitsView {
             return { x, y, ...d };
         });
 
-        // Create line path
-        const linePath = points.map((p, i) =>
-            `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
-        ).join(' ');
+        // Create line path with smooth cubic bezier curves
+        let linePath = `M ${points[0].x} ${points[0].y}`;
+        for (let i = 1; i < points.length; i++) {
+            const p0 = points[i - 1];
+            const p1 = points[i];
+            const cpX = (p0.x + p1.x) / 2;
+            linePath += ` C ${cpX} ${p0.y}, ${cpX} ${p1.y}, ${p1.x} ${p1.y}`;
+        }
 
         // Create area path (closed shape for fill)
         const areaPath = linePath +
             ` L ${points[points.length - 1].x} ${padding.top + chartHeight}` +
             ` L ${padding.left} ${padding.top + chartHeight} Z`;
 
-        // Set paths
+        // Set paths and styling for a more polished look
         chartLine.setAttribute('d', linePath);
-        chartArea.setAttribute('d', areaPath);
+        chartLine.setAttribute('stroke', 'var(--primary-color, #3b82f6)');
+        chartLine.setAttribute('stroke-width', '3');
+        chartLine.setAttribute('fill', 'none');
+        chartLine.style.filter = 'drop-shadow(0 4px 6px rgba(59, 130, 246, 0.3))';
 
-        // Render grid lines
+        chartArea.setAttribute('d', areaPath);
+        chartArea.setAttribute('fill', 'url(#chart-area-gradient)');
+
+        // Render grid lines and gradient defs
         if (chartGrid) {
-            chartGrid.innerHTML = '';
+            chartGrid.innerHTML = `
+                <defs>
+                    <linearGradient id="chart-area-gradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="var(--primary-color, #3b82f6)" stop-opacity="0.4"/>
+                        <stop offset="100%" stop-color="var(--primary-color, #3b82f6)" stop-opacity="0.0"/>
+                    </linearGradient>
+                </defs>
+            `;
             // Horizontal grid lines (4 lines)
             for (let i = 0; i <= 4; i++) {
                 const y = padding.top + (i / 4) * chartHeight;
@@ -2603,6 +2642,8 @@ class HabitsView {
                 line.setAttribute('y1', y);
                 line.setAttribute('x2', width - padding.right);
                 line.setAttribute('y2', y);
+                line.setAttribute('stroke', 'var(--border-color, #e5e7eb)');
+                line.setAttribute('stroke-dasharray', '4 4');
                 line.setAttribute('class', 'grid-line');
                 chartGrid.appendChild(line);
             }
@@ -2618,12 +2659,18 @@ class HabitsView {
                     const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                     circle.setAttribute('cx', p.x);
                     circle.setAttribute('cy', p.y);
-                    circle.setAttribute('r', 4);
+                    circle.setAttribute('r', 5);
+                    circle.setAttribute('fill', 'var(--bg-color, #ffffff)');
+                    circle.setAttribute('stroke', 'var(--primary-color, #3b82f6)');
+                    circle.setAttribute('stroke-width', '2');
                     circle.setAttribute('class', 'data-point');
+                    circle.style.transition = 'r 0.2s';
+                    circle.addEventListener('mouseenter', () => circle.setAttribute('r', 7));
+                    circle.addEventListener('mouseleave', () => circle.setAttribute('r', 5));
 
                     // Tooltip
                     const noteText = p.completion?.notes ? ` (${p.completion.notes})` : '';
-                    circle.setAttribute('data-tooltip', `Day ${p.day}: ${p.value}${noteText}`);
+                    circle.setAttribute('data-tooltip', `Day ${p.day}: ${p.value}${noteText} `);
 
                     // Click handler
                     circle.style.cursor = 'pointer';
@@ -2646,7 +2693,7 @@ class HabitsView {
                 label.className = 'axis-label';
                 label.textContent = day;
                 const percent = ((day - 1) / (daysInMonth - 1)) * 100;
-                label.style.left = `${percent}%`;
+                label.style.left = `${percent}% `;
                 xAxis.appendChild(label);
             });
         }
@@ -2658,7 +2705,7 @@ class HabitsView {
                 const label = document.createElement('span');
                 label.className = 'axis-label';
                 label.textContent = val;
-                label.style.bottom = `${(i / 2) * 100}%`;
+                label.style.bottom = `${(i / 2) * 100}% `;
                 yAxis.appendChild(label);
             });
         }
@@ -2724,7 +2771,7 @@ class HabitsView {
             card.dataset.challengeId = challenge.id;
 
             card.querySelector('.challenge-title').textContent = challenge.title;
-            card.querySelector('.challenge-dates').textContent = `${formatDate(new Date(challenge.start_date))} - ${formatDate(new Date(challenge.end_date))}`;
+            card.querySelector('.challenge-dates').textContent = `${formatDate(new Date(challenge.start_date))} - ${formatDate(new Date(challenge.end_date))} `;
 
             // Calculate progress
             const habits = await dataService.getChallengeHabits(challenge.id, true);
@@ -2734,8 +2781,8 @@ class HabitsView {
             const completedSlots = completions.filter(c => c.completed).length;
             const percent = totalSlots > 0 ? Math.round((completedSlots / totalSlots) * 100) : 0;
 
-            card.querySelector('.progress-fill').style.width = `${percent}%`;
-            card.querySelector('.progress-percent').textContent = `${percent}%`;
+            card.querySelector('.progress-fill').style.width = `${percent}% `;
+            card.querySelector('.progress-percent').textContent = `${percent}% `;
 
             // Days remaining
             const today = new Date();
@@ -2908,10 +2955,10 @@ class HabitsView {
             const item = document.createElement('div');
             item.className = 'archived-challenge-item';
             item.innerHTML = `
-                <div class="archived-info">
+                < div class="archived-info" >
                     <strong>${challenge.title}</strong>
                     <span>${challenge.start_date} to ${challenge.end_date}</span>
-                </div>
+                </div >
                 <div class="archived-actions">
                     <button class="restore-btn" title="Restore challenge">📤</button>
                     <button class="delete-btn" title="Delete permanently">×</button>
@@ -2961,10 +3008,10 @@ class HabitsView {
         row.style.marginBottom = '5px';
         row.style.alignItems = 'center';
         row.innerHTML = `
-            <div class="drag-handle" title="Drag to reorder" style="cursor: grab; color: #94a3b8; font-size: 1.2rem; padding: 0 5px;">⋮⋮</div>
+                < div class="drag-handle" title = "Drag to reorder" style = "cursor: grab; color: #94a3b8; font-size: 1.2rem; padding: 0 5px;" >⋮⋮</div >
             <input type="text" class="challenge-habit-name" value="${habitName}" placeholder="Habit name" style="flex: 1;" />
             <button type="button" class="remove-habit-btn" style="background: none; border: none; color: #ff4d4f; cursor: pointer; font-size: 20px;">×</button>
-        `;
+            `;
 
         row.addEventListener('dragstart', (e) => {
             row.classList.add('dragging');

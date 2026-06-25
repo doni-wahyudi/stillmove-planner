@@ -16,6 +16,7 @@ const TABLE_TO_STORE = {
     'categories': STORES.categories,
     'reading_list': STORES.readingList,
     'user_profiles': STORES.userProfile,
+    'sub_profiles': STORES.subProfiles,
     'interval_challenges': STORES.intervalChallenges,
     'challenge_habits': STORES.challengeHabits,
     'challenge_completions': STORES.challengeCompletions
@@ -4410,6 +4411,598 @@ class DataService {
             return data || [];
         } catch (error) {
             this.handleError(error, 'getKanbanActivityLogRange');
+        }
+    }
+
+    // ========================================================================
+    // MINDMAPS
+    // ========================================================================
+
+    /**
+     * Get all mindmaps for the current user
+     */
+    async getMindmaps() {
+        try {
+            const { data, error } = await this.supabase
+                .from('mindmaps')
+                .select('*')
+                .order('updated_at', { ascending: false });
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getMindmaps');
+        }
+    }
+
+    /**
+     * Create a new mindmap
+     */
+    async createMindmap(mindmapData) {
+        try {
+            const { data: { user } } = await this.supabase.auth.getUser();
+            if (!user) throw new Error('User not authenticated');
+
+            const { data, error } = await this.supabase
+                .from('mindmaps')
+                .insert({ ...mindmapData, user_id: user.id })
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            this.handleError(error, 'createMindmap');
+        }
+    }
+
+    /**
+     * Update a mindmap
+     */
+    async updateMindmap(id, updates) {
+        try {
+            const { data, error } = await this.supabase
+                .from('mindmaps')
+                .update(updates)
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+            return data ? data[0] : null;
+        } catch (error) {
+            this.handleError(error, 'updateMindmap');
+        }
+    }
+
+    /**
+     * Delete a mindmap (cascades to nodes)
+     */
+    async deleteMindmap(id) {
+        try {
+            const { error } = await this.supabase
+                .from('mindmaps')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            this.handleError(error, 'deleteMindmap');
+        }
+    }
+
+    // ========================================================================
+    // MINDMAP NODES
+    // ========================================================================
+
+    /**
+     * Get all nodes for a mindmap
+     */
+    async getMindmapNodes(mindmapId) {
+        try {
+            const { data, error } = await this.supabase
+                .from('mindmap_nodes')
+                .select('*')
+                .eq('mindmap_id', mindmapId)
+                .order('order_index');
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getMindmapNodes');
+        }
+    }
+
+    /**
+     * Create a mindmap node
+     */
+    async createMindmapNode(nodeData) {
+        try {
+            const { data, error } = await this.supabase
+                .from('mindmap_nodes')
+                .insert(nodeData)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            this.handleError(error, 'createMindmapNode');
+        }
+    }
+
+    /**
+     * Update a mindmap node
+     */
+    async updateMindmapNode(id, updates) {
+        try {
+            const { data, error } = await this.supabase
+                .from('mindmap_nodes')
+                .update(updates)
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+            return data ? data[0] : null;
+        } catch (error) {
+            this.handleError(error, 'updateMindmapNode');
+        }
+    }
+
+    /**
+     * Delete a mindmap node
+     */
+    async deleteMindmapNode(id) {
+        try {
+            const { error } = await this.supabase
+                .from('mindmap_nodes')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            this.handleError(error, 'deleteMindmapNode');
+        }
+    }
+
+    /**
+     * Batch update mindmap node positions (for drag operations)
+     */
+    async batchUpdateMindmapNodes(updates) {
+        try {
+            const promises = updates.map(({ id, ...fields }) =>
+                this.supabase
+                    .from('mindmap_nodes')
+                    .update(fields)
+                    .eq('id', id)
+            );
+            const results = await Promise.all(promises);
+
+            for (const { error } of results) {
+                if (error) throw error;
+            }
+            return true;
+        } catch (error) {
+            this.handleError(error, 'batchUpdateMindmapNodes');
+        }
+    }
+
+    // ========================================================================
+    // FLOWCHARTS
+    // ========================================================================
+
+    /**
+     * Get all flowcharts for the current user
+     */
+    async getFlowcharts() {
+        try {
+            const { data, error } = await this.supabase
+                .from('flowcharts')
+                .select('*')
+                .order('updated_at', { ascending: false });
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getFlowcharts');
+        }
+    }
+
+    /**
+     * Create a new flowchart
+     */
+    async createFlowchart(flowchartData) {
+        try {
+            const { data: { user } } = await this.supabase.auth.getUser();
+            if (!user) throw new Error('User not authenticated');
+
+            const { data, error } = await this.supabase
+                .from('flowcharts')
+                .insert({ ...flowchartData, user_id: user.id })
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            this.handleError(error, 'createFlowchart');
+        }
+    }
+
+    /**
+     * Update a flowchart
+     */
+    async updateFlowchart(id, updates) {
+        try {
+            const { data, error } = await this.supabase
+                .from('flowcharts')
+                .update(updates)
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+            return data ? data[0] : null;
+        } catch (error) {
+            this.handleError(error, 'updateFlowchart');
+        }
+    }
+
+    /**
+     * Delete a flowchart (cascades to nodes/edges)
+     */
+    async deleteFlowchart(id) {
+        try {
+            const { error } = await this.supabase
+                .from('flowcharts')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            this.handleError(error, 'deleteFlowchart');
+        }
+    }
+
+    // ========================================================================
+    // FLOWCHART NODES
+    // ========================================================================
+
+    async getFlowchartNodes(flowchartId) {
+        try {
+            const { data, error } = await this.supabase
+                .from('flowchart_nodes')
+                .select('*')
+                .eq('flowchart_id', flowchartId)
+                .order('created_at');
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getFlowchartNodes');
+        }
+    }
+
+    async createFlowchartNode(nodeData) {
+        try {
+            const { data, error } = await this.supabase
+                .from('flowchart_nodes')
+                .insert(nodeData)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            this.handleError(error, 'createFlowchartNode');
+        }
+    }
+
+    async updateFlowchartNode(id, updates) {
+        try {
+            const { data, error } = await this.supabase
+                .from('flowchart_nodes')
+                .update(updates)
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+            return data ? data[0] : null;
+        } catch (error) {
+            this.handleError(error, 'updateFlowchartNode');
+        }
+    }
+
+    async deleteFlowchartNode(id) {
+        try {
+            const { error } = await this.supabase
+                .from('flowchart_nodes')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            this.handleError(error, 'deleteFlowchartNode');
+        }
+    }
+
+    async batchUpdateFlowchartNodes(updates) {
+        try {
+            const promises = updates.map(({ id, ...fields }) =>
+                this.supabase
+                    .from('flowchart_nodes')
+                    .update(fields)
+                    .eq('id', id)
+            );
+            const results = await Promise.all(promises);
+            for (const { error } of results) {
+                if (error) throw error;
+            }
+            return true;
+        } catch (error) {
+            this.handleError(error, 'batchUpdateFlowchartNodes');
+        }
+    }
+
+    // ========================================================================
+    // FLOWCHART EDGES
+    // ========================================================================
+
+    async getFlowchartEdges(flowchartId) {
+        try {
+            const { data, error } = await this.supabase
+                .from('flowchart_edges')
+                .select('*')
+                .eq('flowchart_id', flowchartId)
+                .order('created_at');
+
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            this.handleError(error, 'getFlowchartEdges');
+        }
+    }
+
+    async createFlowchartEdge(edgeData) {
+        try {
+            const { data, error } = await this.supabase
+                .from('flowchart_edges')
+                .insert(edgeData)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            this.handleError(error, 'createFlowchartEdge');
+        }
+    }
+
+    async updateFlowchartEdge(id, updates) {
+        try {
+            const { data, error } = await this.supabase
+                .from('flowchart_edges')
+                .update(updates)
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+            return data ? data[0] : null;
+        } catch (error) {
+            this.handleError(error, 'updateFlowchartEdge');
+        }
+    }
+
+    async deleteFlowchartEdge(id) {
+        try {
+            const { error } = await this.supabase
+                .from('flowchart_edges')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            return true;
+        } catch (error) {
+            this.handleError(error, 'deleteFlowchartEdge');
+        }
+    }
+
+    async batchUpdateFlowchartEdges(updates) {
+        try {
+            const promises = updates.map(({ id, ...fields }) =>
+                this.supabase
+                    .from('flowchart_edges')
+                    .update(fields)
+                    .eq('id', id)
+            );
+            const results = await Promise.all(promises);
+            for (const { error } of results) {
+                if (error) throw error;
+            }
+            return true;
+        } catch (error) {
+            this.handleError(error, 'batchUpdateFlowchartEdges');
+        }
+    }
+
+    // ==================== SUB-PROFILES ====================
+
+    /**
+     * Get all sub-profiles for the logged in user
+     * @returns {Promise<Array>} List of sub-profiles
+     */
+    async getSubProfiles() {
+        const fetchFn = async () => {
+            const { data, error } = await this.supabase
+                .from('sub_profiles')
+                .select('*')
+                .order('created_at');
+
+            if (error) throw error;
+            return data || [];
+        };
+
+        try {
+            if (this.cacheEnabled) {
+                const cached = await cacheService.getAll(STORES.subProfiles);
+                if (cached && cached.length > 0) {
+                    if (cacheService.online) {
+                        this.syncInBackground(STORES.subProfiles, fetchFn);
+                    }
+                    return cached;
+                }
+            }
+
+            const data = await fetchFn();
+            if (this.cacheEnabled && data) {
+                await cacheService.putAll(STORES.subProfiles, data);
+            }
+            return data;
+        } catch (error) {
+            this.handleError(error, 'getSubProfiles');
+        }
+    }
+
+    /**
+     * Create a new sub-profile
+     * @param {Object} profileData - { name, emoji, avatar_data }
+     * @returns {Promise<Object>} Created profile
+     */
+    async createSubProfile(profileData) {
+        try {
+            const { data: { user } } = await this.supabase.auth.getUser();
+            if (!user) throw new Error('User not authenticated');
+
+            const profileWithUser = { ...profileData, user_id: user.id };
+
+            if (!cacheService.online) {
+                const tempProfile = {
+                    ...profileWithUser,
+                    id: `temp_${Date.now()}`,
+                    created_at: new Date().toISOString()
+                };
+                await cacheService.put(STORES.subProfiles, tempProfile);
+                await cacheService.addPendingSync({
+                    type: 'create',
+                    store: 'sub_profiles',
+                    data: profileWithUser
+                });
+                return tempProfile;
+            }
+
+            const { data, error } = await this.supabase
+                .from('sub_profiles')
+                .insert([profileWithUser])
+                .select();
+
+            if (error) throw error;
+
+            if (this.cacheEnabled && data[0]) {
+                await cacheService.put(STORES.subProfiles, data[0]);
+            }
+
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'createSubProfile');
+        }
+    }
+
+    /**
+     * Update a sub-profile (rename, emoji, avatar)
+     * @param {string} id - Profile ID
+     * @param {Object} updates - Updates object
+     * @returns {Promise<Object>} Updated profile
+     */
+    async updateSubProfile(id, updates) {
+        try {
+            if (this.cacheEnabled) {
+                const cached = await cacheService.get(STORES.subProfiles, id);
+                if (cached) {
+                    await cacheService.put(STORES.subProfiles, { ...cached, ...updates });
+                }
+            }
+
+            if (!cacheService.online) {
+                await cacheService.addPendingSync({
+                    type: 'update',
+                    store: 'sub_profiles',
+                    itemId: id,
+                    data: updates
+                });
+                return await cacheService.get(STORES.subProfiles, id);
+            }
+
+            const { data, error } = await this.supabase
+                .from('sub_profiles')
+                .update(updates)
+                .eq('id', id)
+                .select();
+
+            if (error) throw error;
+            return data[0];
+        } catch (error) {
+            this.handleError(error, 'updateSubProfile');
+        }
+    }
+
+    /**
+     * Delete a sub-profile
+     * @param {string} id - Profile ID
+     * @returns {Promise<void>}
+     */
+    async deleteSubProfile(id) {
+        try {
+            if (this.cacheEnabled) {
+                await cacheService.delete(STORES.subProfiles, id);
+            }
+
+            if (!cacheService.online) {
+                await cacheService.addPendingSync({
+                    type: 'delete',
+                    store: 'sub_profiles',
+                    itemId: id
+                });
+                return;
+            }
+
+            const { error } = await this.supabase
+                .from('sub_profiles')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+        } catch (error) {
+            this.handleError(error, 'deleteSubProfile');
+        }
+    }
+
+    /**
+     * Set active profile for the user
+     * @param {string} profileId - The profile ID to activate
+     * @returns {Promise<void>}
+     */
+    async setActiveProfile(profileId) {
+        try {
+            const { data: { user } } = await this.supabase.auth.getUser();
+            if (!user) throw new Error('User not authenticated');
+
+            // Save active profile ID locally first
+            localStorage.setItem('stillmove_active_profile_id', profileId);
+
+            // Invalidate cache for all stores to force refresh for the new profile
+            cacheService.invalidateAllCaches();
+
+            if (cacheService.online) {
+                // Update in database (profiles table)
+                await this.supabase
+                    .from('profiles')
+                    .update({ active_profile_id: profileId })
+                    .eq('id', user.id);
+            }
+        } catch (error) {
+            this.handleError(error, 'setActiveProfile');
         }
     }
 }
