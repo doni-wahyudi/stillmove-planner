@@ -7072,9 +7072,23 @@ body #fab-container {
         display: none !important;
     }
 
-    /* Adjust main content to account for bottom nav */
+    /* Adjust main content to account for bottom nav and FAB */
     .main-content {
-        padding-bottom: 80px !important;
+        padding-bottom: 160px !important;
+    }
+
+    /* Force horizontal scrollable tabs on mobile and prevent buttons shrinking */
+    .tabs {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        gap: 0.5rem !important;
+    }
+
+    .tab-btn {
+        flex-shrink: 0 !important;
+        white-space: nowrap !important;
     }
 
     /* Move FAB above bottom nav */

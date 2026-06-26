@@ -3,7 +3,7 @@
  * Handles caching and offline functionality
  */
 
-const CACHE_NAME = 'daily-planner-v3';
+const CACHE_NAME = 'daily-planner-v5';
 const DATA_CACHE_NAME = 'daily-planner-data-v1';
 
 // Static assets to cache - using relative paths for subdirectory deployment
