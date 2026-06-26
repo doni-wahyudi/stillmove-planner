@@ -2633,10 +2633,15 @@ select:focus-visible,
 
     .tabs {
         overflow-x: auto;
+        display: flex;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        gap: 0.5rem;
     }
 
     .tab-btn {
         white-space: nowrap;
+        flex-shrink: 0;
     }
 
     .mood-grid {
