@@ -1,0 +1,29 @@
+{
+  "name": "Stillmove Planner",
+  "short_name": "Stillmove",
+  "description": "Your personal productivity companion for habits, goals, and time management",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#6366f1",
+  "orientation": "portrait-primary",
+  "categories": ["productivity", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "Weekly Planner",
+      "url": "./#/weekly",
+      "description": "Open weekly planner"
+    },
+    {
+      "name": "Habits",
+      "url": "./#/habits",
+      "description": "Track your habits"
+    },
+    {
+      "name": "Pomodoro",
+      "url": "./#/pomodoro",
+      "description": "Start a focus timer"
+    }
+  ]
+}

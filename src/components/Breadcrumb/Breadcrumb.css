@@ -1,0 +1,39 @@
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 1400px;
+  margin: 0 auto 12px;
+  padding: 0 24px;
+  color: var(--text-secondary, #4a4a4a);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.breadcrumb a {
+  color: var(--accent-primary, #8b6642);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.breadcrumb__segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.breadcrumb__separator {
+  color: var(--text-muted, #777777);
+}
+
+@media (max-width: 768px) {
+  .breadcrumb {
+    padding: 0 16px;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}

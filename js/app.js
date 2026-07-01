@@ -673,8 +673,8 @@ class App {
             keyboardHelpBtn.addEventListener('click', () => this.showKeyboardShortcutsHelp());
         }
 
-        // Swipe gestures for mobile navigation
-        this.setupSwipeGestures();
+        // Swipe gestures for mobile navigation (Disabled as per user request to avoid accidental navigation during horizontal scroll)
+        // this.setupSwipeGestures();
 
         // Mobile menu toggle
         const mobileMenuToggle = document.getElementById('mobile-menu-toggle');

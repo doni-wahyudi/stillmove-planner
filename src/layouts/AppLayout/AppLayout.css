@@ -1,0 +1,5 @@
+/* AppLayout styling — inherits from legacy main.css layout */
+
+.view-container {
+  min-height: calc(100vh - 130px);
+}

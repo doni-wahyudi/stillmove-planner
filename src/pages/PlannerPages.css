@@ -1,0 +1,326 @@
+.planner-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+  padding-bottom: 96px;
+}
+
+.planner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px;
+  margin-bottom: 18px;
+  border-radius: 8px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #8b6642, #2563eb 55%, #10b981);
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.1));
+}
+
+.planner-header h2 {
+  margin: 0 0 4px;
+  color: #ffffff;
+  font-size: 1.4rem;
+}
+
+.planner-header p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.planner-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.planner-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.planner-card {
+  grid-column: span 4;
+  padding: 18px;
+  border: 1px solid var(--border-default, rgba(0, 0, 0, 0.08));
+  border-left: 3px solid #2563eb;
+  border-radius: 8px;
+  background: var(--bg-surface, #ffffff);
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.08));
+}
+
+.planner-card--wide {
+  grid-column: span 8;
+}
+
+.planner-card--full {
+  grid-column: 1 / -1;
+}
+
+.planner-card:nth-child(2n) {
+  border-left-color: #10b981;
+}
+
+.planner-card:nth-child(3n) {
+  border-left-color: #f59e0b;
+}
+
+.planner-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--border-default, rgba(0, 0, 0, 0.08));
+}
+
+.planner-card-header h3 {
+  margin: 0;
+  color: var(--text-primary, #1a1a1a);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.planner-muted {
+  color: var(--text-secondary, #4a4a4a);
+  font-size: 0.84rem;
+}
+
+.planner-list {
+  display: grid;
+  gap: 10px;
+}
+
+.planner-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--bg-elevated, #f8fafc);
+}
+
+.planner-row strong,
+.planner-row span {
+  min-width: 0;
+}
+
+.planner-row strong {
+  color: var(--text-primary, #1a1a1a);
+}
+
+.planner-row small {
+  grid-column: 1 / -1;
+  color: var(--text-secondary, #4a4a4a);
+}
+
+.planner-empty {
+  margin: 0;
+  padding: 18px;
+  border: 1px dashed var(--border-strong, rgba(0, 0, 0, 0.15));
+  border-radius: 8px;
+  color: var(--text-secondary, #4a4a4a);
+  text-align: center;
+}
+
+.planner-form {
+  display: grid;
+  gap: 10px;
+}
+
+.planner-form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.planner-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--text-secondary, #4a4a4a);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.planner-form input,
+.planner-form textarea,
+.planner-form select,
+.planner-select {
+  width: 100%;
+  min-height: 42px;
+  border-radius: 8px;
+}
+
+.planner-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.planner-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.planner-actions .btn-primary,
+.planner-actions .btn-secondary,
+.planner-header .btn-primary,
+.planner-header .btn-secondary,
+.planner-card .btn-primary,
+.planner-card .btn-secondary {
+  border-radius: 8px !important;
+}
+
+.planner-danger {
+  min-width: 36px;
+  min-height: 36px;
+  border: 0;
+  border-radius: 8px;
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.planner-progress {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: rgba(148, 163, 184, 0.22);
+}
+
+.planner-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb, #10b981);
+}
+
+.planner-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.planner-calendar-day {
+  min-height: 116px;
+  padding: 10px;
+  border: 1px solid var(--border-default, rgba(0, 0, 0, 0.08));
+  border-radius: 8px;
+  background: var(--bg-elevated, #f8fafc);
+}
+
+.planner-calendar-day.today {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.planner-calendar-day strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.planner-pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.planner-pill {
+  max-width: 100%;
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: #0f172a;
+  background: rgba(16, 185, 129, 0.16);
+  font-size: 0.72rem;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.planner-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
+  gap: 14px;
+  overflow-x: auto;
+}
+
+.planner-column {
+  min-width: 240px;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--bg-elevated, #f8fafc);
+}
+
+.planner-column h4 {
+  margin: 0 0 10px;
+}
+
+.planner-card-item {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 10px;
+  border: 1px solid var(--border-default, rgba(0, 0, 0, 0.08));
+  border-radius: 8px;
+  background: var(--bg-surface, #ffffff);
+}
+
+.planner-canvas-shell {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 16px;
+}
+
+.planner-canvas {
+  width: 100%;
+  height: 620px;
+  border: 1px solid var(--border-default, rgba(0, 0, 0, 0.08));
+  border-radius: 8px;
+  background: #ffffff;
+  touch-action: none;
+}
+
+@media (max-width: 1040px) {
+  .planner-card,
+  .planner-card--wide {
+    grid-column: span 6;
+  }
+
+  .planner-canvas-shell {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .planner-page {
+    padding: 16px;
+    padding-bottom: 96px;
+  }
+
+  .planner-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .planner-card,
+  .planner-card--wide {
+    grid-column: 1 / -1;
+  }
+
+  .planner-form-row,
+  .planner-calendar {
+    grid-template-columns: 1fr;
+  }
+
+  .planner-calendar-day {
+    min-height: auto;
+  }
+}
