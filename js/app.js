@@ -674,7 +674,7 @@ class App {
         }
 
         // Swipe gestures for mobile navigation
-        this.setupSwipeGestures();
+        // this.setupSwipeGestures();
 
         // Mobile menu toggle
         const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
@@ -1993,7 +1993,7 @@ class App {
         try {
             // Fetch all sub-profiles
             let subProfiles = await dataService.getSubProfiles();
-            
+
             // If no sub-profiles exist, we should create a default "Personal" one
             if (!subProfiles || subProfiles.length === 0) {
                 console.log('No sub-profiles found, creating default Personal profile...');
@@ -2100,19 +2100,19 @@ class App {
         listEl.innerHTML = `
             <div class="profile-switcher-header">Switch Profile</div>
             ${profiles.map(p => {
-                const isActive = activeProfile && activeProfile.id === p.id;
-                const avatarHTML = p.avatar_data 
-                    ? `<img src="${p.avatar_data}" alt="${p.name}" class="profile-avatar-img-sm">`
-                    : `<span class="profile-avatar-emoji-sm">${p.emoji || '👤'}</span>`;
-                
-                return `
+            const isActive = activeProfile && activeProfile.id === p.id;
+            const avatarHTML = p.avatar_data
+                ? `<img src="${p.avatar_data}" alt="${p.name}" class="profile-avatar-img-sm">`
+                : `<span class="profile-avatar-emoji-sm">${p.emoji || '👤'}</span>`;
+
+            return `
                     <div class="profile-switcher-item ${isActive ? 'active' : ''}" data-profile-id="${p.id}">
                         ${avatarHTML}
                         <span class="profile-name-text">${p.name}</span>
                         ${isActive ? '<span class="active-check">✓</span>' : ''}
                     </div>
                 `;
-            }).join('')}
+        }).join('')}
         `;
 
         // Add click listeners to switcher items
