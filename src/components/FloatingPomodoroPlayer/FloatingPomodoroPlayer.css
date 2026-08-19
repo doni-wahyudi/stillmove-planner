@@ -1,0 +1,219 @@
+/* ============================================================
+   Floating Pomodoro Mini-Player Styles
+   ============================================================ */
+
+.floating-pomodoro-player {
+  position: fixed;
+  z-index: 9999;
+  user-select: none;
+  font-family: inherit;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  background: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-default, rgba(0, 0, 0, 0.12));
+  backdrop-filter: blur(12px);
+  transition: box-shadow 0.15s ease;
+}
+
+.floating-pomodoro-player:hover {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+/* Minimized Pill View */
+.floating-mini-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: grab;
+}
+
+.floating-mini-pill:active {
+  cursor: grabbing;
+}
+
+.mini-mode-icon {
+  font-size: 1rem;
+}
+
+.mini-time-text {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--text-primary, #1e293b);
+  letter-spacing: 0.5px;
+}
+
+.mini-play-btn,
+.mini-expand-btn {
+  background: var(--bg-elevated, #f1f5f9);
+  border: none;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: var(--text-primary, #1e293b);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.mini-play-btn:hover,
+.mini-expand-btn:hover {
+  background: var(--accent-primary, #2563eb);
+  color: #ffffff;
+}
+
+/* Expanded Card View */
+.floating-expanded-card {
+  width: 250px;
+  display: flex;
+  flex-direction: column;
+}
+
+.floating-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg-elevated, #f8fafc);
+  border-top-left-radius: 11px;
+  border-top-right-radius: 11px;
+  border-bottom: 1px solid var(--border-default, rgba(0, 0, 0, 0.08));
+  cursor: grab;
+}
+
+.floating-header:active {
+  cursor: grabbing;
+}
+
+.floating-header-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.floating-mode-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.floating-mode-badge.focus {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.floating-mode-badge.shortBreak {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.floating-mode-badge.longBreak {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.floating-session-num {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-secondary, #64748b);
+}
+
+.floating-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.float-header-btn {
+  background: transparent;
+  border: none;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #94a3b8);
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.float-header-btn:hover {
+  background: var(--bg-surface, #ffffff);
+  color: var(--text-primary, #1e293b);
+}
+
+.float-close-btn:hover {
+  color: #ef4444;
+}
+
+/* Floating Body */
+.floating-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.floating-time-display {
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--text-primary, #1e293b);
+  line-height: 1.1;
+}
+
+.floating-task-preview {
+  font-size: 0.72rem;
+  color: var(--text-secondary, #64748b);
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.floating-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.floating-primary-btn {
+  flex: 1;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: none;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+}
+
+.floating-primary-btn:hover {
+  opacity: 0.9;
+}
+
+.floating-secondary-btn {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-default, rgba(0, 0, 0, 0.1));
+  background: var(--bg-elevated, #f8fafc);
+  color: var(--text-primary, #1e293b);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.floating-secondary-btn:hover {
+  background: var(--bg-hover, #e2e8f0);
+}

@@ -4,9 +4,32 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { useToast } from '@/components/Toast/Toast';
 import './HabitsPage.css';
 
-type HabitTab = 'daily' | 'weekly' | 'wellness';
+type HabitTab = 'daily' | 'weekly' | 'wellness' | 'challenges';
 type HabitFilter = 'all' | 'completed' | 'incomplete' | 'streak';
 type GridMode = 'checklist' | 'count';
+
+interface IntervalChallenge {
+  id: string;
+  title: string;
+  start_date: string;
+  end_date: string;
+  notes?: string | null;
+  is_archived?: boolean;
+}
+
+interface ChallengeHabit {
+  id: string;
+  challenge_id: string;
+  habit_name: string;
+  order_index?: number;
+}
+
+interface ChallengeCompletion {
+  habit_id: string;
+  challenge_id: string;
+  date: string;
+  completed?: boolean;
+}
 
 interface DailyHabit {
   id: string;
@@ -151,6 +174,21 @@ export function HabitsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
+  // ---- Challenges state ----
+  const [challenges, setChallenges] = useState<IntervalChallenge[]>([]);
+  const [showArchived, setShowArchived] = useState(false);
+  const [selectedChallengeId, setSelectedChallengeId] = useState<string | null>(null);
+  const [challengeHabits, setChallengeHabits] = useState<ChallengeHabit[]>([]);
+  const [challengeCompletions, setChallengeCompletions] = useState<ChallengeCompletion[]>([]);
+  const [challengesLoading, setChallengesLoading] = useState(false);
+  const [showCreateChallenge, setShowCreateChallenge] = useState(false);
+  const [newChallengeTitle, setNewChallengeTitle] = useState('');
+  const [newChallengeStart, setNewChallengeStart] = useState(toDateKey(new Date()));
+  const [newChallengeEnd, setNewChallengeEnd] = useState(() => {
+    const d = new Date(); d.setDate(d.getDate() + 29); return toDateKey(d);
+  });
+  const [newChallengeNotes, setNewChallengeNotes] = useState('');
+
   const monthDates = useMemo(
     () => getMonthDateKeys(year, monthIndex),
     [year, monthIndex]
@@ -231,6 +269,51 @@ export function HabitsPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Load challenges list whenever the tab becomes active or showArchived changes
+  const loadChallenges = useCallback(async () => {
+    if (!activeProfile) return;
+    setChallengesLoading(true);
+    try {
+      const list = await dataService.getIntervalChallenges(showArchived);
+      setChallenges(list);
+      if (!selectedChallengeId && list.length > 0) {
+        setSelectedChallengeId(list[0].id);
+      }
+    } catch (error) {
+      console.error('Failed to load challenges:', error);
+      showToast('Failed to load challenges', 'error');
+    } finally {
+      setChallengesLoading(false);
+    }
+  }, [activeProfile, showArchived, selectedChallengeId, showToast]);
+
+  useEffect(() => {
+    if (activeTab === 'challenges') loadChallenges();
+  }, [activeTab, loadChallenges]);
+
+  // Load habits and completions for the selected challenge
+  const loadChallengeDetail = useCallback(async (challengeId: string) => {
+    if (!challengeId) return;
+    try {
+      const challenge = challenges.find((c) => c.id === challengeId);
+      const habits = await dataService.getChallengeHabits(challengeId);
+      setChallengeHabits(habits);
+      if (challenge) {
+        const completions = await dataService.getChallengeCompletions(
+          challengeId, challenge.start_date, challenge.end_date
+        );
+        setChallengeCompletions(completions);
+      }
+    } catch (error) {
+      console.error('Failed to load challenge detail:', error);
+      showToast('Failed to load challenge data', 'error');
+    }
+  }, [challenges, showToast]);
+
+  useEffect(() => {
+    if (selectedChallengeId) loadChallengeDetail(selectedChallengeId);
+  }, [selectedChallengeId, loadChallengeDetail]);
 
   useEffect(() => {
     if (!waterForSelectedDate) {
@@ -446,6 +529,107 @@ export function HabitsPage() {
       console.error('Failed to delete daily habit:', error);
       setDailyHabits(previous);
       showToast('Failed to delete habit', 'error');
+    }
+  };
+
+  // ---- Challenge handlers ----
+  const createChallenge = async () => {
+    if (!newChallengeTitle.trim()) { showToast('Please enter a challenge title', 'warning'); return; }
+    setIsSaving(true);
+    try {
+      const created = await dataService.createIntervalChallenge({
+        title: newChallengeTitle.trim(),
+        start_date: newChallengeStart,
+        end_date: newChallengeEnd,
+        notes: newChallengeNotes.trim() || null,
+        is_archived: false,
+      });
+      setChallenges((prev) => [created, ...prev]);
+      setSelectedChallengeId(created.id);
+      setShowCreateChallenge(false);
+      setNewChallengeTitle('');
+      setNewChallengeNotes('');
+      showToast('Challenge created', 'success');
+    } catch (error) {
+      console.error('Failed to create challenge:', error);
+      showToast('Failed to create challenge', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const archiveChallenge = async (id: string, archive: boolean) => {
+    try {
+      const updated = await dataService.updateIntervalChallenge(id, { is_archived: archive });
+      setChallenges((prev) => prev.map((c) => c.id === id ? { ...c, ...updated } : c));
+      showToast(archive ? 'Challenge archived' : 'Challenge restored', 'success');
+    } catch (error) {
+      console.error('Failed to archive challenge:', error);
+      showToast('Failed to update challenge', 'error');
+    }
+  };
+
+  const deleteChallenge = async (id: string) => {
+    if (!window.confirm('Delete this challenge? This will also delete all completions.')) return;
+    try {
+      await dataService.deleteIntervalChallenge(id);
+      setChallenges((prev) => prev.filter((c) => c.id !== id));
+      if (selectedChallengeId === id) {
+        const remaining = challenges.filter((c) => c.id !== id);
+        setSelectedChallengeId(remaining[0]?.id ?? null);
+      }
+      showToast('Challenge deleted', 'success');
+    } catch (error) {
+      console.error('Failed to delete challenge:', error);
+      showToast('Failed to delete challenge', 'error');
+    }
+  };
+
+  const addChallengeHabit = async () => {
+    if (!selectedChallengeId) return;
+    const name = window.prompt('Habit name for this challenge');
+    if (!name?.trim()) return;
+    try {
+      const created = await dataService.createChallengeHabit({
+        challenge_id: selectedChallengeId,
+        habit_name: name.trim(),
+        order_index: challengeHabits.length,
+      });
+      setChallengeHabits((prev) => [...prev, created]);
+    } catch (error) {
+      console.error('Failed to add challenge habit:', error);
+      showToast('Failed to add habit', 'error');
+    }
+  };
+
+  const deleteChallengeHabit = async (id: string) => {
+    if (!window.confirm('Remove this habit from the challenge?')) return;
+    try {
+      await dataService.deleteChallengeHabit(id);
+      setChallengeHabits((prev) => prev.filter((h) => h.id !== id));
+    } catch (error) {
+      console.error('Failed to delete challenge habit:', error);
+      showToast('Failed to delete habit', 'error');
+    }
+  };
+
+  const toggleChallengeCell = async (habitId: string, date: string, current: boolean) => {
+    if (!selectedChallengeId) return;
+    const next = !current;
+    setChallengeCompletions((prev) => {
+      const existing = prev.find((c) => c.habit_id === habitId && c.date === date);
+      if (existing) return prev.map((c) => c.habit_id === habitId && c.date === date ? { ...c, completed: next } : c);
+      return [...prev, { habit_id: habitId, challenge_id: selectedChallengeId, date, completed: next }];
+    });
+    try {
+      await dataService.toggleChallengeCompletion(habitId, selectedChallengeId, date, next);
+    } catch (error) {
+      console.error('Failed to toggle challenge completion:', error);
+      showToast('Failed to update', 'error');
+      // Revert
+      setChallengeCompletions((prev) =>
+        prev.map((c) => c.habit_id === habitId && c.date === date ? { ...c, completed: current } : c)
+      );
     }
   };
 
@@ -694,15 +878,16 @@ export function HabitsPage() {
       </header>
 
       <nav className="habits-tabs" aria-label="Habit sections">
-        {[
+        {([
           ['daily', 'Daily Habits'],
           ['weekly', 'Weekly Habits'],
           ['wellness', 'Wellness'],
-        ].map(([tab, label]) => (
+          ['challenges', 'Challenges'],
+        ] as [HabitTab, string][]).map(([tab, label]) => (
           <button
             key={tab}
             className={`habits-tab ${activeTab === tab ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab as HabitTab)}
+            onClick={() => setActiveTab(tab)}
           >
             {label}
           </button>
@@ -1219,6 +1404,210 @@ export function HabitsPage() {
           </div>
         </section>
       )}
+
+      {activeTab === 'challenges' && (() => {
+        const selectedChallenge = challenges.find((c) => c.id === selectedChallengeId) ?? null;
+        // Build date array spanning the selected challenge's duration
+        const challengeDates: string[] = [];
+        if (selectedChallenge) {
+          const start = new Date(selectedChallenge.start_date);
+          const end = new Date(selectedChallenge.end_date);
+          for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            challengeDates.push(toDateKey(new Date(d)));
+          }
+        }
+        const completionKey2 = (habitId: string, date: string) => `${habitId}:${date}`;
+        const compMap = new Map<string, boolean>();
+        challengeCompletions.forEach((c) => compMap.set(completionKey2(c.habit_id, c.date), Boolean(c.completed)));
+
+        return (
+          <section className="challenges-layout" aria-label="Interval challenges">
+            {/* Left sidebar: challenge list */}
+            <aside className="challenges-sidebar">
+              <div className="panel-heading">
+                <h3>Challenges</h3>
+                <button className="btn-primary" onClick={() => setShowCreateChallenge(true)}>+ New</button>
+              </div>
+
+              <label className="challenges-archive-toggle">
+                <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.currentTarget.checked)} />
+                Show archived
+              </label>
+
+              {challengesLoading ? (
+                <div className="habits-empty">Loading…</div>
+              ) : challenges.length === 0 ? (
+                <div className="habits-empty">No challenges yet. Create one to get started.</div>
+              ) : (
+                <div className="challenge-list">
+                  {challenges.map((challenge) => (
+                    <div
+                      key={challenge.id}
+                      className={`challenge-list-item ${selectedChallengeId === challenge.id ? 'selected' : ''} ${challenge.is_archived ? 'archived' : ''}`}
+                      onClick={() => setSelectedChallengeId(challenge.id)}
+                    >
+                      <div className="challenge-list-item__info">
+                        <strong>{challenge.title}</strong>
+                        <span>{challenge.start_date} → {challenge.end_date}</span>
+                      </div>
+                      <div className="challenge-list-item__actions" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          className="challenge-action-btn"
+                          title={challenge.is_archived ? 'Restore' : 'Archive'}
+                          onClick={() => archiveChallenge(challenge.id, !challenge.is_archived)}
+                        >
+                          {challenge.is_archived ? '↩' : '⊘'}
+                        </button>
+                        <button
+                          className="challenge-action-btn challenge-action-btn--delete"
+                          title="Delete"
+                          onClick={() => deleteChallenge(challenge.id)}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </aside>
+
+            {/* Main area: selected challenge detail */}
+            <div className="challenges-detail">
+              {!selectedChallenge ? (
+                <div className="habits-empty">Select a challenge to view its progress.</div>
+              ) : (
+                <>
+                  <div className="challenges-detail__header">
+                    <div>
+                      <h3>{selectedChallenge.title}</h3>
+                      <span className="challenges-detail__dates">{selectedChallenge.start_date} → {selectedChallenge.end_date}</span>
+                      {selectedChallenge.notes && <p className="challenges-detail__notes">{selectedChallenge.notes}</p>}
+                    </div>
+                    <button className="btn-secondary" onClick={addChallengeHabit}>+ Add habit</button>
+                  </div>
+
+                  {challengeHabits.length === 0 ? (
+                    <div className="habits-empty">No habits in this challenge. Add one to start tracking.</div>
+                  ) : (
+                    <div className="habit-grid-scroll">
+                      <div
+                        className="habit-grid challenge-grid"
+                        style={{ gridTemplateColumns: `minmax(150px, 200px) repeat(${challengeDates.length}, 32px)` }}
+                      >
+                        {/* Header row */}
+                        <div className="habit-grid-header habit-grid-corner">Habit</div>
+                        {challengeDates.map((date) => (
+                          <div
+                            key={date}
+                            className={`habit-grid-header ${date === todayKey ? 'today' : ''}`}
+                            title={date}
+                          >
+                            {Number(date.slice(-2))}
+                          </div>
+                        ))}
+
+                        {/* Habit rows */}
+                        {challengeHabits.map((habit) => (
+                          <div className="habit-grid-row" key={habit.id}>
+                            <div className="habit-grid-name habit-grid-name--challenge" title={habit.habit_name}>
+                              <span>{habit.habit_name}</span>
+                              <button
+                                className="habit-delete"
+                                onClick={() => deleteChallengeHabit(habit.id)}
+                                title="Remove habit"
+                              >×</button>
+                            </div>
+                            {challengeDates.map((date) => {
+                              const checked = Boolean(compMap.get(completionKey2(habit.id, date)));
+                              return (
+                                <label
+                                  key={date}
+                                  className={`habit-cell ${checked ? 'is-done' : ''}`}
+                                  title={date}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => toggleChallengeCell(habit.id, date, checked)}
+                                  />
+                                </label>
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Per-habit summary bars */}
+                  <div className="challenges-summary">
+                    {challengeHabits.map((habit) => {
+                      const done = challengeDates.filter((d) => compMap.get(completionKey2(habit.id, d))).length;
+                      const pct = challengeDates.length > 0 ? Math.round((done / challengeDates.length) * 100) : 0;
+                      return (
+                        <div key={habit.id} className="habit-progress-item">
+                          <div className="habit-progress-label">
+                            <span>{habit.habit_name}</span>
+                            <strong>{done}/{challengeDates.length} ({pct}%)</strong>
+                          </div>
+                          <div className="habit-progress-track">
+                            <div style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Create challenge modal */}
+            {showCreateChallenge && (
+              <div className="dashboard-dialog-backdrop" onMouseDown={() => setShowCreateChallenge(false)}>
+                <section className="dashboard-dialog challenges-create-modal" onMouseDown={(e) => e.stopPropagation()}>
+                  <h3>New Challenge</h3>
+                  <label>
+                    Title
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={newChallengeTitle}
+                      onChange={(e) => setNewChallengeTitle(e.currentTarget.value)}
+                      placeholder="e.g. 30-day fitness challenge"
+                      autoFocus
+                    />
+                  </label>
+                  <div className="challenges-create-modal__dates">
+                    <label>
+                      Start
+                      <input type="date" className="form-input" value={newChallengeStart} onChange={(e) => setNewChallengeStart(e.currentTarget.value)} />
+                    </label>
+                    <label>
+                      End
+                      <input type="date" className="form-input" value={newChallengeEnd} onChange={(e) => setNewChallengeEnd(e.currentTarget.value)} />
+                    </label>
+                  </div>
+                  <label>
+                    Notes (optional)
+                    <textarea
+                      className="form-input"
+                      rows={2}
+                      value={newChallengeNotes}
+                      onChange={(e) => setNewChallengeNotes(e.currentTarget.value)}
+                      placeholder="Any details or motivation…"
+                    />
+                  </label>
+                  <div className="challenges-create-modal__actions">
+                    <button className="btn-secondary" onClick={() => setShowCreateChallenge(false)}>Cancel</button>
+                    <button className="btn-primary" onClick={createChallenge} disabled={isSaving}>Create</button>
+                  </div>
+                </section>
+              </div>
+            )}
+          </section>
+        );
+      })()}
     </div>
   );
 }

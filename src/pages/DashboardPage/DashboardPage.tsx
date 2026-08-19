@@ -1,161 +1,34 @@
-import { useEffect, useState } from 'react';
-import { getSupabaseClient } from '@/db/supabase';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import dataService from '@/services/DataService';
 import { useProfile } from '@/contexts/ProfileContext';
+import { useToast } from '@/components/Toast/Toast';
 import './DashboardPage.css';
 
-interface DashboardStats {
-  habitsCompleted: number;
-  habitsTotal: number;
-  tasksToday: number;
-  goalsCount: number;
-  streak: number;
-}
+type WidgetId = 'today' | 'goals' | 'kanban' | 'actions' | 'calendar' | 'challenges' | 'stats';
+const WIDGETS: { id: WidgetId; title: string }[] = [{ id: 'today', title: "Today's Overview" }, { id: 'goals', title: 'Goals Progress' }, { id: 'kanban', title: 'Tasks' }, { id: 'actions', title: 'Quick Actions' }, { id: 'calendar', title: 'Calendar' }, { id: 'challenges', title: 'Active Challenges' }, { id: 'stats', title: 'Statistics' }];
+const SETTINGS_KEY = 'stillmove_dashboard_widgets';
+const dateKey = (date: Date) => date.toISOString().slice(0, 10);
+const weekStart = () => { const date = new Date(); date.setDate(date.getDate() - date.getDay()); return dateKey(date); };
 
 export function DashboardPage() {
-  const { activeProfile } = useProfile();
-  const [stats, setStats] = useState<DashboardStats>({
-    habitsCompleted: 0,
-    habitsTotal: 0,
-    tasksToday: 0,
-    goalsCount: 0,
-    streak: 0,
-  });
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const loadDashboard = async () => {
-      if (!activeProfile) return;
-
-      setIsLoading(true);
-      try {
-        const supabase = getSupabaseClient();
-        const today = new Date().toISOString().split('T')[0];
-
-        // Fetch daily habits
-        const { data: habits } = await supabase
-          .from('daily_habits')
-          .select('id')
-          .eq('is_active', true);
-
-        // Fetch today's completions
-        const { data: completions } = await supabase
-          .from('daily_habit_completions')
-          .select('id')
-          .eq('date', today);
-
-        // Fetch annual goals
-        const { data: goals } = await supabase
-          .from('annual_goals')
-          .select('id')
-          .eq('year', new Date().getFullYear());
-
-        setStats({
-          habitsCompleted: completions?.length || 0,
-          habitsTotal: habits?.length || 0,
-          tasksToday: 0,
-          goalsCount: goals?.length || 0,
-          streak: 0,
-        });
-      } catch (error) {
-        console.error('Dashboard load error:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadDashboard();
-  }, [activeProfile]);
-
-  const now = new Date();
-  const greeting =
-    now.getHours() < 12
-      ? 'Good morning'
-      : now.getHours() < 18
-      ? 'Good afternoon'
-      : 'Good evening';
-
-  const dateStr = now.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-
-  const habitPercentage =
-    stats.habitsTotal > 0
-      ? Math.round((stats.habitsCompleted / stats.habitsTotal) * 100)
-      : 0;
-
-  if (isLoading) {
-    return (
-      <div className="dashboard-loading">
-        <div className="spinner" />
-        <p>Loading dashboard...</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="dashboard-view">
-      <div className="dashboard-header">
-        <div className="greeting-section">
-          <h2 className="greeting">
-            {greeting}, {activeProfile?.name || 'there'} 👋
-          </h2>
-          <p className="date-display">{dateStr}</p>
-        </div>
-      </div>
-
-      <div className="stats-grid">
-        <div className="stat-card stat-card--habits">
-          <div className="stat-icon">✨</div>
-          <div className="stat-info">
-            <div className="stat-value">
-              {stats.habitsCompleted}/{stats.habitsTotal}
-            </div>
-            <div className="stat-label">Habits Today</div>
-          </div>
-          <div className="stat-progress">
-            <div
-              className="stat-progress-bar"
-              style={{ width: `${habitPercentage}%` }}
-            />
-          </div>
-        </div>
-
-        <div className="stat-card stat-card--goals">
-          <div className="stat-icon">🎯</div>
-          <div className="stat-info">
-            <div className="stat-value">{stats.goalsCount}</div>
-            <div className="stat-label">Annual Goals</div>
-          </div>
-        </div>
-
-        <div className="stat-card stat-card--streak">
-          <div className="stat-icon">🔥</div>
-          <div className="stat-info">
-            <div className="stat-value">{stats.streak}</div>
-            <div className="stat-label">Day Streak</div>
-          </div>
-        </div>
-
-        <div className="stat-card stat-card--tasks">
-          <div className="stat-icon">📋</div>
-          <div className="stat-info">
-            <div className="stat-value">{stats.tasksToday}</div>
-            <div className="stat-label">Tasks Today</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="dashboard-message">
-        <p>
-          🚀 Welcome to the revamped Stillmove Planner! More views are being
-          migrated — stay tuned.
-        </p>
-      </div>
-    </div>
-  );
+  const { activeProfile } = useProfile(); const { showToast } = useToast(); const navigate = useNavigate();
+  const [data, setData] = useState<any>({ habits: [], completions: [], goals: [], blocks: [], boards: [], cards: [], sessions: [], books: [], challenges: [] });
+  const [visible, setVisible] = useState<Record<WidgetId, boolean>>(() => ({ today: true, goals: true, kanban: true, actions: true, calendar: true, challenges: true, stats: true, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') }));
+  const [showSettings, setShowSettings] = useState(false); const [calendarDate, setCalendarDate] = useState(new Date()); const [loading, setLoading] = useState(true);
+  const load = useCallback(async () => { if (!activeProfile) return; setLoading(true); try { const now = new Date(); const start = new Date(now.getFullYear(), now.getMonth(), 1); const end = new Date(now.getFullYear(), now.getMonth() + 1, 0); const [habits, completions, goals, blocks, boards, sessions, books, challenges] = await Promise.all([dataService.getDailyHabits(), dataService.getDailyHabitCompletions(dateKey(now), dateKey(now)), dataService.getAnnualGoals(now.getFullYear()), dataService.getTimeBlocksRange(dateKey(start), dateKey(end)), dataService.getKanbanBoards(), dataService.getPomodoroSessionsRange(weekStart(), dateKey(now)), dataService.getReadingList(now.getFullYear()), dataService.getIntervalChallenges()]); const cards = boards[0] ? await dataService.getKanbanCards(boards[0].id) : []; setData({ habits, completions, goals, blocks, boards, cards, sessions, books, challenges }); } catch (error) { console.error(error); showToast('Dashboard data could not be loaded', 'error'); } finally { setLoading(false); } }, [activeProfile, showToast]);
+  useEffect(() => { load(); }, [load]); useEffect(() => { localStorage.setItem(SETTINGS_KEY, JSON.stringify(visible)); }, [visible]);
+  const today = dateKey(new Date()); const completedHabits = data.completions.filter((item: any) => item.completed !== false).length; const doneCards = data.cards.filter((item: any) => /done|complete/i.test(item.column_title || '')).length; const monthDays = useMemo(() => Array.from({ length: new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 0).getDate() }, (_, index) => new Date(calendarDate.getFullYear(), calendarDate.getMonth(), index + 1)), [calendarDate]);
+  const widget = (id: WidgetId, content: React.ReactNode) => visible[id] ? <section className={`dashboard-widget dashboard-widget--${id}`} key={id}><div className="dashboard-widget-header"><h3>{WIDGETS.find((item) => item.id === id)?.title}</h3></div>{content}</section> : null;
+  if (loading) return <div className="dashboard-loading"><div className="spinner" /><p>Loading dashboard...</p></div>;
+  return <div className="dashboard-view"><header className="dashboard-header"><div><h2 className="greeting">{new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 18 ? 'Good afternoon' : 'Good evening'}, {activeProfile?.name || 'there'}</h2><p className="date-display">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p></div><div className="dashboard-header-actions"><button className="btn-secondary" onClick={load}>Refresh</button><button className="btn-secondary" onClick={() => setShowSettings(true)}>Widgets</button></div></header><div className="dashboard-grid-rich">
+    {widget('today', <div className="dashboard-list"><strong>{completedHabits}/{data.habits.length} habits complete</strong>{data.blocks.filter((item: any) => item.date === today).slice(0, 4).map((item: any) => <span key={item.id}>{(item.start_time || '').slice(0, 5)} {item.activity}</span>)}{data.blocks.filter((item: any) => item.date === today).length === 0 && <span>No time blocks scheduled today.</span>}</div>)}
+    {widget('goals', <div className="dashboard-list">{data.goals.slice(0, 5).map((goal: any) => <div key={goal.id}><span>{goal.title}</span><div className="dashboard-progress"><i style={{ width: `${goal.progress || 0}%` }} /></div></div>)}{data.goals.length === 0 && <span>No annual goals yet.</span>}</div>)}
+    {widget('kanban', <div className="dashboard-list"><select className="dashboard-select" onChange={async (event) => { const cards = await dataService.getKanbanCards(event.currentTarget.value); setData((prev: any) => ({ ...prev, cards })); }}><option value="">{data.boards[0]?.title || 'No board selected'}</option>{data.boards.slice(1).map((board: any) => <option key={board.id} value={board.id}>{board.title}</option>)}</select><strong>{data.cards.length} cards</strong><span>{data.cards.filter((item: any) => item.priority === 'high').length} high priority</span><button className="btn-secondary" onClick={() => navigate('/kanban')}>Open board</button></div>)}
+    {widget('actions', <div className="dashboard-quick-actions"><button onClick={() => navigate('/pomodoro')}>Pomodoro</button><button onClick={() => navigate('/habits')}>Log habit</button><button onClick={() => navigate('/kanban')}>New card</button><button onClick={() => navigate('/weekly')}>Plan week</button></div>)}
+    {widget('calendar', <div><div className="dashboard-calendar-nav"><button onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1))}>Prev</button><strong>{calendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</strong><button onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1))}>Next</button></div><div className="dashboard-calendar">{monthDays.map((date) => { const key = dateKey(date); return <button className={key === today ? 'today' : ''} key={key} onClick={() => navigate('/monthly')}>{date.getDate()}<small>{data.blocks.filter((item: any) => item.date === key).length || ''}</small></button>; })}</div></div>)}
+    {widget('challenges', <div className="dashboard-list">{data.challenges.slice(0, 4).map((challenge: any) => <div key={challenge.id}><strong>{challenge.title}</strong><span>{challenge.start_date} to {challenge.end_date}</span></div>)}{data.challenges.length === 0 && <span>No active challenges.</span>}<button className="btn-secondary" onClick={() => navigate('/habits')}>Open habits</button></div>)}
+    {widget('stats', <div className="dashboard-stat-list"><div><strong>{completedHabits}</strong><span>Habits today</span></div><div><strong>{data.sessions.filter((item: any) => item.was_completed).length}</strong><span>Pomodoros</span></div><div><strong>{doneCards}</strong><span>Cards done</span></div><div><strong>{data.books.filter((item: any) => item.completed).length}/{data.books.length}</strong><span>Books</span></div></div>)}
+  </div>{showSettings && <div className="dashboard-dialog-backdrop" onMouseDown={() => setShowSettings(false)}><section className="dashboard-dialog" onMouseDown={(event) => event.stopPropagation()}><h3>Dashboard widgets</h3>{WIDGETS.map((item) => <label key={item.id}><input type="checkbox" checked={visible[item.id]} onChange={(event) => setVisible((prev) => ({ ...prev, [item.id]: event.currentTarget.checked }))} /> {item.title}</label>)}<button className="btn-primary" onClick={() => setShowSettings(false)}>Done</button></section></div>}</div>;
 }
-
 export default DashboardPage;

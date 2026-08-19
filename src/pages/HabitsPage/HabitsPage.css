@@ -281,14 +281,18 @@
 }
 
 .habit-grid-scroll {
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
   padding-bottom: 6px;
+  position: relative;
+  max-width: 100%;
 }
 
 .habit-grid {
   display: grid;
   gap: 6px;
   min-width: max-content;
+  position: relative;
 }
 
 .habit-grid-row {
@@ -320,6 +324,11 @@
 .habit-grid-corner {
   justify-content: flex-start;
   padding: 0 12px;
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background: var(--bg-elevated, #f8fafc);
+  box-shadow: 3px 0 6px rgba(0, 0, 0, 0.12);
 }
 
 .habit-grid-name {
@@ -334,6 +343,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  box-shadow: 3px 0 6px rgba(0, 0, 0, 0.12);
 }
 
 .habit-cell {
@@ -474,24 +487,29 @@
   margin-top: 20px;
   padding-top: 16px;
   border-top: 1px solid var(--border-default, rgba(0, 0, 0, 0.08));
+  overflow: hidden;
 }
 
 .streak-bars {
   display: flex;
   align-items: flex-end;
-  gap: 3px;
+  gap: 2px;
   height: 92px;
   margin-top: 12px;
-  padding: 10px;
+  padding: 8px 6px;
   border-radius: 8px;
   background: var(--bg-elevated, #f8fafc);
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .streak-bar {
-  flex: 1;
-  min-width: 4px;
-  border-radius: 4px 4px 0 0;
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: 2px 2px 0 0;
   background: #ef4444;
+  transition: height 0.2s ease;
 }
 
 .streak-bar.medium {
@@ -503,8 +521,9 @@
 }
 
 .streak-bar.today {
-  outline: 2px solid #2563eb;
-  outline-offset: 1px;
+  box-shadow: 0 0 0 1.5px #2563eb;
+  position: relative;
+  z-index: 2;
 }
 
 .achievements-grid {
@@ -754,3 +773,246 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================================
+   Challenges Tab
+   ============================================================ */
+
+.challenges-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+/* Sidebar */
+.challenges-sidebar {
+  background: var(--bg-surface, #fff);
+  border: 1px solid var(--border-default, rgba(0, 0, 0, 0.08));
+  border-radius: var(--radius-lg, 12px);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 200px;
+}
+
+.challenges-archive-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #666);
+  cursor: pointer;
+  user-select: none;
+}
+
+.challenge-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.challenge-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-default, rgba(0, 0, 0, 0.08));
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--bg-elevated, #f8fafc);
+  transition: border-color 0.15s, background 0.15s, opacity 0.15s;
+}
+
+.challenge-list-item:hover {
+  border-color: var(--accent-primary, #8b6642);
+  background: var(--bg-hover, rgba(139, 102, 66, 0.06));
+}
+
+.challenge-list-item.selected {
+  border-color: var(--accent-primary, #8b6642);
+  background: rgba(139, 102, 66, 0.1);
+}
+
+.challenge-list-item.archived {
+  opacity: 0.55;
+}
+
+.challenge-list-item__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.challenge-list-item__info strong {
+  font-size: 0.9rem;
+  color: var(--text-primary, #1a1a1a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.challenge-list-item__info span {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #666);
+}
+
+.challenge-list-item__actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.challenge-action-btn {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary, #666);
+  font-size: 1rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.challenge-action-btn:hover {
+  background: var(--bg-elevated, #f0f0f0);
+  color: var(--text-primary, #1a1a1a);
+}
+
+.challenge-action-btn--delete:hover {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+/* Detail pane */
+.challenges-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background: var(--bg-surface, #fff);
+  border: 1px solid var(--border-default, rgba(0, 0, 0, 0.08));
+  border-radius: var(--radius-lg, 12px);
+  padding: 20px;
+  min-height: 300px;
+}
+
+.challenges-detail__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.challenges-detail__header h3 {
+  margin: 0 0 4px;
+  font-size: 1.15rem;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.challenges-detail__dates {
+  font-size: 0.82rem;
+  color: var(--text-secondary, #666);
+}
+
+.challenges-detail__notes {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #666);
+  font-style: italic;
+}
+
+/* Completion grid (reuses habit-grid, adds name variant) */
+.challenge-grid {
+  /* grid-template-columns is set inline */
+}
+
+.habit-grid-name--challenge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding-right: 4px;
+}
+
+.habit-grid-name--challenge span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+/* Summary section */
+.challenges-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-default, rgba(0, 0, 0, 0.08));
+}
+
+/* Create challenge modal */
+.challenges-create-modal {
+  display: grid;
+  gap: 16px;
+  width: min(440px, 100%);
+}
+
+.challenges-create-modal label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #555);
+}
+
+.challenges-create-modal .form-input {
+  padding: 8px 10px;
+  border: 1px solid var(--border-default, rgba(0, 0, 0, 0.15));
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: var(--text-primary, #1a1a1a);
+  background: var(--bg-elevated, #f8fafc);
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.challenges-create-modal .form-input:focus {
+  outline: 2px solid var(--accent-primary, #8b6642);
+  outline-offset: -1px;
+}
+
+.challenges-create-modal__dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.challenges-create-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .challenges-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .challenges-sidebar {
+    max-height: 240px;
+    overflow-y: auto;
+  }
+
+  .challenges-create-modal__dates {
+    grid-template-columns: 1fr;
+  }
+}
+

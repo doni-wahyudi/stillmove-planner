@@ -1407,6 +1407,16 @@ class DataService {
     }
   }
 
+  public async updateCalendarEvent(id: string, updates: any): Promise<any> {
+    try {
+      const { data, error } = await this.supabase.from('calendar_events').update(updates).eq('id', id).select();
+      if (error) throw error;
+      return data[0];
+    } catch (error) {
+      this.handleError(error, 'updateCalendarEvent');
+    }
+  }
+
   // ==================== CANVAS DOCUMENTS ====================
 
   public async getCanvasDocuments(): Promise<any[]> {
@@ -1612,6 +1622,217 @@ class DataService {
       if (error) throw error;
     } catch (error) {
       this.handleError(error, 'deleteKanbanCard');
+    }
+  }
+
+  public async updateKanbanColumn(id: string, updates: any): Promise<any> {
+    try {
+      const { data, error } = await this.supabase.from('kanban_columns').update(updates).eq('id', id).select();
+      if (error) throw error;
+      return data[0];
+    } catch (error) {
+      this.handleError(error, 'updateKanbanColumn');
+    }
+  }
+
+  public async deleteKanbanColumn(id: string): Promise<void> {
+    try {
+      const { error } = await this.supabase.from('kanban_columns').delete().eq('id', id);
+      if (error) throw error;
+    } catch (error) {
+      this.handleError(error, 'deleteKanbanColumn');
+    }
+  }
+
+  public async getKanbanChecklistItems(cardId: string): Promise<any[]> {
+    try {
+      const { data, error } = await this.supabase.from('kanban_checklist_items').select('*').eq('card_id', cardId).order('order_index');
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      this.handleError(error, 'getKanbanChecklistItems');
+    }
+  }
+
+  public async createKanbanChecklistItem(item: any): Promise<any> {
+    try {
+      const { data, error } = await this.supabase.from('kanban_checklist_items').insert([item]).select();
+      if (error) throw error;
+      return data[0];
+    } catch (error) {
+      this.handleError(error, 'createKanbanChecklistItem');
+    }
+  }
+
+  public async updateKanbanChecklistItem(id: string, updates: any): Promise<any> {
+    try {
+      const { data, error } = await this.supabase.from('kanban_checklist_items').update(updates).eq('id', id).select();
+      if (error) throw error;
+      return data[0];
+    } catch (error) {
+      this.handleError(error, 'updateKanbanChecklistItem');
+    }
+  }
+
+  public async deleteKanbanChecklistItem(id: string): Promise<void> {
+    try {
+      const { error } = await this.supabase.from('kanban_checklist_items').delete().eq('id', id);
+      if (error) throw error;
+    } catch (error) {
+      this.handleError(error, 'deleteKanbanChecklistItem');
+    }
+  }
+
+  public async getKanbanComments(cardId: string): Promise<any[]> {
+    try {
+      const { data, error } = await this.supabase.from('kanban_comments').select('*').eq('card_id', cardId).order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      this.handleError(error, 'getKanbanComments');
+    }
+  }
+
+  public async createKanbanComment(comment: any): Promise<any> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+      const { data, error } = await this.supabase.from('kanban_comments').insert([{ ...comment, user_id: user.id }]).select();
+      if (error) throw error;
+      return data[0];
+    } catch (error) {
+      this.handleError(error, 'createKanbanComment');
+    }
+  }
+
+  public async deleteKanbanComment(id: string): Promise<void> {
+    try {
+      const { error } = await this.supabase.from('kanban_comments').delete().eq('id', id);
+      if (error) throw error;
+    } catch (error) {
+      this.handleError(error, 'deleteKanbanComment');
+    }
+  }
+
+  public async getKanbanActivity(cardId: string): Promise<any[]> {
+    try {
+      const { data, error } = await this.supabase.from('kanban_activity_log').select('*').eq('card_id', cardId).order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      this.handleError(error, 'getKanbanActivity');
+    }
+  }
+
+  public async createKanbanActivity(entry: any): Promise<any> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+      const { data, error } = await this.supabase.from('kanban_activity_log').insert([{ ...entry, user_id: user.id }]).select();
+      if (error) throw error;
+      return data[0];
+    } catch (error) {
+      this.handleError(error, 'createKanbanActivity');
+    }
+  }
+
+  // ==================== INTERVAL CHALLENGES ====================
+
+  public async getIntervalChallenges(includeArchived = false): Promise<any[]> {
+    try {
+      let query = this.supabase.from('interval_challenges').select('*').order('start_date', { ascending: false });
+      if (!includeArchived) query = query.eq('is_archived', false);
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      this.handleError(error, 'getIntervalChallenges');
+    }
+  }
+
+  public async createIntervalChallenge(challenge: any): Promise<any> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+      const { data, error } = await this.supabase.from('interval_challenges').insert([{ ...challenge, user_id: user.id }]).select();
+      if (error) throw error;
+      return data[0];
+    } catch (error) {
+      this.handleError(error, 'createIntervalChallenge');
+    }
+  }
+
+  public async getChallengeHabits(challengeId: string): Promise<any[]> {
+    try {
+      const { data, error } = await this.supabase.from('challenge_habits').select('*').eq('challenge_id', challengeId).order('order_index');
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      this.handleError(error, 'getChallengeHabits');
+    }
+  }
+
+  public async createChallengeHabit(habit: any): Promise<any> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+      const { data, error } = await this.supabase.from('challenge_habits').insert([{ ...habit, user_id: user.id }]).select();
+      if (error) throw error;
+      return data[0];
+    } catch (error) {
+      this.handleError(error, 'createChallengeHabit');
+    }
+  }
+
+  public async getChallengeCompletions(challengeId: string, startDate: string, endDate: string): Promise<any[]> {
+    try {
+      const { data, error } = await this.supabase.from('challenge_completions').select('*').eq('challenge_id', challengeId).gte('date', startDate).lte('date', endDate);
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      this.handleError(error, 'getChallengeCompletions');
+    }
+  }
+
+  public async toggleChallengeCompletion(habitId: string, challengeId: string, date: string, completed: boolean): Promise<any> {
+    try {
+      const { data: { user } } = await this.supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+      const { data, error } = await this.supabase.from('challenge_completions').upsert([{
+        habit_id: habitId, challenge_id: challengeId, date, completed, user_id: user.id,
+      }], { onConflict: 'habit_id,date' }).select();
+      if (error) throw error;
+      return data[0];
+    } catch (error) {
+      this.handleError(error, 'toggleChallengeCompletion');
+    }
+  }
+
+  public async updateIntervalChallenge(id: string, updates: any): Promise<any> {
+    try {
+      const { data, error } = await this.supabase.from('interval_challenges').update(updates).eq('id', id).select();
+      if (error) throw error;
+      return data[0];
+    } catch (error) {
+      this.handleError(error, 'updateIntervalChallenge');
+    }
+  }
+
+  public async deleteIntervalChallenge(id: string): Promise<void> {
+    try {
+      const { error } = await this.supabase.from('interval_challenges').delete().eq('id', id);
+      if (error) throw error;
+    } catch (error) {
+      this.handleError(error, 'deleteIntervalChallenge');
+    }
+  }
+
+  public async deleteChallengeHabit(id: string): Promise<void> {
+    try {
+      const { error } = await this.supabase.from('challenge_habits').delete().eq('id', id);
+      if (error) throw error;
+    } catch (error) {
+      this.handleError(error, 'deleteChallengeHabit');
     }
   }
 

@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ProfileProvider } from '@/contexts/ProfileContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ToastProvider } from '@/components/Toast/Toast';
+import { PomodoroProvider } from '@/contexts/PomodoroContext';
 import { AppLayout } from '@/layouts/AppLayout/AppLayout';
 import { AuthPage } from '@/pages/AuthPage/AuthPage';
 import { ActionPlanPage } from '@/pages/ActionPlanPage/ActionPlanPage';
@@ -62,44 +63,46 @@ export function App() {
       <AuthProvider>
         <ProfileProvider>
           <ToastProvider>
-            <HashRouter>
-              <Routes>
-                {/* Public Auth Routes */}
-                <Route
-                  path="/auth"
-                  element={
-                    <PublicRoute>
-                      <AuthPage />
-                    </PublicRoute>
-                  }
-                />
+            <PomodoroProvider>
+              <HashRouter>
+                <Routes>
+                  {/* Public Auth Routes */}
+                  <Route
+                    path="/auth"
+                    element={
+                      <PublicRoute>
+                        <AuthPage />
+                      </PublicRoute>
+                    }
+                  />
 
-                {/* Protected Layout Routes */}
-                <Route
-                  path="/"
-                  element={
-                    <ProtectedRoute>
-                      <AppLayout />
-                    </ProtectedRoute>
-                  }
-                >
-                  <Route index element={<Navigate to="/dashboard" replace />} />
-                  <Route path="dashboard" element={<DashboardPage />} />
-                  <Route path="weekly" element={<WeeklyPage />} />
-                  <Route path="monthly" element={<MonthlyPage />} />
-                  <Route path="annual" element={<AnnualPage />} />
-                  <Route path="habits" element={<HabitsPage />} />
-                  <Route path="action-plan" element={<ActionPlanPage />} />
-                  <Route path="kanban" element={<KanbanPage />} />
-                  <Route path="canvas" element={<CanvasPage />} />
-                  <Route path="pomodoro" element={<PomodoroPage />} />
-                  <Route path="settings" element={<SettingsPage />} />
-                </Route>
+                  {/* Protected Layout Routes */}
+                  <Route
+                    path="/"
+                    element={
+                      <ProtectedRoute>
+                        <AppLayout />
+                      </ProtectedRoute>
+                    }
+                  >
+                    <Route index element={<Navigate to="/dashboard" replace />} />
+                    <Route path="dashboard" element={<DashboardPage />} />
+                    <Route path="weekly" element={<WeeklyPage />} />
+                    <Route path="monthly" element={<MonthlyPage />} />
+                    <Route path="annual" element={<AnnualPage />} />
+                    <Route path="habits" element={<HabitsPage />} />
+                    <Route path="action-plan" element={<ActionPlanPage />} />
+                    <Route path="kanban" element={<KanbanPage />} />
+                    <Route path="canvas" element={<CanvasPage />} />
+                    <Route path="pomodoro" element={<PomodoroPage />} />
+                    <Route path="settings" element={<SettingsPage />} />
+                  </Route>
 
-                {/* Fallback route */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </HashRouter>
+                  {/* Fallback route */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </HashRouter>
+            </PomodoroProvider>
           </ToastProvider>
         </ProfileProvider>
       </AuthProvider>

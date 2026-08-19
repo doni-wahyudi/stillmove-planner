@@ -16,6 +16,12 @@ export function AnnualPage() {
   const [author, setAuthor] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
+  const updateSubGoals = async (goal: any, sub_goals: any[]) => {
+    const progress = sub_goals.length ? Math.round(sub_goals.filter((item) => item.completed).length / sub_goals.length * 100) : goal.progress || 0;
+    const updated = await dataService.updateAnnualGoal(goal.id, { sub_goals, progress });
+    setGoals((prev) => prev.map((item) => item.id === goal.id ? updated : item));
+  };
+
   const loadData = useCallback(async () => {
     if (!activeProfile) return;
 
@@ -128,6 +134,14 @@ export function AnnualPage() {
                     await dataService.updateAnnualGoal(goal.id, { progress });
                   }}
                 />
+                <label className="planner-inline-label">Deadline<input type="date" value={goal.deadline || ''} onChange={async (event) => {
+                  const updated = await dataService.updateAnnualGoal(goal.id, { deadline: event.currentTarget.value || null });
+                  setGoals((prev) => prev.map((item) => item.id === goal.id ? updated : item));
+                }} /></label>
+                <div className="planner-subgoals">
+                  {(goal.sub_goals || []).map((subGoal: any, index: number) => <label key={`${subGoal.text}-${index}`}><input type="checkbox" checked={Boolean(subGoal.completed)} onChange={(event) => updateSubGoals(goal, (goal.sub_goals || []).map((item: any, itemIndex: number) => itemIndex === index ? { ...item, completed: event.currentTarget.checked } : item))} /> {subGoal.text}</label>)}
+                  <button className="btn-secondary" onClick={() => { const text = window.prompt('Milestone title'); if (text?.trim()) updateSubGoals(goal, [...(goal.sub_goals || []), { text: text.trim(), completed: false }]); }}>Add milestone</button>
+                </div>
               </div>
             ))}
           </div>

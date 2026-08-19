@@ -3,6 +3,7 @@ import { Navbar } from '@/components/Navbar/Navbar';
 import { Breadcrumb } from '@/components/Breadcrumb/Breadcrumb';
 import { BottomNav } from '@/components/BottomNav/BottomNav';
 import { QuickAddFAB } from '@/components/QuickAddFAB/QuickAddFAB';
+import { FloatingPomodoroPlayer } from '@/components/FloatingPomodoroPlayer/FloatingPomodoroPlayer';
 import './AppLayout.css';
 
 export function AppLayout() {
@@ -15,6 +16,7 @@ export function AppLayout() {
           <Outlet />
         </div>
       </main>
+      <FloatingPomodoroPlayer />
       <QuickAddFAB />
       <BottomNav />
     </div>

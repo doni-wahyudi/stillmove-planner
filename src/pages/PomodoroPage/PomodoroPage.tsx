@@ -1,29 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import dataService from '@/services/DataService';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useToast } from '@/components/Toast/Toast';
+import { usePomodoro, TimerMode } from '@/contexts/PomodoroContext';
 import './PomodoroPage.css';
 
-type TimerMode = 'focus' | 'shortBreak' | 'longBreak';
 type TaskSource = 'custom' | 'goal' | 'timeblock';
-
-interface PomodoroSettings {
-  focusDuration: number;
-  shortBreakDuration: number;
-  longBreakDuration: number;
-  sessionsBeforeLongBreak: number;
-}
-
-interface TimerState {
-  mode: TimerMode;
-  timeRemaining: number;
-  isRunning: boolean;
-  isPaused: boolean;
-  sessionCount: number;
-  currentTask: string;
-  linkedGoalId: string | null;
-  linkedTimeBlockId: string | null;
-}
 
 interface PomodoroSession {
   id: string;
@@ -51,16 +33,6 @@ interface TimeBlock {
   activity?: string;
   title?: string;
 }
-
-const DEFAULT_SETTINGS: PomodoroSettings = {
-  focusDuration: 25,
-  shortBreakDuration: 5,
-  longBreakDuration: 15,
-  sessionsBeforeLongBreak: 4,
-};
-
-const SETTINGS_KEY = 'stillmove_pomodoro_settings';
-const STATE_KEY = 'stillmove_pomodoro_state';
 
 const BREAK_SUGGESTIONS: Record<Exclude<TimerMode, 'focus'>, string[]> = {
   shortBreak: [
@@ -107,92 +79,50 @@ function modeLabel(mode: TimerMode): string {
   return 'Focus';
 }
 
-function loadSettings(): PomodoroSettings {
-  try {
-    const saved = localStorage.getItem(SETTINGS_KEY);
-    return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
-  } catch {
-    return DEFAULT_SETTINGS;
-  }
-}
-
-function getModeDuration(mode: TimerMode, settings: PomodoroSettings): number {
-  if (mode === 'shortBreak') return settings.shortBreakDuration * 60;
-  if (mode === 'longBreak') return settings.longBreakDuration * 60;
-  return settings.focusDuration * 60;
-}
-
-function createInitialTimerState(settings: PomodoroSettings): TimerState {
-  try {
-    const saved = localStorage.getItem(STATE_KEY);
-    if (!saved) {
-      return {
-        mode: 'focus',
-        timeRemaining: settings.focusDuration * 60,
-        isRunning: false,
-        isPaused: false,
-        sessionCount: 0,
-        currentTask: '',
-        linkedGoalId: null,
-        linkedTimeBlockId: null,
-      };
-    }
-
-    const parsed = JSON.parse(saved);
-    const mode = (parsed.mode || 'focus') as TimerMode;
-    let timeRemaining = Number(parsed.timeRemaining) || getModeDuration(mode, settings);
-
-    if (parsed.isRunning && !parsed.isPaused && parsed.startedAt) {
-      const elapsed = Math.floor((Date.now() - Number(parsed.startedAt)) / 1000);
-      timeRemaining = Math.max(0, timeRemaining - elapsed);
-    }
-
-    return {
-      mode,
-      timeRemaining: timeRemaining || getModeDuration(mode, settings),
-      isRunning: Boolean(parsed.isRunning && timeRemaining > 0),
-      isPaused: Boolean(parsed.isPaused),
-      sessionCount: Number(parsed.sessionCount) || 0,
-      currentTask: parsed.currentTask || '',
-      linkedGoalId: parsed.linkedGoalId || null,
-      linkedTimeBlockId: parsed.linkedTimeBlockId || null,
-    };
-  } catch {
-    return {
-      mode: 'focus',
-      timeRemaining: settings.focusDuration * 60,
-      isRunning: false,
-      isPaused: false,
-      sessionCount: 0,
-      currentTask: '',
-      linkedGoalId: null,
-      linkedTimeBlockId: null,
-    };
-  }
-}
-
 export function PomodoroPage() {
   const { activeProfile } = useProfile();
   const { showToast } = useToast();
-  const [settings, setSettings] = useState<PomodoroSettings>(() => loadSettings());
-  const [timerState, setTimerState] = useState<TimerState>(() =>
-    createInitialTimerState(loadSettings())
-  );
+
+  // Consume global timer state and actions
+  const {
+    mode,
+    timeRemaining,
+    isRunning,
+    isPaused,
+    sessionCount,
+    currentTask,
+    linkedGoalId,
+    linkedTimeBlockId,
+    settings,
+    startTimer,
+    pauseTimer,
+    resumeTimer,
+    resetTimer,
+    skipPhase,
+    setMode,
+    setTask,
+    updateSettings,
+  } = usePomodoro();
+
   const [taskSource, setTaskSource] = useState<TaskSource>('custom');
   const [linkedItem, setLinkedItem] = useState('');
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [showSettings, setShowSettings] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+
+  // Settings form local state
+  const [formFocusDur, setFormFocusDur] = useState(settings.focusDuration);
+  const [formShortBreak, setFormShortBreak] = useState(settings.shortBreakDuration);
+  const [formLongBreak, setFormLongBreak] = useState(settings.longBreakDuration);
+  const [formIntervals, setFormIntervals] = useState(settings.sessionsBeforeLongBreak);
+  const [formSound, setFormSound] = useState(settings.soundEnabled);
+  const [formAutoBreak, setFormAutoBreak] = useState(settings.autoStartBreaks);
+  const [formAutoFocus, setFormAutoFocus] = useState(settings.autoStartFocus);
+
+  // Analytics & targets state
   const [todaySessions, setTodaySessions] = useState<PomodoroSession[]>([]);
   const [weekSessions, setWeekSessions] = useState<PomodoroSession[]>([]);
   const [goals, setGoals] = useState<AnnualGoal[]>([]);
   const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  const intervalRef = useRef<number | null>(null);
-  const runStartedAtRef = useRef<number | null>(null);
-  const runStartRemainingRef = useRef<number | null>(null);
-  const timerStateRef = useRef(timerState);
-  const currentSessionIdRef = useRef(currentSessionId);
 
   const today = toDateKey(new Date());
   const weekStartDate = getWeekStart(new Date());
@@ -201,27 +131,13 @@ export function PomodoroPage() {
   weekEndDate.setDate(weekEndDate.getDate() + 6);
   const weekEnd = toDateKey(weekEndDate);
 
-  useEffect(() => {
-    timerStateRef.current = timerState;
-  }, [timerState]);
-
-  useEffect(() => {
-    currentSessionIdRef.current = currentSessionId;
-  }, [currentSessionId]);
-
   const completedToday = useMemo(
-    () =>
-      todaySessions.filter(
-        (session) => session.session_type === 'focus' && session.was_completed
-      ),
+    () => todaySessions.filter((s) => s.session_type === 'focus' && s.was_completed),
     [todaySessions]
   );
 
   const completedThisWeek = useMemo(
-    () =>
-      weekSessions.filter(
-        (session) => session.session_type === 'focus' && session.was_completed
-      ),
+    () => weekSessions.filter((s) => s.session_type === 'focus' && s.was_completed),
     [weekSessions]
   );
 
@@ -264,24 +180,27 @@ export function PomodoroPage() {
     return streak;
   }, [completedThisWeek]);
 
+  const totalModeDuration = useMemo(() => {
+    if (mode === 'shortBreak') return settings.shortBreakDuration * 60;
+    if (mode === 'longBreak') return settings.longBreakDuration * 60;
+    return settings.focusDuration * 60;
+  }, [mode, settings]);
+
   const progress = useMemo(() => {
-    const duration = getModeDuration(timerState.mode, settings);
-    return duration > 0 ? (duration - timerState.timeRemaining) / duration : 0;
-  }, [settings, timerState.mode, timerState.timeRemaining]);
+    return totalModeDuration > 0 ? (totalModeDuration - timeRemaining) / totalModeDuration : 0;
+  }, [timeRemaining, totalModeDuration]);
 
   const breakSuggestion = useMemo(() => {
-    if (timerState.mode === 'focus') return '';
-    const suggestions = BREAK_SUGGESTIONS[timerState.mode];
-    const index = timerState.sessionCount % suggestions.length;
+    if (mode === 'focus') return '';
+    const suggestions = BREAK_SUGGESTIONS[mode];
+    const index = sessionCount % suggestions.length;
     return suggestions[index];
-  }, [timerState.mode, timerState.sessionCount]);
+  }, [mode, sessionCount]);
 
   const linkedGoalStats = useMemo(() => {
     return goals
       .map((goal) => {
-        const sessions = completedThisWeek.filter(
-          (session) => session.linked_goal_id === goal.id
-        );
+        const sessions = completedThisWeek.filter((session) => session.linked_goal_id === goal.id);
         return {
           goal,
           sessions: sessions.length,
@@ -296,7 +215,6 @@ export function PomodoroPage() {
 
   const loadData = useCallback(async () => {
     if (!activeProfile) return;
-
     setIsLoading(true);
     try {
       const [nextToday, nextWeek, nextGoals, nextBlocks] = await Promise.all([
@@ -305,10 +223,10 @@ export function PomodoroPage() {
         dataService.getAnnualGoals(new Date().getFullYear()),
         dataService.getTimeBlocks(today),
       ]);
-      setTodaySessions(nextToday);
-      setWeekSessions(nextWeek);
-      setGoals(nextGoals);
-      setTimeBlocks(nextBlocks);
+      setTodaySessions(nextToday || []);
+      setWeekSessions(nextWeek || []);
+      setGoals(nextGoals || []);
+      setTimeBlocks(nextBlocks || []);
     } catch (error) {
       console.error('Failed to load pomodoro data:', error);
       showToast('Failed to load Pomodoro data', 'error');
@@ -319,309 +237,50 @@ export function PomodoroPage() {
 
   useEffect(() => {
     loadData();
-  }, [loadData]);
+  }, [loadData, isRunning]);
 
-  const persistTimerState = useCallback((state: TimerState) => {
-    localStorage.setItem(
-      STATE_KEY,
-      JSON.stringify({
-        ...state,
-        startedAt: runStartedAtRef.current,
-      })
-    );
-  }, []);
-
-  useEffect(() => {
-    persistTimerState(timerState);
-  }, [persistTimerState, timerState]);
-
-  const playBell = useCallback(() => {
-    try {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      const audioContext = new AudioContextClass();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      oscillator.frequency.value = 880;
-      oscillator.type = 'sine';
-      gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.45);
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.45);
-    } catch (error) {
-      console.warn('Audio unavailable:', error);
-    }
-  }, []);
-
-  const completeCurrentMode = useCallback(async () => {
-    if (intervalRef.current) {
-      window.clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-
-    const state = timerStateRef.current;
-    playBell();
-
-    if (state.mode === 'focus') {
-      const nextSessionCount = state.sessionCount + 1;
-      const existingSessionId = currentSessionIdRef.current;
-
-      if (existingSessionId) {
-        try {
-          await dataService.updatePomodoroSession(existingSessionId, {
-            completed_at: new Date().toISOString(),
-            was_completed: true,
-          });
-        } catch (error) {
-          console.warn('Failed to complete Pomodoro session:', error);
-        }
-        setCurrentSessionId(null);
-      }
-
-      const nextMode: TimerMode =
-        nextSessionCount % settings.sessionsBeforeLongBreak === 0
-          ? 'longBreak'
-          : 'shortBreak';
-      const nextDuration = getModeDuration(nextMode, settings);
-      runStartedAtRef.current = Date.now();
-      runStartRemainingRef.current = nextDuration;
-
-      setTimerState((prev) => ({
-        ...prev,
-        mode: nextMode,
-        timeRemaining: nextDuration,
-        isRunning: true,
-        isPaused: false,
-        sessionCount: nextSessionCount,
-      }));
-      showToast('Focus session completed', 'success');
-      loadData();
-      return;
-    }
-
-    runStartedAtRef.current = null;
-    runStartRemainingRef.current = null;
-    setTimerState((prev) => ({
-      ...prev,
-      mode: 'focus',
-      timeRemaining: settings.focusDuration * 60,
-      isRunning: false,
-      isPaused: false,
-    }));
-    showToast('Break completed', 'success');
-  }, [loadData, playBell, settings, showToast]);
-
-  useEffect(() => {
-    if (!timerState.isRunning || timerState.isPaused) {
-      if (intervalRef.current) {
-        window.clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      return;
-    }
-
-    if (!runStartedAtRef.current) {
-      runStartedAtRef.current = Date.now();
-      runStartRemainingRef.current = timerState.timeRemaining;
-    }
-
-    intervalRef.current = window.setInterval(() => {
-      if (!runStartedAtRef.current || runStartRemainingRef.current === null) return;
-
-      const elapsed = Math.floor((Date.now() - runStartedAtRef.current) / 1000);
-      const nextTime = Math.max(0, runStartRemainingRef.current - elapsed);
-      setTimerState((prev) => ({ ...prev, timeRemaining: nextTime }));
-
-      if (nextTime <= 0) {
-        completeCurrentMode();
-      }
-    }, 500);
-
-    return () => {
-      if (intervalRef.current) {
-        window.clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [
-    completeCurrentMode,
-    timerState.isPaused,
-    timerState.isRunning,
-    timerState.timeRemaining,
-  ]);
-
-  const startTimer = async () => {
-    if (timerState.mode === 'focus' && !currentSessionId) {
-      try {
-        const session = await dataService.createPomodoroSession({
-          date: today,
-          started_at: new Date().toISOString(),
-          duration_minutes: settings.focusDuration,
-          session_type: 'focus',
-          was_completed: false,
-          task_description: timerState.currentTask || null,
-          linked_goal_id: timerState.linkedGoalId,
-          linked_time_block_id: timerState.linkedTimeBlockId,
-        });
-        setCurrentSessionId(session?.id || null);
-      } catch (error) {
-        console.warn('Failed to create Pomodoro session:', error);
-        showToast('Timer started without cloud session', 'warning');
-      }
-    }
-
-    runStartedAtRef.current = Date.now();
-    runStartRemainingRef.current = timerState.timeRemaining;
-    setTimerState((prev) => ({
-      ...prev,
-      isRunning: true,
-      isPaused: false,
-    }));
-  };
-
-  const pauseTimer = () => {
-    setTimerState((prev) => ({ ...prev, isPaused: true }));
-    runStartedAtRef.current = null;
-    runStartRemainingRef.current = null;
-  };
-
-  const toggleTimer = () => {
-    if (!timerState.isRunning) {
+  const handleToggleTimer = () => {
+    if (isRunning && !isPaused) {
+      pauseTimer();
+    } else if (isPaused) {
+      resumeTimer();
+    } else {
       startTimer();
-      return;
-    }
-    if (timerState.isPaused) {
-      runStartedAtRef.current = Date.now();
-      runStartRemainingRef.current = timerState.timeRemaining;
-      setTimerState((prev) => ({ ...prev, isPaused: false }));
-      return;
-    }
-    pauseTimer();
-  };
-
-  const resetTimer = async () => {
-    if (currentSessionId) {
-      try {
-        await dataService.deletePomodoroSession(currentSessionId);
-      } catch (error) {
-        console.warn('Failed to delete incomplete Pomodoro session:', error);
-      }
-    }
-
-    setCurrentSessionId(null);
-    runStartedAtRef.current = null;
-    runStartRemainingRef.current = null;
-    setTimerState((prev) => ({
-      ...prev,
-      mode: 'focus',
-      timeRemaining: settings.focusDuration * 60,
-      isRunning: false,
-      isPaused: false,
-    }));
-  };
-
-  const skipPhase = async () => {
-    if (timerState.mode === 'focus' && currentSessionId) {
-      try {
-        await dataService.deletePomodoroSession(currentSessionId);
-      } catch (error) {
-        console.warn('Failed to delete skipped Pomodoro session:', error);
-      }
-      setCurrentSessionId(null);
-    }
-
-    const nextMode: TimerMode = timerState.mode === 'focus' ? 'shortBreak' : 'focus';
-    const nextDuration = getModeDuration(nextMode, settings);
-    runStartedAtRef.current = null;
-    runStartRemainingRef.current = null;
-    setTimerState((prev) => ({
-      ...prev,
-      mode: nextMode,
-      timeRemaining: nextDuration,
-      isRunning: false,
-      isPaused: false,
-    }));
-    showToast('Skipped to next phase', 'info');
-  };
-
-  const saveSettings = () => {
-    const nextSettings = {
-      focusDuration: clamp(settings.focusDuration, 1, 60),
-      shortBreakDuration: clamp(settings.shortBreakDuration, 1, 30),
-      longBreakDuration: clamp(settings.longBreakDuration, 1, 60),
-      sessionsBeforeLongBreak: clamp(settings.sessionsBeforeLongBreak, 2, 10),
-    };
-    setSettings(nextSettings);
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(nextSettings));
-
-    if (!timerState.isRunning) {
-      setTimerState((prev) => ({
-        ...prev,
-        timeRemaining: getModeDuration(prev.mode, nextSettings),
-      }));
-    }
-
-    setShowSettings(false);
-    showToast('Timer settings saved', 'success');
-  };
-
-  const resetSettings = () => {
-    setSettings(DEFAULT_SETTINGS);
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(DEFAULT_SETTINGS));
-    if (!timerState.isRunning) {
-      setTimerState((prev) => ({
-        ...prev,
-        mode: 'focus',
-        timeRemaining: DEFAULT_SETTINGS.focusDuration * 60,
-      }));
     }
   };
 
-  const updateTaskSource = (nextSource: TaskSource) => {
-    setTaskSource(nextSource);
+  const handleTaskSourceChange = (src: TaskSource) => {
+    setTaskSource(src);
     setLinkedItem('');
-    setTimerState((prev) => ({
-      ...prev,
-      linkedGoalId: null,
-      linkedTimeBlockId: null,
-    }));
+    setTask(currentTask, null, null);
   };
 
-  const updateLinkedItem = (value: string) => {
-    setLinkedItem(value);
-    if (!value) {
-      setTimerState((prev) => ({
-        ...prev,
-        linkedGoalId: null,
-        linkedTimeBlockId: null,
-      }));
+  const handleLinkedItemChange = (val: string) => {
+    setLinkedItem(val);
+    if (!val) {
+      setTask(currentTask, null, null);
       return;
     }
-
     if (taskSource === 'goal') {
-      const goal = goals.find((item) => item.id === value);
-      setTimerState((prev) => ({
-        ...prev,
-        currentTask: goal?.title || goal?.goal_text || prev.currentTask,
-        linkedGoalId: value,
-        linkedTimeBlockId: null,
-      }));
-      return;
+      const goal = goals.find((g) => g.id === val);
+      setTask(goal?.title || goal?.goal_text || currentTask, val, null);
+    } else {
+      const block = timeBlocks.find((b) => b.id === val);
+      setTask(block?.activity || block?.title || currentTask, null, val);
     }
-
-    const block = timeBlocks.find((item) => item.id === value);
-    setTimerState((prev) => ({
-      ...prev,
-      currentTask: block?.activity || block?.title || prev.currentTask,
-      linkedTimeBlockId: value,
-      linkedGoalId: null,
-    }));
   };
 
-  const clearStoredState = () => {
-    localStorage.removeItem(STATE_KEY);
-    resetTimer();
+  const handleSaveSettings = () => {
+    updateSettings({
+      focusDuration: clamp(Number(formFocusDur), 1, 90),
+      shortBreakDuration: clamp(Number(formShortBreak), 1, 30),
+      longBreakDuration: clamp(Number(formLongBreak), 1, 60),
+      sessionsBeforeLongBreak: clamp(Number(formIntervals), 1, 12),
+      soundEnabled: formSound,
+      autoStartBreaks: formAutoBreak,
+      autoStartFocus: formAutoFocus,
+    });
+    setShowSettingsModal(false);
   };
 
   const circumference = 2 * Math.PI * 90;
@@ -631,25 +290,41 @@ export function PomodoroPage() {
     return (
       <div className="dashboard-loading">
         <div className="spinner" />
-        <p>Loading Pomodoro...</p>
+        <p>Loading Pomodoro Studio...</p>
       </div>
     );
   }
 
   return (
     <div className="pomodoro-page">
+      {/* Page Header */}
       <header className="pomodoro-header">
         <div>
-          <h2>Pomodoro Timer</h2>
-          <p>Stay focused with timed work blocks and real recovery breaks.</p>
+          <h2>Pomodoro Studio</h2>
+          <p>Stay focused with timed work intervals and real recovery breaks.</p>
         </div>
-        <button className="btn-secondary" onClick={() => setShowSettings((value) => !value)}>
-          Settings
+        <button
+          className="btn-secondary"
+          onClick={() => {
+            setFormFocusDur(settings.focusDuration);
+            setFormShortBreak(settings.shortBreakDuration);
+            setFormLongBreak(settings.longBreakDuration);
+            setFormIntervals(settings.sessionsBeforeLongBreak);
+            setFormSound(settings.soundEnabled);
+            setFormAutoBreak(settings.autoStartBreaks);
+            setFormAutoFocus(settings.autoStartFocus);
+            setShowSettingsModal(true);
+          }}
+        >
+          ⚙️ Settings
         </button>
       </header>
 
+      {/* Main Layout Grid */}
       <div className="pomodoro-layout-react">
+        {/* Left / Secondary Analytics & History Sidebar */}
         <aside className="pomodoro-side">
+          {/* Weekly Bar Chart */}
           <section className="pomodoro-card">
             <div className="pomodoro-card-heading">
               <h3>Weekly Progress</h3>
@@ -668,14 +343,15 @@ export function PomodoroPage() {
             </div>
           </section>
 
+          {/* Recent Sessions History */}
           <section className="pomodoro-card">
             <div className="pomodoro-card-heading">
               <h3>Recent Sessions</h3>
-              <span>Last 7 days</span>
+              <span>This Week</span>
             </div>
             <div className="pomodoro-recent-list">
               {completedThisWeek.length === 0 ? (
-                <p className="pomodoro-empty">No completed sessions yet.</p>
+                <p className="pomodoro-empty">No completed sessions yet this week.</p>
               ) : (
                 completedThisWeek
                   .slice()
@@ -685,27 +361,28 @@ export function PomodoroPage() {
                     <div className="pomodoro-recent-item" key={session.id}>
                       <span>{session.date}</span>
                       <strong>{session.duration_minutes} min</strong>
-                      <small>{session.task_description || 'Focus session'}</small>
+                      <small>{session.task_description || 'Focus block'}</small>
                     </div>
                   ))
               )}
             </div>
           </section>
 
+          {/* Goal Focus Time Progress */}
           <section className="pomodoro-card">
             <div className="pomodoro-card-heading">
-              <h3>Goal Progress</h3>
+              <h3>Goal Focus Time</h3>
               <span>{linkedGoalStats.length} linked</span>
             </div>
             <div className="pomodoro-goal-list">
               {linkedGoalStats.length === 0 ? (
-                <p className="pomodoro-empty">Link a session to a goal to track focus time.</p>
+                <p className="pomodoro-empty">Link focus sessions to goals to track target effort.</p>
               ) : (
                 linkedGoalStats.map((item) => (
                   <div className="pomodoro-goal-item" key={item.goal.id}>
-                    <span>{item.goal.title || item.goal.goal_text || 'Untitled goal'}</span>
+                    <span>{item.goal.title || item.goal.goal_text || 'Untitled Goal'}</span>
                     <strong>{item.sessions} sessions</strong>
-                    <small>{Math.round(item.minutes / 60 * 10) / 10}h</small>
+                    <small>{Math.round((item.minutes / 60) * 10) / 10}h</small>
                   </div>
                 ))
               )}
@@ -713,7 +390,9 @@ export function PomodoroPage() {
           </section>
         </aside>
 
+        {/* Right / Primary Timer and Controls Section */}
         <main className="pomodoro-main">
+          {/* Top Metric Cards */}
           <section className="pomodoro-stats-grid" aria-label="Pomodoro statistics">
             <div>
               <strong>{completedToday.length}</strong>
@@ -724,7 +403,7 @@ export function PomodoroPage() {
               <span>This Week</span>
             </div>
             <div>
-              <strong>{Math.round(totalFocusMinutes / 60 * 10) / 10}h</strong>
+              <strong>{Math.round((totalFocusMinutes / 60) * 10) / 10}h</strong>
               <span>Focus Time</span>
             </div>
             <div>
@@ -733,8 +412,23 @@ export function PomodoroPage() {
             </div>
           </section>
 
+          {/* Central Timer Card */}
           <section className="pomodoro-timer-card">
-            <div className={`timer-circle-react timer-circle-react--${timerState.mode}`}>
+            {/* Mode Switcher Tabs */}
+            <div className="pomodoro-mode-switch">
+              {(['focus', 'shortBreak', 'longBreak'] as const).map((item) => (
+                <button
+                  key={item}
+                  className={`pomodoro-mode-btn ${mode === item ? 'active' : ''}`}
+                  onClick={() => setMode(item)}
+                >
+                  {modeLabel(item)}
+                </button>
+              ))}
+            </div>
+
+            {/* Circular Progress Ring */}
+            <div className={`timer-circle-react timer-circle-react--${mode}`}>
               <svg viewBox="0 0 200 200" aria-hidden="true">
                 <circle className="timer-ring-bg" cx="100" cy="100" r="90" />
                 <circle
@@ -747,183 +441,199 @@ export function PomodoroPage() {
                 />
               </svg>
               <div className="timer-face">
-                <span>{modeLabel(timerState.mode)}</span>
-                <strong>{formatTime(timerState.timeRemaining)}</strong>
-                <small>
-                  Session {timerState.sessionCount}/{settings.sessionsBeforeLongBreak}
-                </small>
+                <span>{modeLabel(mode)}</span>
+                <h2>{formatTime(timeRemaining)}</h2>
+                <small>Session {sessionCount + 1} of {settings.sessionsBeforeLongBreak}</small>
               </div>
             </div>
 
-            {timerState.mode !== 'focus' && (
-              <div className="break-suggestion">
-                <strong>Break suggestion</strong>
-                <span>{breakSuggestion}</span>
+            {/* Primary Action Buttons */}
+            <div className="pomodoro-timer-controls">
+              <button
+                className={`btn-primary pomodoro-btn-primary ${isRunning && !isPaused ? 'running' : ''}`}
+                onClick={handleToggleTimer}
+              >
+                {isRunning && !isPaused ? '⏸ Pause' : isPaused ? '▶ Resume' : '▶ Start Focus'}
+              </button>
+              <button className="btn-secondary" onClick={skipPhase} title="Skip to next phase">
+                ⏭ Skip
+              </button>
+              <button className="btn-secondary" onClick={resetTimer} title="Reset timer">
+                ↺ Reset
+              </button>
+            </div>
+
+            {/* Break Suggestion Banner */}
+            {breakSuggestion && (
+              <div className="pomodoro-break-banner">
+                <span>💡 {breakSuggestion}</span>
               </div>
             )}
 
-            <div className="task-selection-react">
-              <label>
-                Working on
-                <input
-                  type="text"
-                  value={timerState.currentTask}
-                  onChange={(event) =>
-                    setTimerState((prev) => ({
-                      ...prev,
-                      currentTask: event.currentTarget.value,
-                    }))
-                  }
-                  placeholder="What are you focusing on?"
-                />
-              </label>
-
-              <div className="task-link-row">
-                <select
-                  value={taskSource}
-                  onChange={(event) => updateTaskSource(event.currentTarget.value as TaskSource)}
-                  aria-label="Task source"
+            {/* Task Link & Details Form */}
+            <div className="pomodoro-task-section">
+              <div className="pomodoro-source-toggle">
+                <button
+                  className={taskSource === 'custom' ? 'active' : ''}
+                  onClick={() => handleTaskSourceChange('custom')}
                 >
-                  <option value="custom">Custom task</option>
-                  <option value="goal">Link to goal</option>
-                  <option value="timeblock">Link to time block</option>
-                </select>
-                {taskSource !== 'custom' && (
-                  <select
-                    value={linkedItem}
-                    onChange={(event) => updateLinkedItem(event.currentTarget.value)}
-                    aria-label="Linked item"
-                  >
-                    <option value="">Select item</option>
-                    {taskSource === 'goal' &&
-                      goals.map((goal) => (
-                        <option value={goal.id} key={goal.id}>
-                          {goal.title || goal.goal_text || 'Untitled goal'}
-                        </option>
-                      ))}
-                    {taskSource === 'timeblock' &&
-                      timeBlocks.map((block) => (
-                        <option value={block.id} key={block.id}>
-                          {(block.start_time || '').slice(0, 5)} {block.activity || block.title}
-                        </option>
-                      ))}
-                  </select>
-                )}
-              </div>
-            </div>
-
-            <div className="timer-controls-react" aria-label="Timer controls">
-              <button className="btn-primary btn-large" onClick={toggleTimer}>
-                {!timerState.isRunning ? 'Start' : timerState.isPaused ? 'Resume' : 'Pause'}
-              </button>
-              <button className="btn-secondary" onClick={resetTimer}>Reset</button>
-              <button className="btn-secondary" onClick={skipPhase}>Skip</button>
-            </div>
-          </section>
-
-          {showSettings && (
-            <section className="pomodoro-settings-react">
-              <div className="pomodoro-card-heading">
-                <h3>Timer Settings</h3>
-                <button className="btn-secondary" onClick={resetSettings}>Defaults</button>
-              </div>
-              <div className="pomodoro-settings-grid">
-                <label>
-                  Focus
-                  <input
-                    type="number"
-                    min={1}
-                    max={60}
-                    value={settings.focusDuration}
-                    onChange={(event) =>
-                      setSettings((prev) => ({
-                        ...prev,
-                        focusDuration: Number(event.currentTarget.value),
-                      }))
-                    }
-                  />
-                </label>
-                <label>
-                  Short break
-                  <input
-                    type="number"
-                    min={1}
-                    max={30}
-                    value={settings.shortBreakDuration}
-                    onChange={(event) =>
-                      setSettings((prev) => ({
-                        ...prev,
-                        shortBreakDuration: Number(event.currentTarget.value),
-                      }))
-                    }
-                  />
-                </label>
-                <label>
-                  Long break
-                  <input
-                    type="number"
-                    min={1}
-                    max={60}
-                    value={settings.longBreakDuration}
-                    onChange={(event) =>
-                      setSettings((prev) => ({
-                        ...prev,
-                        longBreakDuration: Number(event.currentTarget.value),
-                      }))
-                    }
-                  />
-                </label>
-                <label>
-                  Long break after
-                  <input
-                    type="number"
-                    min={2}
-                    max={10}
-                    value={settings.sessionsBeforeLongBreak}
-                    onChange={(event) =>
-                      setSettings((prev) => ({
-                        ...prev,
-                        sessionsBeforeLongBreak: Number(event.currentTarget.value),
-                      }))
-                    }
-                  />
-                </label>
-              </div>
-              <div className="pomodoro-settings-actions">
-                <button className="btn-primary" onClick={saveSettings}>Save Settings</button>
-                <button className="btn-secondary" onClick={clearStoredState}>
-                  Clear Timer State
+                  Custom Task
+                </button>
+                <button
+                  className={taskSource === 'goal' ? 'active' : ''}
+                  onClick={() => handleTaskSourceChange('goal')}
+                >
+                  Annual Goal
+                </button>
+                <button
+                  className={taskSource === 'timeblock' ? 'active' : ''}
+                  onClick={() => handleTaskSourceChange('timeblock')}
+                >
+                  Today's Time Block
                 </button>
               </div>
-            </section>
-          )}
 
-          <section className="pomodoro-card session-history-react">
-            <div className="pomodoro-card-heading">
-              <h3>Today's Sessions</h3>
-              <span>{today}</span>
+              {taskSource === 'custom' ? (
+                <input
+                  type="text"
+                  value={currentTask}
+                  onChange={(e) => setTask(e.target.value, null, null)}
+                  placeholder="What are you working on in this focus block?"
+                />
+              ) : taskSource === 'goal' ? (
+                <select
+                  value={linkedGoalId || linkedItem}
+                  onChange={(e) => handleLinkedItemChange(e.target.value)}
+                >
+                  <option value="">Select an annual goal...</option>
+                  {goals.map((goal) => (
+                    <option key={goal.id} value={goal.id}>
+                      🎯 {goal.title || goal.goal_text || 'Goal'}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <select
+                  value={linkedTimeBlockId || linkedItem}
+                  onChange={(e) => handleLinkedItemChange(e.target.value)}
+                >
+                  <option value="">Select a time block today...</option>
+                  {timeBlocks.map((block) => (
+                    <option key={block.id} value={block.id}>
+                      🕒 {block.start_time} - {block.end_time}: {block.activity || block.title || 'Block'}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
-            {completedToday.length === 0 ? (
-              <p className="pomodoro-empty">No completed sessions today.</p>
-            ) : (
-              <div className="pomodoro-session-list">
-                {completedToday.map((session, index) => (
-                  <div className="pomodoro-session-item" key={session.id}>
-                    <strong>#{index + 1}</strong>
-                    <span>
-                      {new Date(session.started_at).toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </span>
-                    <small>{session.task_description || 'Focus session'}</small>
-                  </div>
-                ))}
-              </div>
-            )}
           </section>
         </main>
       </div>
+
+      {/* Settings Modal */}
+      {showSettingsModal && (
+        <div className="planner-modal-backdrop" onMouseDown={() => setShowSettingsModal(false)}>
+          <div
+            className="planner-modal pomodoro-settings-modal"
+            role="dialog"
+            aria-modal="true"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="planner-card-header">
+              <h3>Pomodoro Settings</h3>
+              <button className="planner-danger" onClick={() => setShowSettingsModal(false)}>
+                ×
+              </button>
+            </div>
+
+            <div className="planner-form">
+              <div className="planner-form-row">
+                <label>
+                  Focus Duration (minutes)
+                  <input
+                    type="number"
+                    min="1"
+                    max="90"
+                    value={formFocusDur}
+                    onChange={(e) => setFormFocusDur(Number(e.target.value))}
+                  />
+                </label>
+                <label>
+                  Short Break (minutes)
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    value={formShortBreak}
+                    onChange={(e) => setFormShortBreak(Number(e.target.value))}
+                  />
+                </label>
+              </div>
+
+              <div className="planner-form-row">
+                <label>
+                  Long Break (minutes)
+                  <input
+                    type="number"
+                    min="1"
+                    max="60"
+                    value={formLongBreak}
+                    onChange={(e) => setFormLongBreak(Number(e.target.value))}
+                  />
+                </label>
+                <label>
+                  Sessions Before Long Break
+                  <input
+                    type="number"
+                    min="1"
+                    max="12"
+                    value={formIntervals}
+                    onChange={(e) => setFormIntervals(Number(e.target.value))}
+                  />
+                </label>
+              </div>
+
+              <div className="pomodoro-toggle-options">
+                <label className="pomodoro-checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={formSound}
+                    onChange={(e) => setFormSound(e.target.checked)}
+                  />
+                  <span>Play audio chime on completion</span>
+                </label>
+
+                <label className="pomodoro-checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={formAutoBreak}
+                    onChange={(e) => setFormAutoBreak(e.target.checked)}
+                  />
+                  <span>Auto-start breaks after focus</span>
+                </label>
+
+                <label className="pomodoro-checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={formAutoFocus}
+                    onChange={(e) => setFormAutoFocus(e.target.checked)}
+                  />
+                  <span>Auto-start focus after breaks</span>
+                </label>
+              </div>
+
+              <div className="planner-actions">
+                <button className="btn-primary" onClick={handleSaveSettings}>
+                  Save Settings
+                </button>
+                <button className="btn-secondary" onClick={() => setShowSettingsModal(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
