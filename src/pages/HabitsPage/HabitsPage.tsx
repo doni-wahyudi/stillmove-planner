@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dataService from '@/services/DataService';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useToast } from '@/components/Toast/Toast';
@@ -189,6 +189,11 @@ export function HabitsPage() {
   });
   const [newChallengeNotes, setNewChallengeNotes] = useState('');
 
+  // Refs for grid scroll containers to auto-focus today
+  const dailyGridScrollRef = useRef<HTMLDivElement | null>(null);
+  const weeklyGridScrollRef = useRef<HTMLDivElement | null>(null);
+  const challengesGridScrollRef = useRef<HTMLDivElement | null>(null);
+
   const monthDates = useMemo(
     () => getMonthDateKeys(year, monthIndex),
     [year, monthIndex]
@@ -326,6 +331,52 @@ export function HabitsPage() {
     setWaterGoal(waterForSelectedDate.goal_glasses || 8);
   }, [waterForSelectedDate]);
 
+  // Center/scroll the grid container to today's column
+  const scrollToToday = useCallback((ref: React.RefObject<HTMLDivElement | null>) => {
+    if (!ref.current) return;
+    const container = ref.current;
+    const todayEl = container.querySelector('.habit-grid-header.today') as HTMLElement | null;
+    if (todayEl) {
+      const stickyWidth = 160;
+      const availableWidth = Math.max(container.clientWidth - stickyWidth, 100);
+      const targetScroll = Math.max(
+        0,
+        (todayEl.offsetLeft - stickyWidth) - (availableWidth / 2) + (todayEl.offsetWidth / 2)
+      );
+      container.scrollTo({ left: targetScroll, behavior: 'smooth' });
+    }
+  }, []);
+
+  // Auto-scroll when daily habits tab loads or month changes
+  useEffect(() => {
+    if (activeTab === 'daily' && !isLoading) {
+      const timer = setTimeout(() => {
+        scrollToToday(dailyGridScrollRef);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab, isLoading, year, monthIndex, dailyHabits.length, scrollToToday]);
+
+  // Auto-scroll when weekly habits tab loads or month changes
+  useEffect(() => {
+    if (activeTab === 'weekly' && !isLoading) {
+      const timer = setTimeout(() => {
+        scrollToToday(weeklyGridScrollRef);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab, isLoading, year, monthIndex, weeklyHabits.length, scrollToToday]);
+
+  // Auto-scroll when challenges grid loads
+  useEffect(() => {
+    if (activeTab === 'challenges' && !challengesLoading && selectedChallengeId) {
+      const timer = setTimeout(() => {
+        scrollToToday(challengesGridScrollRef);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab, challengesLoading, selectedChallengeId, challengeHabits.length, scrollToToday]);
+
   const dailyStats = useMemo(() => {
     const stats = dailyHabits.map((habit) => {
       const completedDates = monthDates.filter(
@@ -434,6 +485,11 @@ export function HabitsPage() {
     const date = new Date();
     setYear(date.getFullYear());
     setMonthIndex(date.getMonth());
+    setTimeout(() => {
+      if (activeTab === 'daily') scrollToToday(dailyGridScrollRef);
+      if (activeTab === 'weekly') scrollToToday(weeklyGridScrollRef);
+      if (activeTab === 'challenges') scrollToToday(challengesGridScrollRef);
+    }, 120);
   };
 
   const addDailyHabit = async () => {
@@ -973,7 +1029,7 @@ export function HabitsPage() {
           </aside>
 
           <div className="habits-panel habits-panel--grid">
-            <div className="habit-grid-scroll">
+            <div className="habit-grid-scroll" ref={dailyGridScrollRef}>
               <div
                 className="habit-grid"
                 style={{
@@ -1169,7 +1225,7 @@ export function HabitsPage() {
           </aside>
 
           <div className="habits-panel habits-panel--grid">
-            <div className="habit-grid-scroll">
+            <div className="habit-grid-scroll" ref={weeklyGridScrollRef}>
               <div
                 className="habit-grid"
                 style={{
@@ -1490,7 +1546,7 @@ export function HabitsPage() {
                   {challengeHabits.length === 0 ? (
                     <div className="habits-empty">No habits in this challenge. Add one to start tracking.</div>
                   ) : (
-                    <div className="habit-grid-scroll">
+                    <div className="habit-grid-scroll" ref={challengesGridScrollRef}>
                       <div
                         className="habit-grid challenge-grid"
                         style={{ gridTemplateColumns: `minmax(150px, 200px) repeat(${challengeDates.length}, 32px)` }}

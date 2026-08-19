@@ -217,3 +217,44 @@
 .floating-secondary-btn:hover {
   background: var(--bg-hover, #e2e8f0);
 }
+
+/* ============================================================
+   Mobile / Tablet Responsive Adjustments
+   ============================================================ */
+
+/* On small screens: make player smaller and anchor it above the bottom nav */
+@media (max-width: 768px) {
+  .floating-expanded-card {
+    width: 220px;
+  }
+
+  .floating-time-display {
+    font-size: 1.5rem;
+  }
+
+  /* Force the player to always appear above bottom nav on mobile */
+  .floating-pomodoro-player {
+    /* Don't let it go below bottom nav zone (~80px + safe area) */
+    max-height: calc(100vh - 100px - env(safe-area-inset-bottom, 0));
+  }
+}
+
+@media (max-width: 480px) {
+  .floating-expanded-card {
+    width: 190px;
+  }
+
+  .floating-time-display {
+    font-size: 1.3rem;
+  }
+
+  .floating-body {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .floating-primary-btn {
+    font-size: 0.72rem;
+    padding: 5px 6px;
+  }
+}

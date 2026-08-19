@@ -427,9 +427,10 @@ export function SettingsPage() {
 
   return (
     <div className="settings-page">
-      <div className="view-header">
-        <h2>Settings</h2>
-      </div>
+      <header className="settings-page-header">
+        <h2>⚙️ Settings & Workspace Preferences</h2>
+        <p>Manage workspace profiles, AI configuration, display options, and data backups.</p>
+      </header>
 
       {/* Tabs Selector */}
       <div className="settings-tabs">

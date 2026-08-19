@@ -7072,9 +7072,11 @@ body #fab-container {
         display: none !important;
     }
 
-    /* Adjust main content to account for bottom nav and FAB */
+    /* Adjust main content to account for bottom nav, FAB, and iPhone notch */
     .main-content {
-        padding-bottom: 160px !important;
+        padding-bottom: calc(100px + env(safe-area-inset-bottom, 0)) !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
     }
 
     /* Force horizontal scrollable tabs on mobile and prevent buttons shrinking */

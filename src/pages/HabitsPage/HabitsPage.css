@@ -1000,8 +1000,52 @@
   gap: 10px;
 }
 
-/* Mobile adjustments */
+/* ============================================================
+   RESPONSIVE ADJUSTMENTS (Desktop, Tablet, Phone, iPhone)
+   ============================================================ */
+
+@media (max-width: 1180px) {
+  .habits-layout,
+  .habits-layout--weekly {
+    grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  }
+
+  .habits-panel--progress {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 860px) {
+  .habits-layout,
+  .habits-layout--weekly {
+    grid-template-columns: 1fr;
+  }
+
+  .habits-panel--progress {
+    grid-column: auto;
+  }
+
+  .habits-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wellness-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
+  .habits-page {
+    padding: 16px 16px calc(100px + env(safe-area-inset-bottom, 0));
+  }
+
+  .habits-page input,
+  .habits-page select,
+  .habits-page textarea {
+    font-size: 16px !important;
+  }
+
   .challenges-layout {
     grid-template-columns: 1fr;
   }
@@ -1013,6 +1057,17 @@
 
   .challenges-create-modal__dates {
     grid-template-columns: 1fr;
+  }
+
+  .habits-nav {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+  }
+
+  .habits-tab {
+    flex-shrink: 0;
   }
 }
 

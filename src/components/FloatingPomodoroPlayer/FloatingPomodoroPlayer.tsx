@@ -59,27 +59,55 @@ export function FloatingPomodoroPlayer() {
     };
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if ((e.target as HTMLElement).closest('button')) return;
+    if (e.touches.length === 0) return;
+    isDraggingRef.current = true;
+    const touch = e.touches[0];
+    dragOffsetRef.current = {
+      x: touch.clientX - position.x,
+      y: touch.clientY - position.y,
+    };
+  };
+
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDraggingRef.current) return;
-      const nextX = Math.max(10, Math.min(window.innerWidth - 300, e.clientX - dragOffsetRef.current.x));
-      const nextY = Math.max(10, Math.min(window.innerHeight - 150, e.clientY - dragOffsetRef.current.y));
+      const nextX = Math.max(10, Math.min(window.innerWidth - (isFloatingMinimized ? 160 : 270), e.clientX - dragOffsetRef.current.x));
+      const nextY = Math.max(10, Math.min(window.innerHeight - 120, e.clientY - dragOffsetRef.current.y));
       const newPos = { x: nextX, y: nextY };
       setPosition(newPos);
       localStorage.setItem('pomodoroFloatPosition', JSON.stringify(newPos));
     };
 
-    const handleMouseUp = () => {
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isDraggingRef.current || e.touches.length === 0) return;
+      const touch = e.touches[0];
+      const nextX = Math.max(10, Math.min(window.innerWidth - (isFloatingMinimized ? 160 : 270), touch.clientX - dragOffsetRef.current.x));
+      const nextY = Math.max(10, Math.min(window.innerHeight - 120, touch.clientY - dragOffsetRef.current.y));
+      const newPos = { x: nextX, y: nextY };
+      setPosition(newPos);
+      localStorage.setItem('pomodoroFloatPosition', JSON.stringify(newPos));
+    };
+
+    const handleEnd = () => {
       isDraggingRef.current = false;
     };
 
     window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('mouseup', handleEnd);
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('touchend', handleEnd);
+    window.addEventListener('touchcancel', handleEnd);
+
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('mouseup', handleEnd);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleEnd);
+      window.removeEventListener('touchcancel', handleEnd);
     };
-  }, []);
+  }, [isFloatingMinimized]);
 
   if (isOnPomodoroPage || !isFloatingOpen || (!isRunning && !isPaused && timeRemaining === 25 * 60)) {
     return null;
@@ -90,6 +118,7 @@ export function FloatingPomodoroPlayer() {
       className={`floating-pomodoro-player ${isFloatingMinimized ? 'minimized' : 'expanded'} mode-${mode}`}
       style={{ left: `${position.x}px`, top: `${position.y}px` }}
       onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
     >
       {isFloatingMinimized ? (
         /* Minimized Pill View */
