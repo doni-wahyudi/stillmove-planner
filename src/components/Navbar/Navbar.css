@@ -44,3 +44,25 @@
   color: var(--primary, #6366f1);
   font-weight: 700;
 }
+
+.nav-lang-btn {
+  background: var(--bg-surface, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--border-default, rgba(255, 255, 255, 0.12));
+  color: var(--text-primary, #f8fafc);
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 5px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.nav-lang-btn:hover {
+  background: var(--bg-elevated, rgba(255, 255, 255, 0.16));
+  border-color: var(--accent-primary, #2563eb);
+  transform: translateY(-1px);
+}
+

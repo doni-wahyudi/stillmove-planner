@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dataService from '@/services/DataService';
 import { useProfile } from '@/contexts/ProfileContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/components/Toast/Toast';
 import { usePomodoro, TimerMode } from '@/contexts/PomodoroContext';
 import './PomodoroPage.css';
@@ -81,6 +82,7 @@ function modeLabel(mode: TimerMode): string {
 
 export function PomodoroPage() {
   const { activeProfile } = useProfile();
+  const { t } = useLanguage();
   const { showToast } = useToast();
 
   // Consume global timer state and actions
@@ -300,8 +302,8 @@ export function PomodoroPage() {
       {/* Page Header */}
       <header className="pomodoro-header">
         <div>
-          <h2>Pomodoro Studio</h2>
-          <p>Stay focused with timed work intervals and real recovery breaks.</p>
+          <h2>{t('pomodoro.title')}</h2>
+          <p>{t('pomodoro.subtitle')}</p>
         </div>
         <button
           className="btn-secondary"
@@ -316,7 +318,7 @@ export function PomodoroPage() {
             setShowSettingsModal(true);
           }}
         >
-          ⚙️ Settings
+          ⚙️ {t('pomodoro.settings')}
         </button>
       </header>
 

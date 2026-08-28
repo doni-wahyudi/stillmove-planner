@@ -2,6 +2,7 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ProfileProvider } from '@/contexts/ProfileContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ToastProvider } from '@/components/Toast/Toast';
 import { PomodoroProvider } from '@/contexts/PomodoroContext';
 import { AppLayout } from '@/layouts/AppLayout/AppLayout';
@@ -10,6 +11,7 @@ import { ActionPlanPage } from '@/pages/ActionPlanPage/ActionPlanPage';
 import { AnnualPage } from '@/pages/AnnualPage/AnnualPage';
 import { CanvasPage } from '@/pages/CanvasPage/CanvasPage';
 import { DashboardPage } from '@/pages/DashboardPage/DashboardPage';
+import { EventPlannerPage } from '@/pages/EventPlannerPage/EventPlannerPage';
 import { HabitsPage } from '@/pages/HabitsPage/HabitsPage';
 import { KanbanPage } from '@/pages/KanbanPage/KanbanPage';
 import { MonthlyPage } from '@/pages/MonthlyPage/MonthlyPage';
@@ -60,52 +62,55 @@ function PublicRoute({ children }: { children: React.JSX.Element }) {
 export function App() {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <ProfileProvider>
-          <ToastProvider>
-            <PomodoroProvider>
-              <HashRouter>
-                <Routes>
-                  {/* Public Auth Routes */}
-                  <Route
-                    path="/auth"
-                    element={
-                      <PublicRoute>
-                        <AuthPage />
-                      </PublicRoute>
-                    }
-                  />
+      <LanguageProvider>
+        <AuthProvider>
+          <ProfileProvider>
+            <ToastProvider>
+              <PomodoroProvider>
+                <HashRouter>
+                  <Routes>
+                    {/* Public Auth Routes */}
+                    <Route
+                      path="/auth"
+                      element={
+                        <PublicRoute>
+                          <AuthPage />
+                        </PublicRoute>
+                      }
+                    />
 
-                  {/* Protected Layout Routes */}
-                  <Route
-                    path="/"
-                    element={
-                      <ProtectedRoute>
-                        <AppLayout />
-                      </ProtectedRoute>
-                    }
-                  >
-                    <Route index element={<Navigate to="/dashboard" replace />} />
-                    <Route path="dashboard" element={<DashboardPage />} />
-                    <Route path="weekly" element={<WeeklyPage />} />
-                    <Route path="monthly" element={<MonthlyPage />} />
-                    <Route path="annual" element={<AnnualPage />} />
-                    <Route path="habits" element={<HabitsPage />} />
-                    <Route path="action-plan" element={<ActionPlanPage />} />
-                    <Route path="kanban" element={<KanbanPage />} />
-                    <Route path="canvas" element={<CanvasPage />} />
-                    <Route path="pomodoro" element={<PomodoroPage />} />
-                    <Route path="settings" element={<SettingsPage />} />
-                  </Route>
+                    {/* Protected Layout Routes */}
+                    <Route
+                      path="/"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout />
+                        </ProtectedRoute>
+                      }
+                    >
+                      <Route index element={<Navigate to="/dashboard" replace />} />
+                      <Route path="dashboard" element={<DashboardPage />} />
+                      <Route path="weekly" element={<WeeklyPage />} />
+                      <Route path="monthly" element={<MonthlyPage />} />
+                      <Route path="annual" element={<AnnualPage />} />
+                      <Route path="habits" element={<HabitsPage />} />
+                      <Route path="action-plan" element={<ActionPlanPage />} />
+                      <Route path="kanban" element={<KanbanPage />} />
+                      <Route path="events" element={<EventPlannerPage />} />
+                      <Route path="canvas" element={<CanvasPage />} />
+                      <Route path="pomodoro" element={<PomodoroPage />} />
+                      <Route path="settings" element={<SettingsPage />} />
+                    </Route>
 
-                  {/* Fallback route */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </HashRouter>
-            </PomodoroProvider>
-          </ToastProvider>
-        </ProfileProvider>
-      </AuthProvider>
+                    {/* Fallback route */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </HashRouter>
+              </PomodoroProvider>
+            </ToastProvider>
+          </ProfileProvider>
+        </AuthProvider>
+      </LanguageProvider>
     </ThemeProvider>
   );
 }

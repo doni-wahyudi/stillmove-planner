@@ -3,24 +3,33 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import './Navbar.css';
 
-const NAV_ITEMS = [
-  { path: '/dashboard', label: 'Dashboard', shortcut: 'D' },
-  { path: '/weekly', label: 'Weekly', shortcut: 'W' },
-  { path: '/monthly', label: 'Monthly', shortcut: 'M' },
-  { path: '/annual', label: 'Annual', shortcut: 'A' },
-  { path: '/habits', label: 'Habits', shortcut: 'H' },
-  { path: '/action-plan', label: 'Action Plan' },
-  { path: '/kanban', label: 'Kanban', shortcut: 'K' },
-  { path: '/canvas', label: 'Canvas', shortcut: 'C' },
-  { path: '/pomodoro', label: 'Pomodoro', shortcut: 'P' },
+interface NavDef {
+  path: string;
+  labelKey: string;
+  shortcut?: string;
+}
+
+const NAV_DEFS: NavDef[] = [
+  { path: '/dashboard', labelKey: 'nav.dashboard', shortcut: 'D' },
+  { path: '/weekly', labelKey: 'nav.weekly', shortcut: 'W' },
+  { path: '/monthly', labelKey: 'nav.monthly', shortcut: 'M' },
+  { path: '/annual', labelKey: 'nav.annual', shortcut: 'A' },
+  { path: '/habits', labelKey: 'nav.habits', shortcut: 'H' },
+  { path: '/action-plan', labelKey: 'nav.actionPlan' },
+  { path: '/kanban', labelKey: 'nav.kanban', shortcut: 'K' },
+  { path: '/events', labelKey: 'nav.events', shortcut: 'E' },
+  { path: '/canvas', labelKey: 'nav.canvas', shortcut: 'C' },
+  { path: '/pomodoro', labelKey: 'nav.pomodoro', shortcut: 'P' },
 ];
 
 export function Navbar() {
   const { signOut } = useAuth();
   const { profiles, activeProfile, switchProfile } = useProfile();
   const { theme, toggleTheme } = useTheme();
+  const { language, toggleLanguage, t } = useLanguage();
   const navigate = useNavigate();
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -57,6 +66,7 @@ export function Navbar() {
         a: '/annual',
         h: '/habits',
         k: '/kanban',
+        e: '/events',
         c: '/canvas',
         p: '/pomodoro',
       };
@@ -106,27 +116,41 @@ export function Navbar() {
         role="menubar"
         aria-label="Main menu"
       >
-        {NAV_ITEMS.map((item) => (
-          <li key={item.path} role="none">
-            <NavLink
-              to={item.path}
-              role="menuitem"
-              aria-label={`Navigate to ${item.label} view`}
-              data-tooltip={item.shortcut ? `Press ${item.shortcut}` : undefined}
-              onClick={() => setMenuOpen(false)}
-              className={({ isActive }) => (isActive ? 'active' : '')}
-            >
-              {item.label}
-            </NavLink>
-          </li>
-        ))}
+        {NAV_DEFS.map((item) => {
+          const label = t(item.labelKey);
+          return (
+            <li key={item.path} role="none">
+              <NavLink
+                to={item.path}
+                role="menuitem"
+                aria-label={`Navigate to ${label} view`}
+                data-tooltip={item.shortcut ? `Press ${item.shortcut}` : undefined}
+                onClick={() => setMenuOpen(false)}
+                className={({ isActive }) => (isActive ? 'active' : '')}
+              >
+                {label}
+              </NavLink>
+            </li>
+          );
+        })}
       </ul>
 
       <div className="nav-actions">
+        {/* Language Toggle Button */}
+        <button
+          className="nav-lang-btn"
+          aria-label={t('nav.toggleLanguage')}
+          title={t('nav.toggleLanguage')}
+          onClick={toggleLanguage}
+        >
+          {language === 'en' ? '🇮🇩 ID' : '🇬🇧 EN'}
+        </button>
+
+        {/* Theme Toggle Button */}
         <button
           className="nav-icon-btn"
-          aria-label="Toggle dark/light mode"
-          title="Toggle Theme"
+          aria-label={t('nav.toggleTheme')}
+          title={t('nav.toggleTheme')}
           onClick={toggleTheme}
         >
           {theme === 'dark' ? '☀️' : '🌙'}
@@ -138,71 +162,77 @@ export function Navbar() {
           className="user-menu-btn"
           aria-haspopup="true"
           aria-expanded={userDropdownOpen}
-          aria-label="User menu"
+          aria-label="Open user menu"
           onClick={() => setUserDropdownOpen(!userDropdownOpen)}
         >
-          <span
-            className="user-profile-avatar"
+          <div
+            className="user-avatar"
             style={{
-              background: activeProfile?.color || '#6366f1',
+              borderColor: activeProfile?.color || 'var(--accent-primary)',
             }}
           >
             {activeProfile?.avatar_data ? (
-              <img
-                src={activeProfile.avatar_data}
-                alt={activeProfile.name}
-                className="avatar-img"
-              />
+              <img src={activeProfile.avatar_data} alt={activeProfile.name} />
+            ) : activeProfile?.emoji ? (
+              <span>{activeProfile.emoji}</span>
             ) : (
-              getAvatarLetter()
+              <span>{getAvatarLetter()}</span>
             )}
+          </div>
+          <span className="profile-name">
+            {activeProfile?.name || 'Default'}
           </span>
-          <span className="user-profile-name">
-            {activeProfile?.name || 'Loading...'}
-          </span>
+          <span className="dropdown-arrow">▼</span>
         </button>
 
         {userDropdownOpen && (
-          <div className="user-dropdown" role="menu" aria-label="User options">
-            <div className="profile-switcher-list">
-              {profiles.map((profile) => (
+          <div className="user-dropdown-menu" role="menu">
+            <div className="user-dropdown-header">
+              <span className="current-profile-label">{t('nav.switchProfile')}:</span>
+            </div>
+
+            <div className="profile-switch-list">
+              {profiles.map((p) => (
                 <button
-                  key={profile.id}
-                  className={`profile-switch-btn ${
-                    profile.id === activeProfile?.id ? 'active' : ''
+                  key={p.id}
+                  className={`profile-switch-item ${
+                    p.id === activeProfile?.id ? 'active' : ''
                   }`}
                   role="menuitem"
                   onClick={() => {
-                    switchProfile(profile.id);
+                    switchProfile(p.id);
                     setUserDropdownOpen(false);
                   }}
                 >
                   <span
                     className="profile-dot"
-                    style={{ background: profile.color }}
-                  />
-                  {profile.name}
-                  {profile.id === activeProfile?.id && (
-                    <span className="profile-check">✓</span>
+                    style={{ backgroundColor: p.color || '#6366f1' }}
+                  ></span>
+                  <span className="profile-item-name">{p.name}</span>
+                  {p.id === activeProfile?.id && (
+                    <span className="active-checkmark">✓</span>
                   )}
                 </button>
               ))}
             </div>
-            <div className="dropdown-divider" />
+
+            <div className="user-dropdown-divider"></div>
+
             <NavLink
               to="/settings"
+              className="user-dropdown-item"
               role="menuitem"
-              aria-label="Open settings"
               onClick={() => setUserDropdownOpen(false)}
             >
-              Manage Profiles
+              ⚙️ {t('nav.settings')}
             </NavLink>
+
             <button
+              className="user-dropdown-item sign-out-btn"
               role="menuitem"
-              aria-label="Sign out of application"
               onClick={handleSignOut}
             >
-              Sign Out
+              🚪 {t('nav.signOut')}
             </button>
           </div>
         )}

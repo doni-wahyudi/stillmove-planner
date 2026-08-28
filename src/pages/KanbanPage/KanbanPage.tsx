@@ -1,6 +1,7 @@
 import { DragEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import dataService from '@/services/DataService';
 import { useProfile } from '@/contexts/ProfileContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/components/Toast/Toast';
 import '../PlannerPages.css';
 
@@ -61,6 +62,7 @@ interface ActivityLog {
 
 export function KanbanPage() {
   const { activeProfile } = useProfile();
+  const { t } = useLanguage();
   const { showToast } = useToast();
 
   // Boards & structure state
@@ -598,15 +600,15 @@ export function KanbanPage() {
 
   return (
     <div className="planner-page kanban-page">
-      {/* Header with Board Selection & Actions */}
-      <header className="planner-header kanban-header">
-        <div className="kanban-header__left">
-          <h2>Kanban Boards</h2>
-          <p>{activeBoard?.description || 'Move work across columns and track details.'}</p>
+      {/* Header with Board Switcher */}
+      <header className="planner-header">
+        <div>
+          <h2>{t('kanban.title')}</h2>
+          <p>{activeBoard?.description || t('kanban.subtitle')}</p>
         </div>
-        <div className="kanban-header__actions">
+        <div className="planner-header-actions">
           <select
-            className="planner-select kanban-board-select"
+            className="planner-select"
             value={boardId}
             onChange={(e) => setBoardId(e.target.value)}
           >
@@ -626,7 +628,7 @@ export function KanbanPage() {
                 setShowEditBoardModal(true);
               }}
             >
-              ⚙️ Manage Board
+              ⚙️ {t('kanban.manageBoard')}
             </button>
           )}
           <button
@@ -637,7 +639,7 @@ export function KanbanPage() {
               setShowCreateBoardModal(true);
             }}
           >
-            + New Board
+            {t('kanban.newBoard')}
           </button>
         </div>
       </header>

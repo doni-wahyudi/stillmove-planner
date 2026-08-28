@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dataService from '@/services/DataService';
 import { useProfile } from '@/contexts/ProfileContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/components/Toast/Toast';
 import '../PlannerPages.css';
 
@@ -8,6 +9,7 @@ const LIFE_AREAS = ['Personal', 'Work', 'Health', 'Family', 'Learning', 'Finance
 
 export function ActionPlanPage() {
   const { activeProfile } = useProfile();
+  const { language, t } = useLanguage();
   const { showToast } = useToast();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
@@ -20,8 +22,8 @@ export function ActionPlanPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   const monthLabel = useMemo(
-    () => new Date(year, month - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-    [month, year]
+    () => new Date(year, month - 1, 1).toLocaleDateString(language === 'id' ? 'id-ID' : 'en-US', { month: 'long', year: 'numeric' }),
+    [language, month, year]
   );
 
   const loadData = useCallback(async () => {

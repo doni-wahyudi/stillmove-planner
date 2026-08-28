@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dataService from '@/services/DataService';
 import { useProfile } from '@/contexts/ProfileContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/components/Toast/Toast';
 import '../PlannerPages.css';
 
@@ -97,6 +98,7 @@ const CATEGORIES = ['Personal', 'Work', 'Business', 'Family', 'Education', 'Soci
 
 export function WeeklyPage() {
   const { activeProfile } = useProfile();
+  const { language, t } = useLanguage();
   const { showToast } = useToast();
   const [anchorDate, setAnchorDate] = useState(new Date());
   const [goals, setGoals] = useState<WeeklyGoal[]>([]);
@@ -278,13 +280,13 @@ export function WeeklyPage() {
     <div className="planner-page">
       <header className="planner-header">
         <div>
-          <h2>Weekly Planner</h2>
+          <h2>{t('weekly.title')}</h2>
           <p>Week {weekNumber}: {toDateKey(weekStart)} – {toDateKey(weekEnd)}</p>
         </div>
         <div className="planner-header-actions">
-          <button className="btn-secondary" onClick={() => setAnchorDate(new Date(anchorDate.getFullYear(), anchorDate.getMonth(), anchorDate.getDate() - 7))}>← Prev</button>
-          <button className="btn-secondary" onClick={() => setAnchorDate(new Date())}>Today</button>
-          <button className="btn-secondary" onClick={() => setAnchorDate(new Date(anchorDate.getFullYear(), anchorDate.getMonth(), anchorDate.getDate() + 7))}>Next →</button>
+          <button className="btn-secondary" onClick={() => setAnchorDate(new Date(anchorDate.getFullYear(), anchorDate.getMonth(), anchorDate.getDate() - 7))}>{t('weekly.prevWeek')}</button>
+          <button className="btn-secondary" onClick={() => setAnchorDate(new Date())}>{t('habits.jumpToday')}</button>
+          <button className="btn-secondary" onClick={() => setAnchorDate(new Date(anchorDate.getFullYear(), anchorDate.getMonth(), anchorDate.getDate() + 7))}>{t('weekly.nextWeek')}</button>
         </div>
       </header>
 
@@ -362,7 +364,7 @@ export function WeeklyPage() {
                 >
                   {/* Day header */}
                   <div className={`weekly-day-col__header ${isToday ? 'today' : ''}`}>
-                    <strong>{day.toLocaleDateString('en-US', { weekday: 'short' })}</strong>
+                    <strong>{day.toLocaleDateString(language === 'id' ? 'id-ID' : 'en-US', { weekday: 'short' })}</strong>
                     <span>{day.getDate()}</span>
                   </div>
 

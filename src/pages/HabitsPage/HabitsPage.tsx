@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dataService from '@/services/DataService';
 import { useProfile } from '@/contexts/ProfileContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/components/Toast/Toast';
 import './HabitsPage.css';
 
@@ -143,6 +144,7 @@ function getCompletionValue(completion?: HabitCompletion): number {
 
 export function HabitsPage() {
   const { activeProfile } = useProfile();
+  const { t } = useLanguage();
   const { showToast } = useToast();
 
   const now = new Date();
@@ -923,7 +925,7 @@ export function HabitsPage() {
             &gt;
           </button>
           <button className="btn-today" onClick={goToCurrentMonth}>
-            Today
+            {t('habits.jumpToday')}
           </button>
         </div>
 
@@ -935,10 +937,10 @@ export function HabitsPage() {
 
       <nav className="habits-tabs" aria-label="Habit sections">
         {([
-          ['daily', 'Daily Habits'],
-          ['weekly', 'Weekly Habits'],
-          ['wellness', 'Wellness'],
-          ['challenges', 'Challenges'],
+          ['daily', t('habits.dailyTab')],
+          ['weekly', t('habits.weeklyTab')],
+          ['wellness', t('habits.wellnessTab')],
+          ['challenges', t('habits.challengesTab')],
         ] as [HabitTab, string][]).map(([tab, label]) => (
           <button
             key={tab}

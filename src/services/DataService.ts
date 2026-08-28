@@ -1,5 +1,14 @@
 import { getSupabaseClient } from '@/db/supabase';
 import cacheService, { STORES } from './CacheService';
+import type {
+  PlannerEvent,
+  EventRundownItem,
+  EventCrewMember,
+  EventBudgetItem,
+  EventLogisticsItem,
+  EventVendor,
+  EventMilestone,
+} from '@/types/event';
 
 class DataService {
   private supabase = getSupabaseClient();
@@ -1872,7 +1881,542 @@ class DataService {
       this.handleError(error, 'upsertUserProfile');
     }
   }
+
+  // ==================== EVENT PLANNER (EO) ====================
+
+  /**
+   * Helper to get active profile ID
+   */
+  private getActiveProfileId(): string | null {
+    try {
+      return localStorage.getItem('stillmove_active_profile_id') || null;
+    } catch {
+      return null;
+    }
+  }
+
+  // --- Events ---
+  public async getEvents(): Promise<PlannerEvent[]> {
+    const profileId = this.getActiveProfileId();
+    const fallback = async (): Promise<PlannerEvent[]> => {
+      const cached = await cacheService.getAll(STORES.events);
+      if (profileId) {
+        return cached.filter((e: PlannerEvent) => e.profile_id === profileId || !e.profile_id);
+      }
+      return cached;
+    };
+
+    try {
+      let query = this.supabase.from('events').select('*').order('start_date', { ascending: true });
+      if (profileId) {
+        query = query.or(`profile_id.eq.${profileId},profile_id.is.null`);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      if (data) {
+        this.syncInBackground(STORES.events, async () => data);
+        return data;
+      }
+      return await fallback();
+    } catch {
+      return await fallback();
+    }
+  }
+
+  public async getEvent(id: string): Promise<PlannerEvent | null> {
+    try {
+      const { data, error } = await this.supabase.from('events').select('*').eq('id', id).single();
+      if (error) throw error;
+      return data || null;
+    } catch {
+      const cached = await cacheService.get(STORES.events, id);
+      return cached || null;
+    }
+  }
+
+  public async createEvent(event: Omit<PlannerEvent, 'id' | 'created_at' | 'updated_at'>): Promise<PlannerEvent> {
+    const profileId = this.getActiveProfileId();
+    const newId = crypto.randomUUID();
+    const { data: { user } } = await this.supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+    const newEvent: PlannerEvent = {
+      ...event,
+      id: newId,
+      user_id: user?.id,
+      profile_id: profileId || undefined,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    try {
+      const { data, error } = await this.supabase.from('events').insert([newEvent]).select();
+      if (error) throw error;
+      const created = data?.[0] || newEvent;
+      await cacheService.put(STORES.events, created);
+      return created;
+    } catch {
+      await cacheService.put(STORES.events, newEvent);
+      return newEvent;
+    }
+  }
+
+  public async updateEvent(id: string, updates: Partial<PlannerEvent>): Promise<PlannerEvent> {
+    const updatedRecord = {
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+
+    try {
+      const { data, error } = await this.supabase.from('events').update(updatedRecord).eq('id', id).select();
+      if (error) throw error;
+      const res = data?.[0] || { id, ...updates };
+      await cacheService.put(STORES.events, res);
+      return res as PlannerEvent;
+    } catch {
+      const existing = (await cacheService.get(STORES.events, id)) || {};
+      const res = { ...existing, ...updatedRecord, id };
+      await cacheService.put(STORES.events, res);
+      return res as PlannerEvent;
+    }
+  }
+
+  public async deleteEvent(id: string): Promise<void> {
+    try {
+      await this.supabase.from('events').delete().eq('id', id);
+    } catch {
+      // offline fallback
+    }
+    await cacheService.delete(STORES.events, id);
+  }
+
+  // --- Rundown / Run-of-Show ---
+  public async getEventRundown(eventId: string): Promise<EventRundownItem[]> {
+    const fallback = async (): Promise<EventRundownItem[]> => {
+      const cached = await cacheService.getAll(STORES.eventRundowns);
+      return cached
+        .filter((r: EventRundownItem) => r.event_id === eventId)
+        .sort((a: EventRundownItem, b: EventRundownItem) => a.order_index - b.order_index || a.start_time.localeCompare(b.start_time));
+    };
+
+    try {
+      const { data, error } = await this.supabase
+        .from('event_rundowns')
+        .select('*')
+        .eq('event_id', eventId)
+        .order('order_index', { ascending: true })
+        .order('start_time', { ascending: true });
+      if (error) throw error;
+      if (data) {
+        await cacheService.putAll(STORES.eventRundowns, data);
+        return data;
+      }
+      return await fallback();
+    } catch {
+      return await fallback();
+    }
+  }
+
+  public async createRundownItem(item: Omit<EventRundownItem, 'id' | 'created_at'>): Promise<EventRundownItem> {
+    const { data: { user } } = await this.supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+    const newItem: EventRundownItem = {
+      ...item,
+      id: crypto.randomUUID(),
+      user_id: user?.id,
+      created_at: new Date().toISOString(),
+    };
+
+    try {
+      const { data, error } = await this.supabase.from('event_rundowns').insert([newItem]).select();
+      if (error) throw error;
+      const created = data?.[0] || newItem;
+      await cacheService.put(STORES.eventRundowns, created);
+      return created;
+    } catch {
+      await cacheService.put(STORES.eventRundowns, newItem);
+      return newItem;
+    }
+  }
+
+  public async updateRundownItem(id: string, updates: Partial<EventRundownItem>): Promise<EventRundownItem> {
+    try {
+      const { data, error } = await this.supabase.from('event_rundowns').update(updates).eq('id', id).select();
+      if (error) throw error;
+      const res = data?.[0] || { id, ...updates };
+      await cacheService.put(STORES.eventRundowns, res);
+      return res as EventRundownItem;
+    } catch {
+      const existing = (await cacheService.get(STORES.eventRundowns, id)) || {};
+      const res = { ...existing, ...updates, id };
+      await cacheService.put(STORES.eventRundowns, res);
+      return res as EventRundownItem;
+    }
+  }
+
+  public async deleteRundownItem(id: string): Promise<void> {
+    try {
+      await this.supabase.from('event_rundowns').delete().eq('id', id);
+    } catch {
+      // offline
+    }
+    await cacheService.delete(STORES.eventRundowns, id);
+  }
+
+  // --- Crew / Kepanitiaan ---
+  public async getEventCrew(eventId: string): Promise<EventCrewMember[]> {
+    const fallback = async (): Promise<EventCrewMember[]> => {
+      const cached = await cacheService.getAll(STORES.eventCrew);
+      return cached
+        .filter((c: EventCrewMember) => c.event_id === eventId)
+        .sort((a: EventCrewMember, b: EventCrewMember) => a.division.localeCompare(b.division) || a.name.localeCompare(b.name));
+    };
+
+    try {
+      const { data, error } = await this.supabase
+        .from('event_crew')
+        .select('*')
+        .eq('event_id', eventId)
+        .order('division', { ascending: true })
+        .order('order_index', { ascending: true });
+      if (error) throw error;
+      if (data) {
+        await cacheService.putAll(STORES.eventCrew, data);
+        return data;
+      }
+      return await fallback();
+    } catch {
+      return await fallback();
+    }
+  }
+
+  public async createCrewMember(member: Omit<EventCrewMember, 'id' | 'created_at'>): Promise<EventCrewMember> {
+    const { data: { user } } = await this.supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+    const newMember: EventCrewMember = {
+      ...member,
+      id: crypto.randomUUID(),
+      user_id: user?.id,
+      created_at: new Date().toISOString(),
+    };
+
+    try {
+      const { data, error } = await this.supabase.from('event_crew').insert([newMember]).select();
+      if (error) throw error;
+      const created = data?.[0] || newMember;
+      await cacheService.put(STORES.eventCrew, created);
+      return created;
+    } catch {
+      await cacheService.put(STORES.eventCrew, newMember);
+      return newMember;
+    }
+  }
+
+  public async updateCrewMember(id: string, updates: Partial<EventCrewMember>): Promise<EventCrewMember> {
+    try {
+      const { data, error } = await this.supabase.from('event_crew').update(updates).eq('id', id).select();
+      if (error) throw error;
+      const res = data?.[0] || { id, ...updates };
+      await cacheService.put(STORES.eventCrew, res);
+      return res as EventCrewMember;
+    } catch {
+      const existing = (await cacheService.get(STORES.eventCrew, id)) || {};
+      const res = { ...existing, ...updates, id };
+      await cacheService.put(STORES.eventCrew, res);
+      return res as EventCrewMember;
+    }
+  }
+
+  public async deleteCrewMember(id: string): Promise<void> {
+    try {
+      await this.supabase.from('event_crew').delete().eq('id', id);
+    } catch {
+      // offline
+    }
+    await cacheService.delete(STORES.eventCrew, id);
+  }
+
+  // --- Budget & RAB ---
+  public async getEventBudget(eventId: string): Promise<EventBudgetItem[]> {
+    const fallback = async (): Promise<EventBudgetItem[]> => {
+      const cached = await cacheService.getAll(STORES.eventBudget);
+      return cached.filter((b: EventBudgetItem) => b.event_id === eventId);
+    };
+
+    try {
+      const { data, error } = await this.supabase
+        .from('event_budget')
+        .select('*')
+        .eq('event_id', eventId)
+        .order('category', { ascending: true })
+        .order('order_index', { ascending: true });
+      if (error) throw error;
+      if (data) {
+        await cacheService.putAll(STORES.eventBudget, data);
+        return data;
+      }
+      return await fallback();
+    } catch {
+      return await fallback();
+    }
+  }
+
+  public async createBudgetItem(item: Omit<EventBudgetItem, 'id' | 'created_at'>): Promise<EventBudgetItem> {
+    const { data: { user } } = await this.supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+    const newItem: EventBudgetItem = {
+      ...item,
+      id: crypto.randomUUID(),
+      user_id: user?.id,
+      created_at: new Date().toISOString(),
+    };
+
+    try {
+      const { data, error } = await this.supabase.from('event_budget').insert([newItem]).select();
+      if (error) throw error;
+      const created = data?.[0] || newItem;
+      await cacheService.put(STORES.eventBudget, created);
+      return created;
+    } catch {
+      await cacheService.put(STORES.eventBudget, newItem);
+      return newItem;
+    }
+  }
+
+  public async updateBudgetItem(id: string, updates: Partial<EventBudgetItem>): Promise<EventBudgetItem> {
+    try {
+      const { data, error } = await this.supabase.from('event_budget').update(updates).eq('id', id).select();
+      if (error) throw error;
+      const res = data?.[0] || { id, ...updates };
+      await cacheService.put(STORES.eventBudget, res);
+      return res as EventBudgetItem;
+    } catch {
+      const existing = (await cacheService.get(STORES.eventBudget, id)) || {};
+      const res = { ...existing, ...updates, id };
+      await cacheService.put(STORES.eventBudget, res);
+      return res as EventBudgetItem;
+    }
+  }
+
+  public async deleteBudgetItem(id: string): Promise<void> {
+    try {
+      await this.supabase.from('event_budget').delete().eq('id', id);
+    } catch {
+      // offline
+    }
+    await cacheService.delete(STORES.eventBudget, id);
+  }
+
+  // --- Logistics & Equipment ---
+  public async getEventLogistics(eventId: string): Promise<EventLogisticsItem[]> {
+    const fallback = async (): Promise<EventLogisticsItem[]> => {
+      const cached = await cacheService.getAll(STORES.eventLogistics);
+      return cached.filter((l: EventLogisticsItem) => l.event_id === eventId);
+    };
+
+    try {
+      const { data, error } = await this.supabase
+        .from('event_logistics')
+        .select('*')
+        .eq('event_id', eventId)
+        .order('category', { ascending: true })
+        .order('order_index', { ascending: true });
+      if (error) throw error;
+      if (data) {
+        await cacheService.putAll(STORES.eventLogistics, data);
+        return data;
+      }
+      return await fallback();
+    } catch {
+      return await fallback();
+    }
+  }
+
+  public async createLogisticsItem(item: Omit<EventLogisticsItem, 'id' | 'created_at'>): Promise<EventLogisticsItem> {
+    const { data: { user } } = await this.supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+    const newItem: EventLogisticsItem = {
+      ...item,
+      id: crypto.randomUUID(),
+      user_id: user?.id,
+      created_at: new Date().toISOString(),
+    };
+
+    try {
+      const { data, error } = await this.supabase.from('event_logistics').insert([newItem]).select();
+      if (error) throw error;
+      const created = data?.[0] || newItem;
+      await cacheService.put(STORES.eventLogistics, created);
+      return created;
+    } catch {
+      await cacheService.put(STORES.eventLogistics, newItem);
+      return newItem;
+    }
+  }
+
+  public async updateLogisticsItem(id: string, updates: Partial<EventLogisticsItem>): Promise<EventLogisticsItem> {
+    try {
+      const { data, error } = await this.supabase.from('event_logistics').update(updates).eq('id', id).select();
+      if (error) throw error;
+      const res = data?.[0] || { id, ...updates };
+      await cacheService.put(STORES.eventLogistics, res);
+      return res as EventLogisticsItem;
+    } catch {
+      const existing = (await cacheService.get(STORES.eventLogistics, id)) || {};
+      const res = { ...existing, ...updates, id };
+      await cacheService.put(STORES.eventLogistics, res);
+      return res as EventLogisticsItem;
+    }
+  }
+
+  public async deleteLogisticsItem(id: string): Promise<void> {
+    try {
+      await this.supabase.from('event_logistics').delete().eq('id', id);
+    } catch {
+      // offline
+    }
+    await cacheService.delete(STORES.eventLogistics, id);
+  }
+
+  // --- Vendors & Talent ---
+  public async getEventVendors(eventId: string): Promise<EventVendor[]> {
+    const fallback = async (): Promise<EventVendor[]> => {
+      const cached = await cacheService.getAll(STORES.eventVendors);
+      return cached.filter((v: EventVendor) => v.event_id === eventId);
+    };
+
+    try {
+      const { data, error } = await this.supabase
+        .from('event_vendors')
+        .select('*')
+        .eq('event_id', eventId)
+        .order('category', { ascending: true })
+        .order('order_index', { ascending: true });
+      if (error) throw error;
+      if (data) {
+        await cacheService.putAll(STORES.eventVendors, data);
+        return data;
+      }
+      return await fallback();
+    } catch {
+      return await fallback();
+    }
+  }
+
+  public async createVendor(vendor: Omit<EventVendor, 'id' | 'created_at'>): Promise<EventVendor> {
+    const { data: { user } } = await this.supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+    const newVendor: EventVendor = {
+      ...vendor,
+      id: crypto.randomUUID(),
+      user_id: user?.id,
+      created_at: new Date().toISOString(),
+    };
+
+    try {
+      const { data, error } = await this.supabase.from('event_vendors').insert([newVendor]).select();
+      if (error) throw error;
+      const created = data?.[0] || newVendor;
+      await cacheService.put(STORES.eventVendors, created);
+      return created;
+    } catch {
+      await cacheService.put(STORES.eventVendors, newVendor);
+      return newVendor;
+    }
+  }
+
+  public async updateVendor(id: string, updates: Partial<EventVendor>): Promise<EventVendor> {
+    try {
+      const { data, error } = await this.supabase.from('event_vendors').update(updates).eq('id', id).select();
+      if (error) throw error;
+      const res = data?.[0] || { id, ...updates };
+      await cacheService.put(STORES.eventVendors, res);
+      return res as EventVendor;
+    } catch {
+      const existing = (await cacheService.get(STORES.eventVendors, id)) || {};
+      const res = { ...existing, ...updates, id };
+      await cacheService.put(STORES.eventVendors, res);
+      return res as EventVendor;
+    }
+  }
+
+  public async deleteVendor(id: string): Promise<void> {
+    try {
+      await this.supabase.from('event_vendors').delete().eq('id', id);
+    } catch {
+      // offline
+    }
+    await cacheService.delete(STORES.eventVendors, id);
+  }
+
+  // --- Milestones ---
+  public async getEventMilestones(eventId: string): Promise<EventMilestone[]> {
+    const fallback = async (): Promise<EventMilestone[]> => {
+      const cached = await cacheService.getAll(STORES.eventMilestones);
+      return cached.filter((m: EventMilestone) => m.event_id === eventId);
+    };
+
+    try {
+      const { data, error } = await this.supabase
+        .from('event_milestones')
+        .select('*')
+        .eq('event_id', eventId)
+        .order('order_index', { ascending: true });
+      if (error) throw error;
+      if (data) {
+        await cacheService.putAll(STORES.eventMilestones, data);
+        return data;
+      }
+      return await fallback();
+    } catch {
+      return await fallback();
+    }
+  }
+
+  public async createMilestone(milestone: Omit<EventMilestone, 'id' | 'created_at'>): Promise<EventMilestone> {
+    const { data: { user } } = await this.supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+    const newMilestone: EventMilestone = {
+      ...milestone,
+      id: crypto.randomUUID(),
+      user_id: user?.id,
+      created_at: new Date().toISOString(),
+    };
+
+    try {
+      const { data, error } = await this.supabase.from('event_milestones').insert([newMilestone]).select();
+      if (error) throw error;
+      const created = data?.[0] || newMilestone;
+      await cacheService.put(STORES.eventMilestones, created);
+      return created;
+    } catch {
+      await cacheService.put(STORES.eventMilestones, newMilestone);
+      return newMilestone;
+    }
+  }
+
+  public async toggleMilestone(id: string, is_completed: boolean): Promise<EventMilestone> {
+    const updates = {
+      is_completed,
+      completed_at: is_completed ? new Date().toISOString() : null,
+    };
+
+    try {
+      const { data, error } = await this.supabase.from('event_milestones').update(updates).eq('id', id).select();
+      if (error) throw error;
+      const res = data?.[0] || { id, ...updates };
+      await cacheService.put(STORES.eventMilestones, res);
+      return res as EventMilestone;
+    } catch {
+      const existing = (await cacheService.get(STORES.eventMilestones, id)) || {};
+      const res = { ...existing, ...updates, id };
+      await cacheService.put(STORES.eventMilestones, res);
+      return res as EventMilestone;
+    }
+  }
+
+  public async deleteMilestone(id: string): Promise<void> {
+    try {
+      await this.supabase.from('event_milestones').delete().eq('id', id);
+    } catch {
+      // offline
+    }
+    await cacheService.delete(STORES.eventMilestones, id);
+  }
 }
 
 const dataService = new DataService();
 export default dataService;
+

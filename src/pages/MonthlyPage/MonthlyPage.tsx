@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import dataService from '@/services/DataService';
 import { useProfile } from '@/contexts/ProfileContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/components/Toast/Toast';
 import '../PlannerPages.css';
 
@@ -88,6 +89,7 @@ const CATEGORIES = ['Personal', 'Work', 'Business', 'Family', 'Education', 'Soci
 
 export function MonthlyPage() {
   const { activeProfile } = useProfile();
+  const { language, t } = useLanguage();
   const { showToast } = useToast();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
@@ -582,29 +584,29 @@ export function MonthlyPage() {
       {/* View Header */}
       <header className="planner-header">
         <div>
-          <h2>Monthly Planner</h2>
+          <h2>{t('monthly.title')}</h2>
           <p>{monthLabel}</p>
         </div>
         <div className="planner-header-actions">
           <button
             className="btn-secondary"
             onClick={() => {
-              const next = new Date(year, monthIndex - 1, 1);
-              setYear(next.getFullYear());
-              setMonthIndex(next.getMonth());
+              const prev = new Date(year, monthIndex - 1, 1);
+              setYear(prev.getFullYear());
+              setMonthIndex(prev.getMonth());
             }}
           >
-            ← Prev
+            {t('weekly.prevWeek')}
           </button>
           <button
             className="btn-secondary"
             onClick={() => {
-              const next = new Date();
-              setYear(next.getFullYear());
-              setMonthIndex(next.getMonth());
+              const now = new Date();
+              setYear(now.getFullYear());
+              setMonthIndex(now.getMonth());
             }}
           >
-            Today
+            {t('habits.jumpToday')}
           </button>
           <button
             className="btn-secondary"
@@ -614,7 +616,7 @@ export function MonthlyPage() {
               setMonthIndex(next.getMonth());
             }}
           >
-            Next →
+            {t('weekly.nextWeek')}
           </button>
         </div>
       </header>

@@ -4,7 +4,7 @@
  */
 
 const DB_NAME = 'DailyPlannerCache';
-const DB_VERSION = 6; // Incremented to 6 to add pomodoro sessions store
+const DB_VERSION = 7; // Incremented to 7 to add event planner stores
 const SYNC_KEY = 'stillmove_last_sync';
 const CACHE_METADATA_KEY = 'stillmove_cache_metadata';
 
@@ -40,6 +40,13 @@ export const CACHE_TTL: Record<string, number> = {
   challengeHabits: 12 * 60 * 60 * 1000,    // 12 hours
   challengeCompletions: 5 * 60 * 1000,      // 5 minutes
   pomodoroSessions: 5 * 60 * 1000,           // 5 minutes
+  events: 12 * 60 * 60 * 1000,               // 12 hours - events
+  eventRundowns: 5 * 60 * 1000,              // 5 minutes - rundowns
+  eventCrew: 12 * 60 * 60 * 1000,            // 12 hours - crew
+  eventBudget: 12 * 60 * 60 * 1000,          // 12 hours - budget
+  eventLogistics: 5 * 60 * 1000,             // 5 minutes - logistics
+  eventVendors: 12 * 60 * 60 * 1000,         // 12 hours - vendors
+  eventMilestones: 12 * 60 * 60 * 1000,      // 12 hours - milestones
   default: 10 * 60 * 1000               // 10 minutes default
 };
 
@@ -75,7 +82,14 @@ export const STORES = {
   intervalChallenges: 'interval_challenges',
   challengeHabits: 'challenge_habits',
   challengeCompletions: 'challenge_completions',
-  pomodoroSessions: 'pomodoro_sessions'
+  pomodoroSessions: 'pomodoro_sessions',
+  events: 'events',
+  eventRundowns: 'event_rundowns',
+  eventCrew: 'event_crew',
+  eventBudget: 'event_budget',
+  eventLogistics: 'event_logistics',
+  eventVendors: 'event_vendors',
+  eventMilestones: 'event_milestones'
 };
 
 export interface PendingOperation {

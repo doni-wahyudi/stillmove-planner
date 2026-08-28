@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/components/Toast/Toast';
 import dataService from '@/services/DataService';
 import aiService, { type AISettings } from '@/services/AIService';
@@ -22,6 +23,7 @@ export function SettingsPage() {
     deleteProfile,
   } = useProfile();
   const { theme, toggleTheme } = useTheme();
+  const { language, setLanguage, t } = useLanguage();
   const { showToast } = useToast();
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('general');
@@ -428,8 +430,8 @@ export function SettingsPage() {
   return (
     <div className="settings-page">
       <header className="settings-page-header">
-        <h2>⚙️ Settings & Workspace Preferences</h2>
-        <p>Manage workspace profiles, AI configuration, display options, and data backups.</p>
+        <h2>⚙️ {t('settings.title')}</h2>
+        <p>{t('settings.subtitle')}</p>
       </header>
 
       {/* Tabs Selector */}
@@ -438,31 +440,31 @@ export function SettingsPage() {
           className={`settings-tab ${activeTab === 'general' ? 'active' : ''}`}
           onClick={() => setActiveTab('general')}
         >
-          ⚙️ General
+          ⚙️ {t('settings.tabGeneral')}
         </button>
         <button
           className={`settings-tab ${activeTab === 'ai' ? 'active' : ''}`}
           onClick={() => setActiveTab('ai')}
         >
-          ✨ AI Configuration
+          ✨ {t('settings.tabAi')}
         </button>
         <button
           className={`settings-tab ${activeTab === 'profiles' ? 'active' : ''}`}
           onClick={() => setActiveTab('profiles')}
         >
-          👥 Manage Profiles
+          👥 {t('settings.tabProfiles')}
         </button>
         <button
           className={`settings-tab ${activeTab === 'account' ? 'active' : ''}`}
           onClick={() => setActiveTab('account')}
         >
-          👤 Account
+          👤 {t('settings.tabAccount')}
         </button>
         <button
           className={`settings-tab ${activeTab === 'data' ? 'active' : ''}`}
           onClick={() => setActiveTab('data')}
         >
-          💾 Data Management
+          💾 {t('settings.tabData')}
         </button>
       </div>
 
@@ -480,12 +482,28 @@ export function SettingsPage() {
         {activeTab === 'general' && (
           <div className="settings-tab-content active">
             <section className="settings-section">
-              <h3>Preferences</h3>
+              <h3>{t('settings.preferences')}</h3>
               <div className="preferences-list">
                 <div className="preference-item">
                   <div className="preference-info">
-                    <label>Sound Effects</label>
-                    <p className="preference-description">Play sounds when completing habits</p>
+                    <label>{t('settings.language')}</label>
+                    <p className="preference-description">{t('settings.languageDescription')}</p>
+                  </div>
+                  <select
+                    className="form-select"
+                    style={{ width: '190px' }}
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value as 'en' | 'id')}
+                    aria-label={t('settings.language')}
+                  >
+                    <option value="en">🇺🇸 English (US)</option>
+                    <option value="id">🇮🇩 Bahasa Indonesia (ID)</option>
+                  </select>
+                </div>
+                <div className="preference-item">
+                  <div className="preference-info">
+                    <label>{t('settings.soundEffects')}</label>
+                    <p className="preference-description">{t('settings.soundDescription')}</p>
                   </div>
                   <label className="toggle-switch">
                     <input
