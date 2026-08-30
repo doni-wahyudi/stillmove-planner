@@ -23,6 +23,7 @@ const NAV_DEFS: NavDef[] = [
   { path: '/events', labelKey: 'nav.events', shortcut: 'E' },
   { path: '/canvas', labelKey: 'nav.canvas', shortcut: 'C' },
   { path: '/pomodoro', labelKey: 'nav.pomodoro', shortcut: 'P' },
+  { path: '/pantry', labelKey: 'nav.pantry', shortcut: 'F' },
 ];
 
 export function Navbar() {
@@ -69,6 +70,7 @@ export function Navbar() {
         e: '/events',
         c: '/canvas',
         p: '/pomodoro',
+        f: '/pantry',
       };
 
       const path = shortcutMap[e.key.toLowerCase()];

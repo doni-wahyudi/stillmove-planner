@@ -2415,8 +2415,74 @@ class DataService {
     }
     await cacheService.delete(STORES.eventMilestones, id);
   }
+
+  // ==================== PANTRY / FRIDGE TRACKER ====================
+
+  public async getPantryItems(profileId: string): Promise<any[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('pantry_items')
+        .select('*')
+        .eq('profile_id', profileId)
+        .order('purchase_date', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      this.handleError(error, 'getPantryItems');
+    }
+  }
+
+  public async createPantryItem(data: any): Promise<any> {
+    const { data: { user } } = await this.supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+    const payload = {
+      ...data,
+      user_id: user?.id,
+    };
+    const { data: result, error } = await this.supabase
+      .from('pantry_items')
+      .insert([payload])
+      .select();
+    if (error) this.handleError(error, 'createPantryItem');
+    return result![0];
+  }
+
+  public async updatePantryItem(id: string, data: any): Promise<any> {
+    const { data: result, error } = await this.supabase
+      .from('pantry_items')
+      .update(data)
+      .eq('id', id)
+      .select();
+    if (error) this.handleError(error, 'updatePantryItem');
+    return result![0];
+  }
+
+  public async deletePantryItem(id: string): Promise<void> {
+    const { error } = await this.supabase.from('pantry_items').delete().eq('id', id);
+    if (error) this.handleError(error, 'deletePantryItem');
+  }
+
+  /**
+   * Quick-consume: set fraction and recalculate quantity_remaining
+   */
+  public async consumePantryItem(
+    id: string,
+    fraction: string,
+    quantityInitial: number
+  ): Promise<any> {
+    const fractionMap: Record<string, number> = {
+      full: 1,
+      'three-quarters': 0.75,
+      half: 0.5,
+      quarter: 0.25,
+      empty: 0,
+    };
+    const multiplier = fractionMap[fraction] ?? 1;
+    const quantity_remaining = parseFloat((quantityInitial * multiplier).toFixed(2));
+    return this.updatePantryItem(id, { quantity_fraction: fraction, quantity_remaining });
+  }
 }
 
 const dataService = new DataService();
 export default dataService;
+
 

@@ -18,6 +18,7 @@ import { MonthlyPage } from '@/pages/MonthlyPage/MonthlyPage';
 import { PomodoroPage } from '@/pages/PomodoroPage/PomodoroPage';
 import { SettingsPage } from '@/pages/SettingsPage/SettingsPage';
 import { WeeklyPage } from '@/pages/WeeklyPage/WeeklyPage';
+import { PantryPage } from '@/pages/PantryPage/PantryPage';
 
 // Protected Route Wrapper
 function ProtectedRoute({ children }: { children: React.JSX.Element }) {
@@ -99,6 +100,7 @@ export function App() {
                       <Route path="events" element={<EventPlannerPage />} />
                       <Route path="canvas" element={<CanvasPage />} />
                       <Route path="pomodoro" element={<PomodoroPage />} />
+                      <Route path="pantry" element={<PantryPage />} />
                       <Route path="settings" element={<SettingsPage />} />
                     </Route>
 
