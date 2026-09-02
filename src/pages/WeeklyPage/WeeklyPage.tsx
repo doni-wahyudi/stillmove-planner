@@ -121,7 +121,7 @@ export function WeeklyPage() {
     setIsLoading(true);
     try {
       const [ng, nb] = await Promise.all([dataService.getWeeklyGoals(year, weekNumber), dataService.getTimeBlocksRange(toDateKey(weekStart), toDateKey(weekEnd))]);
-      setGoals(ng); setBlocks(nb);
+      setGoals(ng || []); setBlocks(nb || []);
     } catch (err) { console.error(err); showToast('Failed to load weekly planner', 'error'); }
     finally { setIsLoading(false); }
   }, [activeProfile, showToast, weekEnd, weekNumber, weekStart, year]);
@@ -218,7 +218,7 @@ export function WeeklyPage() {
               : goals.map((goal) => (
                 <div className="planner-row" key={goal.id}>
                   <label>
-                    <input type="checkbox" checked={Boolean(goal.completed)} onChange={async (e) => { const c = e.currentTarget.checked; setGoals((p) => p.map((x) => x.id === goal.id ? { ...x, completed: c } : x)); await dataService.updateWeeklyGoal(goal.id, { completed: c }); }} />{' '}
+                    <input type="checkbox" checked={Boolean(goal.completed)} onChange={async (e) => { const c = e.target.checked; setGoals((p) => p.map((x) => x.id === goal.id ? { ...x, completed: c } : x)); await dataService.updateWeeklyGoal(goal.id, { completed: c }); }} />{' '}
                     <strong style={{ textDecoration: goal.completed ? 'line-through' : 'none' }}>{goal.goal_text}</strong>
                   </label>
                   <button className="planner-danger" onClick={async () => { await dataService.deleteWeeklyGoal(goal.id); setGoals((p) => p.filter((x) => x.id !== goal.id)); }}>×</button>
@@ -227,9 +227,9 @@ export function WeeklyPage() {
               ))}
           </div>
           <div className="planner-form mt-2">
-            <input value={goalText} onChange={(e) => setGoalText(e.currentTarget.value)} placeholder={isId ? 'Target minggu baru...' : 'New weekly goal...'} onKeyDown={(e) => e.key === 'Enter' && addGoal()} />
+            <input value={goalText} onChange={(e) => setGoalText(e.target.value)} placeholder={isId ? 'Target minggu baru...' : 'New weekly goal...'} onKeyDown={(e) => e.key === 'Enter' && addGoal()} />
             <div className="planner-form-row">
-              <select value={priority} onChange={(e) => setPriority(e.currentTarget.value)}><option>Urgent</option><option>Medium</option><option>Low</option></select>
+              <select value={priority} onChange={(e) => setPriority(e.target.value)}><option>Urgent</option><option>Medium</option><option>Low</option></select>
               <button className="btn-primary" onClick={addGoal}>{isId ? 'Tambah' : 'Add Goal'}</button>
             </div>
           </div>
@@ -266,7 +266,7 @@ export function WeeklyPage() {
           </div>
           <div className="planner-form mt-2">
             <div className="planner-form-row">
-              <input value={dailyGoalText} onChange={(e) => setDailyGoalText(e.currentTarget.value)} placeholder={isId ? 'Tambah target hari ini...' : 'Add a task...'} onKeyDown={(e) => e.key === 'Enter' && addDG()} />
+              <input value={dailyGoalText} onChange={(e) => setDailyGoalText(e.target.value)} placeholder={isId ? 'Tambah target hari ini...' : 'Add a task...'} onKeyDown={(e) => e.key === 'Enter' && addDG()} />
               <button className="btn-primary" onClick={addDG}>+</button>
             </div>
           </div>
@@ -322,22 +322,69 @@ export function WeeklyPage() {
               <span className="quick-add-chip">🕐 {quickAdd.start_time} – {quickAdd.end_time}</span>
             </div>
             <div className="planner-form">
-              <input ref={quickInputRef} value={quickAdd.activity} onChange={(e) => setQuickAdd((p) => ({ ...p, activity: e.currentTarget.value }))} placeholder={isId ? 'Nama aktivitas...' : 'Activity name...'} onKeyDown={(e) => e.key === 'Enter' && saveQA()} className="quick-add-activity-input" />
+              <input
+                ref={quickInputRef}
+                value={quickAdd.activity || ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setQuickAdd((p) => ({ ...p, activity: val }));
+                }}
+                placeholder={isId ? 'Nama aktivitas...' : 'Activity name...'}
+                onKeyDown={(e) => e.key === 'Enter' && saveQA()}
+                className="quick-add-activity-input"
+              />
               <div className="planner-form-row">
-                <label>{isId ? 'Mulai' : 'Start'}<input type="time" value={quickAdd.start_time} onChange={(e) => setQuickAdd((p) => ({ ...p, start_time: e.currentTarget.value }))} /></label>
-                <label>{isId ? 'Selesai' : 'End'}<input type="time" value={quickAdd.end_time} onChange={(e) => setQuickAdd((p) => ({ ...p, end_time: e.currentTarget.value }))} /></label>
+                <label>
+                  {isId ? 'Mulai' : 'Start'}
+                  <input
+                    type="time"
+                    value={quickAdd.start_time || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setQuickAdd((p) => ({ ...p, start_time: val }));
+                    }}
+                  />
+                </label>
+                <label>
+                  {isId ? 'Selesai' : 'End'}
+                  <input
+                    type="time"
+                    value={quickAdd.end_time || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setQuickAdd((p) => ({ ...p, end_time: val }));
+                    }}
+                  />
+                </label>
               </div>
               <div className="quick-add-cat-row">
                 <span className="quick-add-cat-label">{isId ? 'Kategori' : 'Category'}:</span>
                 <div className="quick-add-cat-chips">
                   {CATEGORIES.map((cat) => (
-                    <button key={cat} className={`quick-add-cat-chip${quickAdd.category === cat ? ' active' : ''}`} style={{ '--cat-color': CATEGORY_COLORS[cat] } as React.CSSProperties} onClick={() => setQuickAdd((p) => ({ ...p, category: cat }))} title={cat}>{cat}</button>
+                    <button
+                      key={cat}
+                      className={`quick-add-cat-chip${quickAdd.category === cat ? ' active' : ''}`}
+                      style={{ '--cat-color': CATEGORY_COLORS[cat] } as React.CSSProperties}
+                      onClick={() => setQuickAdd((p) => ({ ...p, category: cat }))}
+                      title={cat}
+                    >
+                      {cat}
+                    </button>
                   ))}
                 </div>
               </div>
               <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary,#64748b)' }}>
                 {isId ? 'Catatan (opsional)' : 'Notes (optional)'}
-                <textarea rows={2} value={quickAdd.notes} onChange={(e) => setQuickAdd((p) => ({ ...p, notes: e.currentTarget.value }))} placeholder={isId ? 'Tambah catatan...' : 'Add notes...'} style={{ resize: 'vertical', minHeight: 56 }} />
+                <textarea
+                  rows={2}
+                  value={quickAdd.notes || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setQuickAdd((p) => ({ ...p, notes: val }));
+                  }}
+                  placeholder={isId ? 'Tambah catatan...' : 'Add notes...'}
+                  style={{ resize: 'vertical', minHeight: 56 }}
+                />
               </label>
             </div>
             <div className="weekly-edit-modal__actions">
@@ -357,15 +404,76 @@ export function WeeklyPage() {
             </div>
             <div className="planner-form">
               <div className="planner-form-row">
-                <label>{isId ? 'Tanggal' : 'Date'}<input type="date" value={editBlock.date || ''} onChange={(e) => setEditBlock((p) => ({ ...p, date: e.currentTarget.value }))} /></label>
-                <label>{isId ? 'Kategori' : 'Category'}<select value={editBlock.category || 'Personal'} onChange={(e) => setEditBlock((p) => ({ ...p, category: e.currentTarget.value }))}>{CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select></label>
+                <label>
+                  {isId ? 'Tanggal' : 'Date'}
+                  <input
+                    type="date"
+                    value={editBlock.date || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditBlock((p) => ({ ...p, date: val }));
+                    }}
+                  />
+                </label>
+                <label>
+                  {isId ? 'Kategori' : 'Category'}
+                  <select
+                    value={editBlock.category || 'Personal'}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditBlock((p) => ({ ...p, category: val }));
+                    }}
+                  >
+                    {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+                  </select>
+                </label>
               </div>
               <div className="planner-form-row">
-                <label>{isId ? 'Mulai' : 'Start'}<input type="time" value={editBlock.start_time || ''} onChange={(e) => setEditBlock((p) => ({ ...p, start_time: e.currentTarget.value }))} /></label>
-                <label>{isId ? 'Selesai' : 'End'}<input type="time" value={editBlock.end_time || ''} onChange={(e) => setEditBlock((p) => ({ ...p, end_time: e.currentTarget.value }))} /></label>
+                <label>
+                  {isId ? 'Mulai' : 'Start'}
+                  <input
+                    type="time"
+                    value={editBlock.start_time || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditBlock((p) => ({ ...p, start_time: val }));
+                    }}
+                  />
+                </label>
+                <label>
+                  {isId ? 'Selesai' : 'End'}
+                  <input
+                    type="time"
+                    value={editBlock.end_time || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditBlock((p) => ({ ...p, end_time: val }));
+                    }}
+                  />
+                </label>
               </div>
-              <label>{isId ? 'Aktivitas' : 'Activity'}<input type="text" value={editBlock.activity || ''} onChange={(e) => setEditBlock((p) => ({ ...p, activity: e.currentTarget.value }))} /></label>
-              <label>{isId ? 'Catatan' : 'Notes'}<textarea rows={2} value={editBlock.notes || ''} onChange={(e) => setEditBlock((p) => ({ ...p, notes: e.currentTarget.value }))} /></label>
+              <label>
+                {isId ? 'Aktivitas' : 'Activity'}
+                <input
+                  type="text"
+                  value={editBlock.activity || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setEditBlock((p) => ({ ...p, activity: val }));
+                  }}
+                />
+              </label>
+              <label>
+                {isId ? 'Catatan' : 'Notes'}
+                <textarea
+                  rows={2}
+                  value={editBlock.notes || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setEditBlock((p) => ({ ...p, notes: val }));
+                  }}
+                />
+              </label>
             </div>
             <div className="weekly-edit-modal__actions">
               <button className="btn-secondary" onClick={() => dupBlock(editBlock as TimeBlock)}>{isId ? 'Duplikat' : 'Duplicate'}</button>
