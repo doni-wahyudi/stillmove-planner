@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dataService from '@/services/DataService';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -6,6 +6,8 @@ import { useToast } from '@/components/Toast/Toast';
 import '../PlannerPages.css';
 
 type WeeklyGoal = any;
+type DailyGoal = { id: string; text: string; completed: boolean; date: string };
+
 interface TimeBlock {
   id: string;
   date: string;
@@ -49,6 +51,7 @@ const HOUR_HEIGHT = 60; // px per hour in the grid
 const GRID_START = 6;   // grid starts at 06:00
 const GRID_END   = 23;  // grid ends at 23:00 (17 hours visible)
 const HOURS = Array.from({ length: GRID_END - GRID_START }, (_, i) => GRID_START + i);
+const SCROLL_TO_HOUR = 7; // auto-scroll to 07:00 on mount
 
 const CATEGORY_COLORS: Record<string, string> = {
   Personal:  '#8b5cf6',
@@ -60,6 +63,12 @@ const CATEGORY_COLORS: Record<string, string> = {
   Project:   '#dc2626',
   Health:    '#16a34a',
   Other:     '#64748b',
+};
+
+const PRIORITY_COLORS: Record<string, string> = {
+  Urgent: '#dc2626',
+  Medium: '#d97706',
+  Low:    '#16a34a',
 };
 
 function blockStyle(block: TimeBlock, conflicts: Set<string>) {
@@ -96,6 +105,21 @@ function findConflicts(dayBlocks: TimeBlock[]): Set<string> {
 const EMPTY_EDIT: Partial<TimeBlock> & { id?: string } = {};
 const CATEGORIES = ['Personal', 'Work', 'Business', 'Family', 'Education', 'Social', 'Project', 'Health', 'Other'];
 
+// ── Daily Goals stored in localStorage (no new Supabase table needed) ──
+const DAILY_GOALS_KEY = 'sm_daily_goals';
+
+function loadDailyGoalsFromStorage(): DailyGoal[] {
+  try {
+    return JSON.parse(localStorage.getItem(DAILY_GOALS_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function saveDailyGoalsToStorage(goals: DailyGoal[]) {
+  localStorage.setItem(DAILY_GOALS_KEY, JSON.stringify(goals));
+}
+
 export function WeeklyPage() {
   const { activeProfile } = useProfile();
   const { language, t } = useLanguage();
@@ -113,6 +137,14 @@ export function WeeklyPage() {
   const [draggedBlockId, setDraggedBlockId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+
+  // ── Daily Goals state ──
+  const [dailyGoals, setDailyGoals] = useState<DailyGoal[]>(loadDailyGoalsFromStorage);
+  const [selectedDayKey, setSelectedDayKey] = useState(toDateKey(new Date()));
+  const [dailyGoalText, setDailyGoalText] = useState('');
+
+  // Schedule grid ref for auto-scroll
+  const scheduleRef = useRef<HTMLDivElement>(null);
 
   // Edit modal
   const [editBlock, setEditBlock] = useState<Partial<TimeBlock> & { id?: string }>(EMPTY_EDIT);
@@ -151,6 +183,45 @@ export function WeeklyPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Auto-scroll schedule to SCROLL_TO_HOUR on mount / week change
+  useEffect(() => {
+    if (scheduleRef.current) {
+      const scrollPx = (SCROLL_TO_HOUR - GRID_START) * HOUR_HEIGHT;
+      scheduleRef.current.scrollTop = scrollPx;
+    }
+  }, [weekStart]);
+
+  // ── Daily Goals helpers ──
+  const todayDailyGoals = dailyGoals.filter((g) => g.date === selectedDayKey);
+
+  const addDailyGoal = () => {
+    const text = dailyGoalText.trim();
+    if (!text) return;
+    const newGoal: DailyGoal = {
+      id: `dg_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      text,
+      completed: false,
+      date: selectedDayKey,
+    };
+    const updated = [...dailyGoals, newGoal];
+    setDailyGoals(updated);
+    saveDailyGoalsToStorage(updated);
+    setDailyGoalText('');
+  };
+
+  const toggleDailyGoal = (id: string) => {
+    const updated = dailyGoals.map((g) => g.id === id ? { ...g, completed: !g.completed } : g);
+    setDailyGoals(updated);
+    saveDailyGoalsToStorage(updated);
+  };
+
+  const deleteDailyGoal = (id: string) => {
+    const updated = dailyGoals.filter((g) => g.id !== id);
+    setDailyGoals(updated);
+    saveDailyGoalsToStorage(updated);
+  };
+
+  // Weekly goals
   const addGoal = async () => {
     if (!goalText.trim()) return;
     try {
@@ -194,13 +265,11 @@ export function WeeklyPage() {
     }
   };
 
-  // Open edit modal with existing block
   const openEdit = (block: TimeBlock) => {
     setEditBlock({ ...block });
     setShowEditModal(true);
   };
 
-  // Save edits from modal
   const saveEdit = async () => {
     if (!editBlock.id) return;
     setIsSaving(true);
@@ -225,7 +294,6 @@ export function WeeklyPage() {
     }
   };
 
-  // Delete from modal
   const deleteBlock = async (id: string) => {
     if (!window.confirm('Delete this time block?')) return;
     setBlocks((prev) => prev.filter((b) => b.id !== id));
@@ -240,7 +308,6 @@ export function WeeklyPage() {
     }
   };
 
-  // Duplicate block
   const duplicateBlock = async (block: TimeBlock) => {
     setShowEditModal(false);
     try {
@@ -260,7 +327,6 @@ export function WeeklyPage() {
     }
   };
 
-  // Click on empty slot to pre-fill the add form
   const handleSlotClick = (date: string, hour: number) => {
     setBlockDate(date);
     setStartTime(minutesToTime(hour * 60));
@@ -291,42 +357,123 @@ export function WeeklyPage() {
       </header>
 
       <div className="planner-grid">
-        {/* Goals */}
+        {/* Weekly Goals */}
         <section className="planner-card">
           <div className="planner-card-header">
-            <h3>Weekly Goals</h3>
+            <h3>{language === 'id' ? '🎯 Target Mingguan' : '🎯 Weekly Goals'}</h3>
             <span className="planner-muted">{goals.filter((g) => g.completed).length}/{goals.length}</span>
           </div>
           <div className="planner-list">
-            {goals.length === 0 ? <p className="planner-empty">No goals for this week.</p> : goals.map((goal) => (
-              <div className="planner-row" key={goal.id}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(goal.completed)}
-                    onChange={async (e) => {
-                      const completed = e.currentTarget.checked;
-                      setGoals((prev) => prev.map((item) => item.id === goal.id ? { ...item, completed } : item));
-                      await dataService.updateWeeklyGoal(goal.id, { completed });
-                    }}
-                  />{' '}
-                  <strong style={{ textDecoration: goal.completed ? 'line-through' : 'none' }}>{goal.goal_text}</strong>
-                </label>
-                <button className="planner-danger" onClick={async () => {
-                  await dataService.deleteWeeklyGoal(goal.id);
-                  setGoals((prev) => prev.filter((item) => item.id !== goal.id));
-                }}>×</button>
-                <small>{goal.priority || 'Medium'}</small>
-              </div>
-            ))}
+            {goals.length === 0
+              ? <p className="planner-empty">{language === 'id' ? 'Belum ada target minggu ini.' : 'No goals for this week.'}</p>
+              : goals.map((goal) => (
+                <div className="planner-row" key={goal.id}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(goal.completed)}
+                      onChange={async (e) => {
+                        const completed = e.currentTarget.checked;
+                        setGoals((prev) => prev.map((item) => item.id === goal.id ? { ...item, completed } : item));
+                        await dataService.updateWeeklyGoal(goal.id, { completed });
+                      }}
+                    />{' '}
+                    <strong style={{ textDecoration: goal.completed ? 'line-through' : 'none' }}>{goal.goal_text}</strong>
+                  </label>
+                  <button className="planner-danger" onClick={async () => {
+                    await dataService.deleteWeeklyGoal(goal.id);
+                    setGoals((prev) => prev.filter((item) => item.id !== goal.id));
+                  }}>×</button>
+                  <small style={{ color: PRIORITY_COLORS[goal.priority] || '#64748b', gridColumn: '1/-1', fontWeight: 700 }}>
+                    {goal.priority || 'Medium'}
+                  </small>
+                </div>
+              ))
+            }
           </div>
           <div className="planner-form mt-2">
-            <input value={goalText} onChange={(e) => setGoalText(e.currentTarget.value)} placeholder="New weekly goal" onKeyDown={(e) => e.key === 'Enter' && addGoal()} />
+            <input value={goalText} onChange={(e) => setGoalText(e.currentTarget.value)} placeholder={language === 'id' ? 'Target minggu baru...' : 'New weekly goal...'} onKeyDown={(e) => e.key === 'Enter' && addGoal()} />
             <div className="planner-form-row">
               <select value={priority} onChange={(e) => setPriority(e.currentTarget.value)}>
                 <option>Urgent</option><option>Medium</option><option>Low</option>
               </select>
-              <button className="btn-primary" onClick={addGoal}>Add Goal</button>
+              <button className="btn-primary" onClick={addGoal}>{language === 'id' ? 'Tambah' : 'Add Goal'}</button>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Daily Goals Card ── */}
+        <section className="planner-card weekly-daily-goals-card">
+          <div className="planner-card-header">
+            <h3>{language === 'id' ? '📋 Target Harian' : '📋 Daily Goals'}</h3>
+            <span className="planner-muted">
+              {todayDailyGoals.filter((g) => g.completed).length}/{todayDailyGoals.length}
+            </span>
+          </div>
+
+          {/* Day selector tabs */}
+          <div className="daily-goals-day-tabs">
+            {weekDays.map((day) => {
+              const key = toDateKey(day);
+              const isToday = key === toDateKey(new Date());
+              const dayGoals = dailyGoals.filter((g) => g.date === key);
+              const doneCount = dayGoals.filter((g) => g.completed).length;
+              const isSelected = key === selectedDayKey;
+              return (
+                <button
+                  key={key}
+                  className={`daily-goals-day-tab ${isSelected ? 'active' : ''} ${isToday ? 'today' : ''}`}
+                  onClick={() => setSelectedDayKey(key)}
+                  title={key}
+                >
+                  <span className="day-tab-label">
+                    {day.toLocaleDateString(language === 'id' ? 'id-ID' : 'en-US', { weekday: 'narrow' })}
+                  </span>
+                  <span className="day-tab-date">{day.getDate()}</span>
+                  {dayGoals.length > 0 && (
+                    <span className={`day-tab-badge ${doneCount === dayGoals.length ? 'done' : ''}`}>
+                      {doneCount}/{dayGoals.length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Goals list for selected day */}
+          <div className="planner-list daily-goals-list">
+            {todayDailyGoals.length === 0
+              ? <p className="planner-empty" style={{ fontSize: '0.8rem', padding: '12px' }}>
+                  {language === 'id' ? 'Tidak ada target untuk hari ini.' : 'No tasks for this day.'}
+                </p>
+              : todayDailyGoals.map((g) => (
+                <div className={`daily-goal-row ${g.completed ? 'completed' : ''}`} key={g.id}>
+                  <label className="daily-goal-label">
+                    <input
+                      type="checkbox"
+                      checked={g.completed}
+                      onChange={() => toggleDailyGoal(g.id)}
+                    />
+                    <span>{g.text}</span>
+                  </label>
+                  <button className="planner-danger" style={{ fontSize: '0.75rem', minWidth: 28, minHeight: 28 }} onClick={() => deleteDailyGoal(g.id)}>×</button>
+                </div>
+              ))
+            }
+          </div>
+
+          {/* Add goal input */}
+          <div className="planner-form mt-2">
+            <div className="planner-form-row">
+              <input
+                value={dailyGoalText}
+                onChange={(e) => setDailyGoalText(e.currentTarget.value)}
+                placeholder={language === 'id' ? 'Tambah target hari ini...' : 'Add a task for this day...'}
+                onKeyDown={(e) => e.key === 'Enter' && addDailyGoal()}
+              />
+              <button className="btn-primary" onClick={addDailyGoal}>
+                {language === 'id' ? '+' : '+'}
+              </button>
             </div>
           </div>
         </section>
@@ -334,11 +481,11 @@ export function WeeklyPage() {
         {/* Time Slot Grid */}
         <section className="planner-card planner-card--wide weekly-schedule-card">
           <div className="planner-card-header">
-            <h3>Schedule</h3>
-            <span className="planner-muted">{blocks.length} blocks</span>
+            <h3>{language === 'id' ? 'Jadwal Mingguan' : 'Schedule'}</h3>
+            <span className="planner-muted">{blocks.length} {language === 'id' ? 'blok' : 'blocks'} · {language === 'id' ? 'Scroll untuk navigasi' : 'Scroll to navigate'}</span>
           </div>
 
-          <div className="weekly-grid-wrapper">
+          <div className="weekly-grid-wrapper" ref={scheduleRef}>
             {/* Time axis */}
             <div className="weekly-time-axis">
               <div className="weekly-time-axis__header" />
@@ -370,7 +517,6 @@ export function WeeklyPage() {
 
                   {/* Slot body */}
                   <div className="weekly-day-col__body" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
-                    {/* Hour slot lines */}
                     {HOURS.map((h) => (
                       <div
                         key={h}
@@ -381,7 +527,6 @@ export function WeeklyPage() {
                       />
                     ))}
 
-                    {/* Time blocks */}
                     {dayBlocks.map((block) => (
                       <button
                         key={block.id}
@@ -407,24 +552,24 @@ export function WeeklyPage() {
         {/* Add Time Block form */}
         <section className="planner-card planner-card--full">
           <div className="planner-card-header">
-            <h3>Add Time Block</h3>
-            <span className="planner-muted">Click a slot on the grid to pre-fill date & time</span>
+            <h3>{language === 'id' ? 'Tambah Blok Waktu' : 'Add Time Block'}</h3>
+            <span className="planner-muted">{language === 'id' ? 'Klik slot jam pada jadwal untuk mengisi otomatis' : 'Click a slot on the grid to pre-fill date & time'}</span>
           </div>
           <div className="planner-form">
             <div className="planner-form-row">
-              <label>Date<input type="date" value={blockDate} onChange={(e) => setBlockDate(e.currentTarget.value)} /></label>
-              <label>Category
+              <label>{language === 'id' ? 'Tanggal' : 'Date'}<input type="date" value={blockDate} onChange={(e) => setBlockDate(e.currentTarget.value)} /></label>
+              <label>{language === 'id' ? 'Kategori' : 'Category'}
                 <select value={category} onChange={(e) => setCategory(e.currentTarget.value)}>
                   {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
                 </select>
               </label>
             </div>
             <div className="planner-form-row">
-              <label>Start<input type="time" value={startTime} onChange={(e) => setStartTime(e.currentTarget.value)} /></label>
-              <label>End<input type="time" value={endTime} onChange={(e) => setEndTime(e.currentTarget.value)} /></label>
+              <label>{language === 'id' ? 'Mulai' : 'Start'}<input type="time" value={startTime} onChange={(e) => setStartTime(e.currentTarget.value)} /></label>
+              <label>{language === 'id' ? 'Selesai' : 'End'}<input type="time" value={endTime} onChange={(e) => setEndTime(e.currentTarget.value)} /></label>
             </div>
-            <input value={activity} onChange={(e) => setActivity(e.currentTarget.value)} placeholder="Activity name" onKeyDown={(e) => e.key === 'Enter' && addBlock()} />
-            <button className="btn-primary" onClick={addBlock} disabled={isSaving}>Add Time Block</button>
+            <input value={activity} onChange={(e) => setActivity(e.currentTarget.value)} placeholder={language === 'id' ? 'Nama aktivitas' : 'Activity name'} onKeyDown={(e) => e.key === 'Enter' && addBlock()} />
+            <button className="btn-primary" onClick={addBlock} disabled={isSaving}>{language === 'id' ? 'Tambah Blok Waktu' : 'Add Time Block'}</button>
           </div>
         </section>
       </div>
@@ -434,31 +579,31 @@ export function WeeklyPage() {
         <div className="planner-modal-backdrop" onMouseDown={() => setShowEditModal(false)}>
           <div className="planner-modal weekly-edit-modal" onMouseDown={(e) => e.stopPropagation()}>
             <div className="weekly-edit-modal__header">
-              <h3>Edit Time Block</h3>
-              <button className="planner-danger" onClick={() => deleteBlock(editBlock.id!)}>Delete</button>
+              <h3>{language === 'id' ? 'Ubah Blok Waktu' : 'Edit Time Block'}</h3>
+              <button className="planner-danger" onClick={() => deleteBlock(editBlock.id!)}>{language === 'id' ? 'Hapus' : 'Delete'}</button>
             </div>
 
             <div className="planner-form">
               <div className="planner-form-row">
-                <label>Date<input type="date" value={editBlock.date || ''} onChange={(e) => setEditBlock((prev) => ({ ...prev, date: e.currentTarget.value }))} /></label>
-                <label>Category
+                <label>{language === 'id' ? 'Tanggal' : 'Date'}<input type="date" value={editBlock.date || ''} onChange={(e) => setEditBlock((prev) => ({ ...prev, date: e.currentTarget.value }))} /></label>
+                <label>{language === 'id' ? 'Kategori' : 'Category'}
                   <select value={editBlock.category || 'Personal'} onChange={(e) => setEditBlock((prev) => ({ ...prev, category: e.currentTarget.value }))}>
                     {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
                   </select>
                 </label>
               </div>
               <div className="planner-form-row">
-                <label>Start<input type="time" value={editBlock.start_time || ''} onChange={(e) => setEditBlock((prev) => ({ ...prev, start_time: e.currentTarget.value }))} /></label>
-                <label>End<input type="time" value={editBlock.end_time || ''} onChange={(e) => setEditBlock((prev) => ({ ...prev, end_time: e.currentTarget.value }))} /></label>
+                <label>{language === 'id' ? 'Mulai' : 'Start'}<input type="time" value={editBlock.start_time || ''} onChange={(e) => setEditBlock((prev) => ({ ...prev, start_time: e.currentTarget.value }))} /></label>
+                <label>{language === 'id' ? 'Selesai' : 'End'}<input type="time" value={editBlock.end_time || ''} onChange={(e) => setEditBlock((prev) => ({ ...prev, end_time: e.currentTarget.value }))} /></label>
               </div>
-              <label>Activity<input type="text" value={editBlock.activity || ''} onChange={(e) => setEditBlock((prev) => ({ ...prev, activity: e.currentTarget.value }))} /></label>
-              <label>Notes<textarea rows={2} value={editBlock.notes || ''} onChange={(e) => setEditBlock((prev) => ({ ...prev, notes: e.currentTarget.value }))} /></label>
+              <label>{language === 'id' ? 'Aktivitas' : 'Activity'}<input type="text" value={editBlock.activity || ''} onChange={(e) => setEditBlock((prev) => ({ ...prev, activity: e.currentTarget.value }))} /></label>
+              <label>{language === 'id' ? 'Catatan' : 'Notes'}<textarea rows={2} value={editBlock.notes || ''} onChange={(e) => setEditBlock((prev) => ({ ...prev, notes: e.currentTarget.value }))} /></label>
             </div>
 
             <div className="weekly-edit-modal__actions">
-              <button className="btn-secondary" onClick={() => duplicateBlock(editBlock as TimeBlock)}>Duplicate</button>
-              <button className="btn-secondary" onClick={() => setShowEditModal(false)}>Cancel</button>
-              <button className="btn-primary" onClick={saveEdit} disabled={isSaving}>Save</button>
+              <button className="btn-secondary" onClick={() => duplicateBlock(editBlock as TimeBlock)}>{language === 'id' ? 'Duplikat' : 'Duplicate'}</button>
+              <button className="btn-secondary" onClick={() => setShowEditModal(false)}>{language === 'id' ? 'Batal' : 'Cancel'}</button>
+              <button className="btn-primary" onClick={saveEdit} disabled={isSaving}>{language === 'id' ? 'Simpan' : 'Save'}</button>
             </div>
           </div>
         </div>
@@ -468,5 +613,3 @@ export function WeeklyPage() {
 }
 
 export default WeeklyPage;
-
-
