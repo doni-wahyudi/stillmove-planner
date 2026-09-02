@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dataService from '@/services/DataService';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -18,107 +18,75 @@ interface TimeBlock {
   notes?: string | null;
 }
 
+interface QuickAdd {
+  date: string;
+  start_time: string;
+  end_time: string;
+  activity: string;
+  category: string;
+  notes: string;
+}
+
 function toDateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
-
 function getWeekStart(date: Date): Date {
   const start = new Date(date);
   start.setHours(0, 0, 0, 0);
   start.setDate(start.getDate() - start.getDay());
   return start;
 }
-
 function getWeekNumber(date: Date): number {
   const start = new Date(date.getFullYear(), 0, 1);
   const day = Math.floor((date.getTime() - start.getTime()) / 86400000);
   return Math.ceil((day + start.getDay() + 1) / 7);
 }
-
 function timeToMinutes(time: string): number {
   if (!time) return 0;
   const [h, m] = time.split(':').map(Number);
   return h * 60 + (m || 0);
 }
-
 function minutesToTime(minutes: number): string {
   const h = Math.floor(minutes / 60) % 24;
   const m = minutes % 60;
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
-const HOUR_HEIGHT = 60; // px per hour in the grid
-const GRID_START = 6;   // grid starts at 06:00
-const GRID_END   = 23;  // grid ends at 23:00 (17 hours visible)
+const HOUR_HEIGHT = 60;
+const GRID_START = 6;
+const GRID_END   = 23;
 const HOURS = Array.from({ length: GRID_END - GRID_START }, (_, i) => GRID_START + i);
-const SCROLL_TO_HOUR = 7; // auto-scroll to 07:00 on mount
+const SCROLL_TO_HOUR = 7;
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Personal:  '#8b5cf6',
-  Work:      '#2563eb',
-  Business:  '#0891b2',
-  Family:    '#059669',
-  Education: '#d97706',
-  Social:    '#db2777',
-  Project:   '#dc2626',
-  Health:    '#16a34a',
-  Other:     '#64748b',
+  Personal: '#8b5cf6', Work: '#2563eb', Business: '#0891b2', Family: '#059669',
+  Education: '#d97706', Social: '#db2777', Project: '#dc2626', Health: '#16a34a', Other: '#64748b',
 };
-
-const PRIORITY_COLORS: Record<string, string> = {
-  Urgent: '#dc2626',
-  Medium: '#d97706',
-  Low:    '#16a34a',
-};
+const PRIORITY_COLORS: Record<string, string> = { Urgent: '#dc2626', Medium: '#d97706', Low: '#16a34a' };
 
 function blockStyle(block: TimeBlock, conflicts: Set<string>) {
   const start = Math.max(timeToMinutes(block.start_time), GRID_START * 60);
   const end   = Math.min(timeToMinutes(block.end_time),   GRID_END   * 60);
   const top   = ((start - GRID_START * 60) / 60) * HOUR_HEIGHT;
   const height = Math.max(((end - start) / 60) * HOUR_HEIGHT, 20);
-  const color = CATEGORY_COLORS[block.category || 'Other'] || '#64748b';
-  const hasConflict = conflicts.has(block.id);
-  return {
-    top:    `${top}px`,
-    height: `${height}px`,
-    background: color,
-    outline: hasConflict ? '2px solid #dc2626' : 'none',
-  };
+  return { top: `${top}px`, height: `${height}px`, background: CATEGORY_COLORS[block.category || 'Other'] || '#64748b', outline: conflicts.has(block.id) ? '2px solid #dc2626' : 'none' };
 }
-
 function findConflicts(dayBlocks: TimeBlock[]): Set<string> {
   const conflicts = new Set<string>();
-  for (let i = 0; i < dayBlocks.length; i++) {
+  for (let i = 0; i < dayBlocks.length; i++)
     for (let j = i + 1; j < dayBlocks.length; j++) {
       const a = dayBlocks[i], b = dayBlocks[j];
-      const aStart = timeToMinutes(a.start_time), aEnd = timeToMinutes(a.end_time);
-      const bStart = timeToMinutes(b.start_time), bEnd = timeToMinutes(b.end_time);
-      if (aStart < bEnd && aEnd > bStart) {
-        conflicts.add(a.id);
-        conflicts.add(b.id);
-      }
+      if (timeToMinutes(a.start_time) < timeToMinutes(b.end_time) && timeToMinutes(a.end_time) > timeToMinutes(b.start_time)) { conflicts.add(a.id); conflicts.add(b.id); }
     }
-  }
   return conflicts;
 }
 
 const EMPTY_EDIT: Partial<TimeBlock> & { id?: string } = {};
+const EMPTY_QUICK: QuickAdd = { date: '', start_time: '', end_time: '', activity: '', category: 'Personal', notes: '' };
 const CATEGORIES = ['Personal', 'Work', 'Business', 'Family', 'Education', 'Social', 'Project', 'Health', 'Other'];
-
-// ── Daily Goals stored in localStorage (no new Supabase table needed) ──
 const DAILY_GOALS_KEY = 'sm_daily_goals';
-
-function loadDailyGoalsFromStorage(): DailyGoal[] {
-  try {
-    return JSON.parse(localStorage.getItem(DAILY_GOALS_KEY) || '[]');
-  } catch {
-    return [];
-  }
-}
-
-function saveDailyGoalsToStorage(goals: DailyGoal[]) {
-  localStorage.setItem(DAILY_GOALS_KEY, JSON.stringify(goals));
-}
+function loadDG(): DailyGoal[] { try { return JSON.parse(localStorage.getItem(DAILY_GOALS_KEY) || '[]'); } catch { return []; } }
+function saveDG(goals: DailyGoal[]) { localStorage.setItem(DAILY_GOALS_KEY, JSON.stringify(goals)); }
 
 export function WeeklyPage() {
   const { activeProfile } = useProfile();
@@ -129,36 +97,21 @@ export function WeeklyPage() {
   const [blocks, setBlocks] = useState<TimeBlock[]>([]);
   const [goalText, setGoalText] = useState('');
   const [priority, setPriority] = useState('Medium');
-  const [blockDate, setBlockDate] = useState(toDateKey(new Date()));
-  const [startTime, setStartTime] = useState('09:00');
-  const [endTime, setEndTime] = useState('10:00');
-  const [activity, setActivity] = useState('');
-  const [category, setCategory] = useState('Personal');
   const [draggedBlockId, setDraggedBlockId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-
-  // ── Daily Goals state ──
-  const [dailyGoals, setDailyGoals] = useState<DailyGoal[]>(loadDailyGoalsFromStorage);
+  const [dailyGoals, setDailyGoals] = useState<DailyGoal[]>(loadDG);
   const [selectedDayKey, setSelectedDayKey] = useState(toDateKey(new Date()));
   const [dailyGoalText, setDailyGoalText] = useState('');
-
-  // Schedule grid ref for auto-scroll
   const scheduleRef = useRef<HTMLDivElement>(null);
-
-  // Edit modal
+  const quickInputRef = useRef<HTMLInputElement>(null);
   const [editBlock, setEditBlock] = useState<Partial<TimeBlock> & { id?: string }>(EMPTY_EDIT);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [quickAdd, setQuickAdd] = useState<QuickAdd>(EMPTY_QUICK);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
 
   const weekStart = useMemo(() => getWeekStart(anchorDate), [anchorDate]);
-  const weekDays = useMemo(
-    () => Array.from({ length: 7 }, (_, index) => {
-      const date = new Date(weekStart);
-      date.setDate(weekStart.getDate() + index);
-      return date;
-    }),
-    [weekStart]
-  );
+  const weekDays  = useMemo(() => Array.from({ length: 7 }, (_, i) => { const d = new Date(weekStart); d.setDate(weekStart.getDate() + i); return d; }), [weekStart]);
   const weekEnd = weekDays[6];
   const year = anchorDate.getFullYear();
   const weekNumber = getWeekNumber(anchorDate);
@@ -167,183 +120,80 @@ export function WeeklyPage() {
     if (!activeProfile) return;
     setIsLoading(true);
     try {
-      const [nextGoals, nextBlocks] = await Promise.all([
-        dataService.getWeeklyGoals(year, weekNumber),
-        dataService.getTimeBlocksRange(toDateKey(weekStart), toDateKey(weekEnd)),
-      ]);
-      setGoals(nextGoals);
-      setBlocks(nextBlocks);
-    } catch (error) {
-      console.error('Failed to load weekly view:', error);
-      showToast('Failed to load weekly planner', 'error');
-    } finally {
-      setIsLoading(false);
-    }
+      const [ng, nb] = await Promise.all([dataService.getWeeklyGoals(year, weekNumber), dataService.getTimeBlocksRange(toDateKey(weekStart), toDateKey(weekEnd))]);
+      setGoals(ng); setBlocks(nb);
+    } catch (err) { console.error(err); showToast('Failed to load weekly planner', 'error'); }
+    finally { setIsLoading(false); }
   }, [activeProfile, showToast, weekEnd, weekNumber, weekStart, year]);
 
   useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { if (scheduleRef.current) scheduleRef.current.scrollTop = (SCROLL_TO_HOUR - GRID_START) * HOUR_HEIGHT; }, [weekStart]);
+  useEffect(() => { if (showQuickAdd) setTimeout(() => quickInputRef.current?.focus(), 80); }, [showQuickAdd]);
 
-  // Auto-scroll schedule to SCROLL_TO_HOUR on mount / week change
-  useEffect(() => {
-    if (scheduleRef.current) {
-      const scrollPx = (SCROLL_TO_HOUR - GRID_START) * HOUR_HEIGHT;
-      scheduleRef.current.scrollTop = scrollPx;
-    }
-  }, [weekStart]);
+  const isId = language === 'id';
+  const todayDG = dailyGoals.filter((g) => g.date === selectedDayKey);
+  const addDG = () => { const t2 = dailyGoalText.trim(); if (!t2) return; const u = [...dailyGoals, { id: `dg_${Date.now()}`, text: t2, completed: false, date: selectedDayKey }]; setDailyGoals(u); saveDG(u); setDailyGoalText(''); };
+  const toggleDG = (id: string) => { const u = dailyGoals.map((g) => g.id === id ? { ...g, completed: !g.completed } : g); setDailyGoals(u); saveDG(u); };
+  const deleteDG = (id: string) => { const u = dailyGoals.filter((g) => g.id !== id); setDailyGoals(u); saveDG(u); };
 
-  // ── Daily Goals helpers ──
-  const todayDailyGoals = dailyGoals.filter((g) => g.date === selectedDayKey);
-
-  const addDailyGoal = () => {
-    const text = dailyGoalText.trim();
-    if (!text) return;
-    const newGoal: DailyGoal = {
-      id: `dg_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-      text,
-      completed: false,
-      date: selectedDayKey,
-    };
-    const updated = [...dailyGoals, newGoal];
-    setDailyGoals(updated);
-    saveDailyGoalsToStorage(updated);
-    setDailyGoalText('');
-  };
-
-  const toggleDailyGoal = (id: string) => {
-    const updated = dailyGoals.map((g) => g.id === id ? { ...g, completed: !g.completed } : g);
-    setDailyGoals(updated);
-    saveDailyGoalsToStorage(updated);
-  };
-
-  const deleteDailyGoal = (id: string) => {
-    const updated = dailyGoals.filter((g) => g.id !== id);
-    setDailyGoals(updated);
-    saveDailyGoalsToStorage(updated);
-  };
-
-  // Weekly goals
   const addGoal = async () => {
     if (!goalText.trim()) return;
-    try {
-      const created = await dataService.createWeeklyGoal({ year, week_number: weekNumber, goal_text: goalText.trim(), priority, completed: false });
-      setGoals((prev) => [...prev, created]);
-      setGoalText('');
-    } catch (error) {
-      console.error(error);
-      showToast('Failed to add weekly goal', 'error');
-    }
+    try { const c = await dataService.createWeeklyGoal({ year, week_number: weekNumber, goal_text: goalText.trim(), priority, completed: false }); setGoals((p) => [...p, c]); setGoalText(''); }
+    catch (err) { console.error(err); showToast('Failed to add goal', 'error'); }
   };
 
-  const addBlock = async () => {
-    if (!activity.trim()) return;
+  const openQA = (date: string, hour: number) => { setQuickAdd({ date, start_time: minutesToTime(hour * 60), end_time: minutesToTime((hour + 1) * 60), activity: '', category: 'Personal', notes: '' }); setShowQuickAdd(true); };
+  const closeQA = () => { setShowQuickAdd(false); setQuickAdd(EMPTY_QUICK); };
+  const saveQA = async () => {
+    if (!quickAdd.activity.trim()) { quickInputRef.current?.focus(); return; }
     setIsSaving(true);
     try {
-      const created = await dataService.createTimeBlock({ date: blockDate, start_time: startTime, end_time: endTime, activity: activity.trim(), category });
-      setBlocks((prev) => [...prev, created].sort((a, b) => a.date.localeCompare(b.date) || a.start_time.localeCompare(b.start_time)));
-      setActivity('');
-    } catch (error) {
-      console.error(error);
-      showToast('Failed to add time block', 'error');
-    } finally {
-      setIsSaving(false);
-    }
+      const c = await dataService.createTimeBlock({ date: quickAdd.date, start_time: quickAdd.start_time, end_time: quickAdd.end_time, activity: quickAdd.activity.trim(), category: quickAdd.category, notes: quickAdd.notes || null });
+      setBlocks((p) => [...p, c].sort((a, b) => a.date.localeCompare(b.date) || a.start_time.localeCompare(b.start_time)));
+      closeQA(); showToast(isId ? 'Blok waktu ditambahkan!' : 'Time block added!', 'success');
+    } catch (err) { console.error(err); showToast('Failed to add time block', 'error'); }
+    finally { setIsSaving(false); }
   };
 
-  const moveBlockToDay = async (date: string) => {
-    const block = blocks.find((item) => item.id === draggedBlockId);
+  const moveBlock = async (date: string) => {
+    const block = blocks.find((b) => b.id === draggedBlockId);
     if (!block || block.date === date) { setDraggedBlockId(''); return; }
-    setBlocks((prev) => prev.map((item) => item.id === block.id ? { ...item, date } : item));
-    try {
-      await dataService.updateTimeBlock(block.id, { date });
-      showToast('Time block moved', 'success');
-    } catch (error) {
-      console.error(error);
-      showToast('Failed to move time block', 'error');
-      loadData();
-    } finally {
-      setDraggedBlockId('');
-    }
+    setBlocks((p) => p.map((b) => b.id === block.id ? { ...b, date } : b));
+    try { await dataService.updateTimeBlock(block.id, { date }); showToast('Moved', 'success'); }
+    catch (err) { console.error(err); loadData(); }
+    finally { setDraggedBlockId(''); }
   };
 
-  const openEdit = (block: TimeBlock) => {
-    setEditBlock({ ...block });
-    setShowEditModal(true);
-  };
-
+  const openEdit = (block: TimeBlock) => { setEditBlock({ ...block }); setShowEditModal(true); };
   const saveEdit = async () => {
     if (!editBlock.id) return;
     setIsSaving(true);
-    const updates: Partial<TimeBlock> = {
-      date: editBlock.date ?? '',
-      start_time: editBlock.start_time ?? '',
-      end_time: editBlock.end_time ?? '',
-      activity: (editBlock.activity ?? '').trim(),
-      category: editBlock.category,
-      notes: editBlock.notes || null,
-    };
-    setBlocks((prev) => prev.map((b) => b.id === editBlock.id ? { ...b, ...updates } as TimeBlock : b));
-    setShowEditModal(false);
-    try {
-      await dataService.updateTimeBlock(editBlock.id, updates);
-    } catch (error) {
-      console.error(error);
-      showToast('Failed to save changes', 'error');
-      loadData();
-    } finally {
-      setIsSaving(false);
-    }
+    const upd: Partial<TimeBlock> = { date: editBlock.date ?? '', start_time: editBlock.start_time ?? '', end_time: editBlock.end_time ?? '', activity: (editBlock.activity ?? '').trim(), category: editBlock.category, notes: editBlock.notes || null };
+    setBlocks((p) => p.map((b) => b.id === editBlock.id ? { ...b, ...upd } as TimeBlock : b)); setShowEditModal(false);
+    try { await dataService.updateTimeBlock(editBlock.id, upd); }
+    catch (err) { console.error(err); showToast('Failed to save', 'error'); loadData(); }
+    finally { setIsSaving(false); }
   };
 
   const deleteBlock = async (id: string) => {
-    if (!window.confirm('Delete this time block?')) return;
-    setBlocks((prev) => prev.filter((b) => b.id !== id));
+    if (!window.confirm(isId ? 'Hapus blok waktu ini?' : 'Delete this time block?')) return;
+    setBlocks((p) => p.filter((b) => b.id !== id)); setShowEditModal(false);
+    try { await dataService.deleteTimeBlock(id); showToast(isId ? 'Dihapus' : 'Deleted', 'success'); }
+    catch (err) { console.error(err); loadData(); }
+  };
+
+  const dupBlock = async (block: TimeBlock) => {
     setShowEditModal(false);
-    try {
-      await dataService.deleteTimeBlock(id);
-      showToast('Time block deleted', 'success');
-    } catch (error) {
-      console.error(error);
-      showToast('Failed to delete', 'error');
-      loadData();
-    }
+    try { const c = await dataService.createTimeBlock({ ...block, activity: `${block.activity} (copy)` }); setBlocks((p) => [...p, c].sort((a, b) => a.date.localeCompare(b.date) || a.start_time.localeCompare(b.start_time))); showToast('Duplicated', 'success'); }
+    catch (err) { console.error(err); }
   };
 
-  const duplicateBlock = async (block: TimeBlock) => {
-    setShowEditModal(false);
-    try {
-      const created = await dataService.createTimeBlock({
-        date: block.date,
-        start_time: block.start_time,
-        end_time: block.end_time,
-        activity: `${block.activity} (copy)`,
-        category: block.category,
-        notes: block.notes,
-      });
-      setBlocks((prev) => [...prev, created].sort((a, b) => a.date.localeCompare(b.date) || a.start_time.localeCompare(b.start_time)));
-      showToast('Time block duplicated', 'success');
-    } catch (error) {
-      console.error(error);
-      showToast('Failed to duplicate', 'error');
-    }
-  };
+  if (isLoading) return <div className="dashboard-loading"><div className="spinner" /><p>Loading weekly planner...</p></div>;
 
-  const handleSlotClick = (date: string, hour: number) => {
-    setBlockDate(date);
-    setStartTime(minutesToTime(hour * 60));
-    setEndTime(minutesToTime((hour + 1) * 60));
-  };
-
-  if (isLoading) {
-    return (
-      <div className="dashboard-loading">
-        <div className="spinner" />
-        <p>Loading weekly planner...</p>
-      </div>
-    );
-  }
+  const todayKey = toDateKey(new Date());
 
   return (
-    <div className="planner-page">
+    <div className="planner-page weekly-page-full">
       <header className="planner-header">
         <div>
           <h2>{t('weekly.title')}</h2>
@@ -356,254 +206,171 @@ export function WeeklyPage() {
         </div>
       </header>
 
-      <div className="planner-grid">
-        {/* Weekly Goals */}
+      <div className="weekly-goals-row">
         <section className="planner-card">
           <div className="planner-card-header">
-            <h3>{language === 'id' ? '🎯 Target Mingguan' : '🎯 Weekly Goals'}</h3>
+            <h3>🎯 {isId ? 'Target Mingguan' : 'Weekly Goals'}</h3>
             <span className="planner-muted">{goals.filter((g) => g.completed).length}/{goals.length}</span>
           </div>
           <div className="planner-list">
             {goals.length === 0
-              ? <p className="planner-empty">{language === 'id' ? 'Belum ada target minggu ini.' : 'No goals for this week.'}</p>
+              ? <p className="planner-empty">{isId ? 'Belum ada target minggu ini.' : 'No goals for this week.'}</p>
               : goals.map((goal) => (
                 <div className="planner-row" key={goal.id}>
                   <label>
-                    <input
-                      type="checkbox"
-                      checked={Boolean(goal.completed)}
-                      onChange={async (e) => {
-                        const completed = e.currentTarget.checked;
-                        setGoals((prev) => prev.map((item) => item.id === goal.id ? { ...item, completed } : item));
-                        await dataService.updateWeeklyGoal(goal.id, { completed });
-                      }}
-                    />{' '}
+                    <input type="checkbox" checked={Boolean(goal.completed)} onChange={async (e) => { const c = e.currentTarget.checked; setGoals((p) => p.map((x) => x.id === goal.id ? { ...x, completed: c } : x)); await dataService.updateWeeklyGoal(goal.id, { completed: c }); }} />{' '}
                     <strong style={{ textDecoration: goal.completed ? 'line-through' : 'none' }}>{goal.goal_text}</strong>
                   </label>
-                  <button className="planner-danger" onClick={async () => {
-                    await dataService.deleteWeeklyGoal(goal.id);
-                    setGoals((prev) => prev.filter((item) => item.id !== goal.id));
-                  }}>×</button>
-                  <small style={{ color: PRIORITY_COLORS[goal.priority] || '#64748b', gridColumn: '1/-1', fontWeight: 700 }}>
-                    {goal.priority || 'Medium'}
-                  </small>
+                  <button className="planner-danger" onClick={async () => { await dataService.deleteWeeklyGoal(goal.id); setGoals((p) => p.filter((x) => x.id !== goal.id)); }}>×</button>
+                  <small style={{ color: PRIORITY_COLORS[goal.priority] || '#64748b', gridColumn: '1/-1', fontWeight: 700 }}>{goal.priority || 'Medium'}</small>
                 </div>
-              ))
-            }
+              ))}
           </div>
           <div className="planner-form mt-2">
-            <input value={goalText} onChange={(e) => setGoalText(e.currentTarget.value)} placeholder={language === 'id' ? 'Target minggu baru...' : 'New weekly goal...'} onKeyDown={(e) => e.key === 'Enter' && addGoal()} />
+            <input value={goalText} onChange={(e) => setGoalText(e.currentTarget.value)} placeholder={isId ? 'Target minggu baru...' : 'New weekly goal...'} onKeyDown={(e) => e.key === 'Enter' && addGoal()} />
             <div className="planner-form-row">
-              <select value={priority} onChange={(e) => setPriority(e.currentTarget.value)}>
-                <option>Urgent</option><option>Medium</option><option>Low</option>
-              </select>
-              <button className="btn-primary" onClick={addGoal}>{language === 'id' ? 'Tambah' : 'Add Goal'}</button>
+              <select value={priority} onChange={(e) => setPriority(e.currentTarget.value)}><option>Urgent</option><option>Medium</option><option>Low</option></select>
+              <button className="btn-primary" onClick={addGoal}>{isId ? 'Tambah' : 'Add Goal'}</button>
             </div>
           </div>
         </section>
 
-        {/* ── Daily Goals Card ── */}
         <section className="planner-card weekly-daily-goals-card">
           <div className="planner-card-header">
-            <h3>{language === 'id' ? '📋 Target Harian' : '📋 Daily Goals'}</h3>
-            <span className="planner-muted">
-              {todayDailyGoals.filter((g) => g.completed).length}/{todayDailyGoals.length}
-            </span>
+            <h3>📋 {isId ? 'Target Harian' : 'Daily Goals'}</h3>
+            <span className="planner-muted">{todayDG.filter((g) => g.completed).length}/{todayDG.length}</span>
           </div>
-
-          {/* Day selector tabs */}
           <div className="daily-goals-day-tabs">
             {weekDays.map((day) => {
               const key = toDateKey(day);
-              const isToday = key === toDateKey(new Date());
-              const dayGoals = dailyGoals.filter((g) => g.date === key);
-              const doneCount = dayGoals.filter((g) => g.completed).length;
-              const isSelected = key === selectedDayKey;
+              const dg = dailyGoals.filter((g) => g.date === key);
+              const dc = dg.filter((g) => g.completed).length;
               return (
-                <button
-                  key={key}
-                  className={`daily-goals-day-tab ${isSelected ? 'active' : ''} ${isToday ? 'today' : ''}`}
-                  onClick={() => setSelectedDayKey(key)}
-                  title={key}
-                >
-                  <span className="day-tab-label">
-                    {day.toLocaleDateString(language === 'id' ? 'id-ID' : 'en-US', { weekday: 'narrow' })}
-                  </span>
+                <button key={key} className={`daily-goals-day-tab${key === selectedDayKey ? ' active' : ''}${key === todayKey ? ' today' : ''}`} onClick={() => setSelectedDayKey(key)} title={key}>
+                  <span className="day-tab-label">{day.toLocaleDateString(isId ? 'id-ID' : 'en-US', { weekday: 'narrow' })}</span>
                   <span className="day-tab-date">{day.getDate()}</span>
-                  {dayGoals.length > 0 && (
-                    <span className={`day-tab-badge ${doneCount === dayGoals.length ? 'done' : ''}`}>
-                      {doneCount}/{dayGoals.length}
-                    </span>
-                  )}
+                  {dg.length > 0 && <span className={`day-tab-badge${dc === dg.length ? ' done' : ''}`}>{dc}/{dg.length}</span>}
                 </button>
               );
             })}
           </div>
-
-          {/* Goals list for selected day */}
           <div className="planner-list daily-goals-list">
-            {todayDailyGoals.length === 0
-              ? <p className="planner-empty" style={{ fontSize: '0.8rem', padding: '12px' }}>
-                  {language === 'id' ? 'Tidak ada target untuk hari ini.' : 'No tasks for this day.'}
-                </p>
-              : todayDailyGoals.map((g) => (
-                <div className={`daily-goal-row ${g.completed ? 'completed' : ''}`} key={g.id}>
-                  <label className="daily-goal-label">
-                    <input
-                      type="checkbox"
-                      checked={g.completed}
-                      onChange={() => toggleDailyGoal(g.id)}
-                    />
-                    <span>{g.text}</span>
-                  </label>
-                  <button className="planner-danger" style={{ fontSize: '0.75rem', minWidth: 28, minHeight: 28 }} onClick={() => deleteDailyGoal(g.id)}>×</button>
-                </div>
-              ))
-            }
-          </div>
-
-          {/* Add goal input */}
-          <div className="planner-form mt-2">
-            <div className="planner-form-row">
-              <input
-                value={dailyGoalText}
-                onChange={(e) => setDailyGoalText(e.currentTarget.value)}
-                placeholder={language === 'id' ? 'Tambah target hari ini...' : 'Add a task for this day...'}
-                onKeyDown={(e) => e.key === 'Enter' && addDailyGoal()}
-              />
-              <button className="btn-primary" onClick={addDailyGoal}>
-                {language === 'id' ? '+' : '+'}
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* Time Slot Grid */}
-        <section className="planner-card planner-card--wide weekly-schedule-card">
-          <div className="planner-card-header">
-            <h3>{language === 'id' ? 'Jadwal Mingguan' : 'Schedule'}</h3>
-            <span className="planner-muted">{blocks.length} {language === 'id' ? 'blok' : 'blocks'} · {language === 'id' ? 'Scroll untuk navigasi' : 'Scroll to navigate'}</span>
-          </div>
-
-          <div className="weekly-grid-wrapper" ref={scheduleRef}>
-            {/* Time axis */}
-            <div className="weekly-time-axis">
-              <div className="weekly-time-axis__header" />
-              {HOURS.map((h) => (
-                <div key={h} className="weekly-time-axis__hour" style={{ height: `${HOUR_HEIGHT}px` }}>
-                  {String(h).padStart(2, '0')}:00
+            {todayDG.length === 0
+              ? <p className="planner-empty" style={{ fontSize: '0.8rem', padding: '12px' }}>{isId ? 'Tidak ada target untuk hari ini.' : 'No tasks for this day.'}</p>
+              : todayDG.map((g) => (
+                <div className={`daily-goal-row${g.completed ? ' completed' : ''}`} key={g.id}>
+                  <label className="daily-goal-label"><input type="checkbox" checked={g.completed} onChange={() => toggleDG(g.id)} /><span>{g.text}</span></label>
+                  <button className="planner-danger" style={{ minWidth: 28, minHeight: 28 }} onClick={() => deleteDG(g.id)}>×</button>
                 </div>
               ))}
-            </div>
-
-            {/* Day columns */}
-            {weekDays.map((day) => {
-              const dateKey = toDateKey(day);
-              const dayBlocks = blocks.filter((b) => b.date === dateKey);
-              const conflicts = findConflicts(dayBlocks);
-              const isToday = dateKey === toDateKey(new Date());
-              return (
-                <div
-                  key={dateKey}
-                  className={`weekly-day-col ${isToday ? 'today' : ''}`}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => moveBlockToDay(dateKey)}
-                >
-                  {/* Day header */}
-                  <div className={`weekly-day-col__header ${isToday ? 'today' : ''}`}>
-                    <strong>{day.toLocaleDateString(language === 'id' ? 'id-ID' : 'en-US', { weekday: 'short' })}</strong>
-                    <span>{day.getDate()}</span>
-                  </div>
-
-                  {/* Slot body */}
-                  <div className="weekly-day-col__body" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
-                    {HOURS.map((h) => (
-                      <div
-                        key={h}
-                        className="weekly-slot-line"
-                        style={{ top: `${(h - GRID_START) * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }}
-                        onClick={() => handleSlotClick(dateKey, h)}
-                        title={`Add block at ${String(h).padStart(2, '0')}:00`}
-                      />
-                    ))}
-
-                    {dayBlocks.map((block) => (
-                      <button
-                        key={block.id}
-                        className="weekly-block"
-                        style={blockStyle(block, conflicts)}
-                        draggable
-                        onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; setDraggedBlockId(block.id); }}
-                        onClick={(e) => { e.stopPropagation(); openEdit(block); }}
-                        title={`${block.start_time}–${block.end_time} ${block.activity}`}
-                      >
-                        <span className="weekly-block__time">{block.start_time.slice(0, 5)}–{block.end_time.slice(0, 5)}</span>
-                        <span className="weekly-block__name">{block.activity}</span>
-                        {block.category && <span className="weekly-block__cat">{block.category}</span>}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
           </div>
-        </section>
-
-        {/* Add Time Block form */}
-        <section className="planner-card planner-card--full">
-          <div className="planner-card-header">
-            <h3>{language === 'id' ? 'Tambah Blok Waktu' : 'Add Time Block'}</h3>
-            <span className="planner-muted">{language === 'id' ? 'Klik slot jam pada jadwal untuk mengisi otomatis' : 'Click a slot on the grid to pre-fill date & time'}</span>
-          </div>
-          <div className="planner-form">
+          <div className="planner-form mt-2">
             <div className="planner-form-row">
-              <label>{language === 'id' ? 'Tanggal' : 'Date'}<input type="date" value={blockDate} onChange={(e) => setBlockDate(e.currentTarget.value)} /></label>
-              <label>{language === 'id' ? 'Kategori' : 'Category'}
-                <select value={category} onChange={(e) => setCategory(e.currentTarget.value)}>
-                  {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-                </select>
-              </label>
+              <input value={dailyGoalText} onChange={(e) => setDailyGoalText(e.currentTarget.value)} placeholder={isId ? 'Tambah target hari ini...' : 'Add a task...'} onKeyDown={(e) => e.key === 'Enter' && addDG()} />
+              <button className="btn-primary" onClick={addDG}>+</button>
             </div>
-            <div className="planner-form-row">
-              <label>{language === 'id' ? 'Mulai' : 'Start'}<input type="time" value={startTime} onChange={(e) => setStartTime(e.currentTarget.value)} /></label>
-              <label>{language === 'id' ? 'Selesai' : 'End'}<input type="time" value={endTime} onChange={(e) => setEndTime(e.currentTarget.value)} /></label>
-            </div>
-            <input value={activity} onChange={(e) => setActivity(e.currentTarget.value)} placeholder={language === 'id' ? 'Nama aktivitas' : 'Activity name'} onKeyDown={(e) => e.key === 'Enter' && addBlock()} />
-            <button className="btn-primary" onClick={addBlock} disabled={isSaving}>{language === 'id' ? 'Tambah Blok Waktu' : 'Add Time Block'}</button>
           </div>
         </section>
       </div>
 
-      {/* Edit / Delete / Duplicate Modal */}
+      <section className="planner-card weekly-schedule-full">
+        <div className="planner-card-header">
+          <h3>{isId ? 'Jadwal Mingguan' : 'Weekly Schedule'}</h3>
+          <span className="planner-muted">{blocks.length} {isId ? 'blok' : 'blocks'} · {isId ? 'Klik slot kosong untuk tambah aktivitas' : 'Click any empty slot to add an activity'}</span>
+        </div>
+        <div className="weekly-grid-wrapper" ref={scheduleRef}>
+          <div className="weekly-time-axis">
+            <div className="weekly-time-axis__header" />
+            {HOURS.map((h) => <div key={h} className="weekly-time-axis__hour" style={{ height: `${HOUR_HEIGHT}px` }}>{String(h).padStart(2, '0')}:00</div>)}
+          </div>
+          {weekDays.map((day) => {
+            const dk = toDateKey(day);
+            const db = blocks.filter((b) => b.date === dk);
+            const cf = findConflicts(db);
+            const isT = dk === todayKey;
+            return (
+              <div key={dk} className={`weekly-day-col${isT ? ' today' : ''}`} onDragOver={(e) => e.preventDefault()} onDrop={() => moveBlock(dk)}>
+                <div className={`weekly-day-col__header${isT ? ' today' : ''}`}>
+                  <strong>{day.toLocaleDateString(isId ? 'id-ID' : 'en-US', { weekday: 'short' })}</strong>
+                  <span>{day.getDate()}</span>
+                </div>
+                <div className="weekly-day-col__body" style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}>
+                  {HOURS.map((h) => <div key={h} className="weekly-slot-line" style={{ top: `${(h - GRID_START) * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }} onClick={() => openQA(dk, h)} title={`${isId ? 'Tambah pukul' : 'Add at'} ${String(h).padStart(2, '0')}:00`} />)}
+                  {db.map((block) => (
+                    <button key={block.id} className="weekly-block" style={blockStyle(block, cf)} draggable onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; setDraggedBlockId(block.id); }} onClick={(e) => { e.stopPropagation(); openEdit(block); }}>
+                      <span className="weekly-block__time">{block.start_time.slice(0, 5)}–{block.end_time.slice(0, 5)}</span>
+                      <span className="weekly-block__name">{block.activity}</span>
+                      {block.category && <span className="weekly-block__cat">{block.category}</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {showQuickAdd && (
+        <div className="planner-modal-backdrop" onMouseDown={closeQA}>
+          <div className="planner-modal weekly-quick-add-modal" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="weekly-edit-modal__header">
+              <h3>⚡ {isId ? 'Tambah Aktivitas' : 'Add Activity'}</h3>
+              <button className="planner-danger" onClick={closeQA}>×</button>
+            </div>
+            <div className="quick-add-meta">
+              <span className="quick-add-chip">📅 {quickAdd.date}</span>
+              <span className="quick-add-chip">🕐 {quickAdd.start_time} – {quickAdd.end_time}</span>
+            </div>
+            <div className="planner-form">
+              <input ref={quickInputRef} value={quickAdd.activity} onChange={(e) => setQuickAdd((p) => ({ ...p, activity: e.currentTarget.value }))} placeholder={isId ? 'Nama aktivitas...' : 'Activity name...'} onKeyDown={(e) => e.key === 'Enter' && saveQA()} className="quick-add-activity-input" />
+              <div className="planner-form-row">
+                <label>{isId ? 'Mulai' : 'Start'}<input type="time" value={quickAdd.start_time} onChange={(e) => setQuickAdd((p) => ({ ...p, start_time: e.currentTarget.value }))} /></label>
+                <label>{isId ? 'Selesai' : 'End'}<input type="time" value={quickAdd.end_time} onChange={(e) => setQuickAdd((p) => ({ ...p, end_time: e.currentTarget.value }))} /></label>
+              </div>
+              <div className="quick-add-cat-row">
+                <span className="quick-add-cat-label">{isId ? 'Kategori' : 'Category'}:</span>
+                <div className="quick-add-cat-chips">
+                  {CATEGORIES.map((cat) => (
+                    <button key={cat} className={`quick-add-cat-chip${quickAdd.category === cat ? ' active' : ''}`} style={{ '--cat-color': CATEGORY_COLORS[cat] } as React.CSSProperties} onClick={() => setQuickAdd((p) => ({ ...p, category: cat }))} title={cat}>{cat}</button>
+                  ))}
+                </div>
+              </div>
+              <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary,#64748b)' }}>
+                {isId ? 'Catatan (opsional)' : 'Notes (optional)'}
+                <textarea rows={2} value={quickAdd.notes} onChange={(e) => setQuickAdd((p) => ({ ...p, notes: e.currentTarget.value }))} placeholder={isId ? 'Tambah catatan...' : 'Add notes...'} style={{ resize: 'vertical', minHeight: 56 }} />
+              </label>
+            </div>
+            <div className="weekly-edit-modal__actions">
+              <button className="btn-secondary" onClick={closeQA}>{isId ? 'Batal' : 'Cancel'}</button>
+              <button className="btn-primary" onClick={saveQA} disabled={isSaving}>{isSaving ? '...' : (isId ? '+ Tambah' : '+ Add Block')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showEditModal && editBlock.id && (
         <div className="planner-modal-backdrop" onMouseDown={() => setShowEditModal(false)}>
           <div className="planner-modal weekly-edit-modal" onMouseDown={(e) => e.stopPropagation()}>
             <div className="weekly-edit-modal__header">
-              <h3>{language === 'id' ? 'Ubah Blok Waktu' : 'Edit Time Block'}</h3>
-              <button className="planner-danger" onClick={() => deleteBlock(editBlock.id!)}>{language === 'id' ? 'Hapus' : 'Delete'}</button>
+              <h3>{isId ? 'Ubah Blok Waktu' : 'Edit Time Block'}</h3>
+              <button className="planner-danger" onClick={() => deleteBlock(editBlock.id!)}>{isId ? 'Hapus' : 'Delete'}</button>
             </div>
-
             <div className="planner-form">
               <div className="planner-form-row">
-                <label>{language === 'id' ? 'Tanggal' : 'Date'}<input type="date" value={editBlock.date || ''} onChange={(e) => setEditBlock((prev) => ({ ...prev, date: e.currentTarget.value }))} /></label>
-                <label>{language === 'id' ? 'Kategori' : 'Category'}
-                  <select value={editBlock.category || 'Personal'} onChange={(e) => setEditBlock((prev) => ({ ...prev, category: e.currentTarget.value }))}>
-                    {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-                  </select>
-                </label>
+                <label>{isId ? 'Tanggal' : 'Date'}<input type="date" value={editBlock.date || ''} onChange={(e) => setEditBlock((p) => ({ ...p, date: e.currentTarget.value }))} /></label>
+                <label>{isId ? 'Kategori' : 'Category'}<select value={editBlock.category || 'Personal'} onChange={(e) => setEditBlock((p) => ({ ...p, category: e.currentTarget.value }))}>{CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select></label>
               </div>
               <div className="planner-form-row">
-                <label>{language === 'id' ? 'Mulai' : 'Start'}<input type="time" value={editBlock.start_time || ''} onChange={(e) => setEditBlock((prev) => ({ ...prev, start_time: e.currentTarget.value }))} /></label>
-                <label>{language === 'id' ? 'Selesai' : 'End'}<input type="time" value={editBlock.end_time || ''} onChange={(e) => setEditBlock((prev) => ({ ...prev, end_time: e.currentTarget.value }))} /></label>
+                <label>{isId ? 'Mulai' : 'Start'}<input type="time" value={editBlock.start_time || ''} onChange={(e) => setEditBlock((p) => ({ ...p, start_time: e.currentTarget.value }))} /></label>
+                <label>{isId ? 'Selesai' : 'End'}<input type="time" value={editBlock.end_time || ''} onChange={(e) => setEditBlock((p) => ({ ...p, end_time: e.currentTarget.value }))} /></label>
               </div>
-              <label>{language === 'id' ? 'Aktivitas' : 'Activity'}<input type="text" value={editBlock.activity || ''} onChange={(e) => setEditBlock((prev) => ({ ...prev, activity: e.currentTarget.value }))} /></label>
-              <label>{language === 'id' ? 'Catatan' : 'Notes'}<textarea rows={2} value={editBlock.notes || ''} onChange={(e) => setEditBlock((prev) => ({ ...prev, notes: e.currentTarget.value }))} /></label>
+              <label>{isId ? 'Aktivitas' : 'Activity'}<input type="text" value={editBlock.activity || ''} onChange={(e) => setEditBlock((p) => ({ ...p, activity: e.currentTarget.value }))} /></label>
+              <label>{isId ? 'Catatan' : 'Notes'}<textarea rows={2} value={editBlock.notes || ''} onChange={(e) => setEditBlock((p) => ({ ...p, notes: e.currentTarget.value }))} /></label>
             </div>
-
             <div className="weekly-edit-modal__actions">
-              <button className="btn-secondary" onClick={() => duplicateBlock(editBlock as TimeBlock)}>{language === 'id' ? 'Duplikat' : 'Duplicate'}</button>
-              <button className="btn-secondary" onClick={() => setShowEditModal(false)}>{language === 'id' ? 'Batal' : 'Cancel'}</button>
-              <button className="btn-primary" onClick={saveEdit} disabled={isSaving}>{language === 'id' ? 'Simpan' : 'Save'}</button>
+              <button className="btn-secondary" onClick={() => dupBlock(editBlock as TimeBlock)}>{isId ? 'Duplikat' : 'Duplicate'}</button>
+              <button className="btn-secondary" onClick={() => setShowEditModal(false)}>{isId ? 'Batal' : 'Cancel'}</button>
+              <button className="btn-primary" onClick={saveEdit} disabled={isSaving}>{isId ? 'Simpan' : 'Save'}</button>
             </div>
           </div>
         </div>

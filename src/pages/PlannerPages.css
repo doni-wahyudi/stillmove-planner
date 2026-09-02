@@ -348,6 +348,28 @@
    Weekly Schedule Grid
    ============================================================ */
 
+/* Full-width page layout override */
+.weekly-page-full {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Goals row: 2 equal cards side by side */
+.weekly-goals-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* Full-width schedule section */
+.weekly-schedule-full {
+  width: 100%;
+  margin: 0;
+}
+
+/* Legacy compat — keep for any other pages that still use it */
 .weekly-schedule-card { grid-column: span 8; overflow: hidden; }
 
 /* Scrollable vertical + horizontal */
@@ -395,6 +417,86 @@
 .weekly-edit-modal__header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .weekly-edit-modal__header h3 { margin: 0; }
 .weekly-edit-modal__actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+
+/* ── Quick-Add Modal ── */
+.weekly-quick-add-modal { max-width: 480px; width: 100%; }
+
+.quick-add-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.quick-add-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  background: var(--bg-elevated, #f1f5f9);
+  border: 1px solid var(--border-default, rgba(0,0,0,.08));
+  color: var(--text-secondary, #64748b);
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.quick-add-activity-input {
+  font-size: 1rem !important;
+  font-weight: 600;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 2px solid var(--border-default, rgba(0,0,0,.1));
+  width: 100%;
+  transition: border-color .15s;
+}
+
+.quick-add-activity-input:focus {
+  border-color: #2563eb;
+  outline: none;
+}
+
+.quick-add-cat-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex-direction: column;
+}
+
+.quick-add-cat-label {
+  font-size: .78rem;
+  font-weight: 700;
+  color: var(--text-secondary, #64748b);
+}
+
+.quick-add-cat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.quick-add-cat-chip {
+  padding: 3px 10px;
+  border-radius: 99px;
+  border: 2px solid transparent;
+  background: var(--bg-elevated, #f1f5f9);
+  color: var(--text-primary, #1a1a1a);
+  font-size: .72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .12s;
+  border-color: var(--cat-color, #64748b);
+  opacity: .65;
+}
+
+.quick-add-cat-chip:hover { opacity: 1; }
+
+.quick-add-cat-chip.active {
+  background: var(--cat-color, #64748b);
+  color: #fff;
+  opacity: 1;
+}
+
 
 /* ── Daily Goals Card ── */
 .weekly-daily-goals-card { grid-column: span 4; }
@@ -509,7 +611,10 @@
   .weekly-schedule-card { grid-column: 1 / -1; }
   .weekly-daily-goals-card { grid-column: 1 / -1; }
   .weekly-day-col { min-width: 62px; }
+  /* Stack goals row on tablet */
+  .weekly-goals-row { grid-template-columns: 1fr; }
 }
+
 
 /* ============================================================
    Monthly Planner Styles
