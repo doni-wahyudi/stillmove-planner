@@ -412,7 +412,15 @@ class DataService {
       const { data: { user } } = await this.supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      const blockWithUser = { ...timeBlock, user_id: user.id };
+      const activity = timeBlock.notes ? `${timeBlock.activity} (${timeBlock.notes})` : timeBlock.activity;
+      const blockWithUser: any = {
+        date: timeBlock.date,
+        start_time: timeBlock.start_time,
+        end_time: timeBlock.end_time || null,
+        activity: activity || '',
+        category: timeBlock.category || 'Personal',
+        user_id: user.id,
+      };
 
       if (!cacheService.online) {
         const tempBlock = {
@@ -444,9 +452,18 @@ class DataService {
 
   public async updateTimeBlock(id: string, updates: any): Promise<any> {
     try {
+      const cleanUpdates: any = {};
+      if (updates.date !== undefined) cleanUpdates.date = updates.date;
+      if (updates.start_time !== undefined) cleanUpdates.start_time = updates.start_time;
+      if (updates.end_time !== undefined) cleanUpdates.end_time = updates.end_time;
+      if (updates.activity !== undefined) {
+        cleanUpdates.activity = updates.notes ? `${updates.activity} (${updates.notes})` : updates.activity;
+      }
+      if (updates.category !== undefined) cleanUpdates.category = updates.category;
+
       if (this.cacheEnabled) {
         const cached = await cacheService.get(STORES.timeBlocks, id);
-        if (cached) await cacheService.put(STORES.timeBlocks, { ...cached, ...updates });
+        if (cached) await cacheService.put(STORES.timeBlocks, { ...cached, ...cleanUpdates });
       }
 
       if (!cacheService.online) {
@@ -454,14 +471,14 @@ class DataService {
           type: 'update',
           store: 'time_blocks',
           itemId: id,
-          data: updates,
+          data: cleanUpdates,
         });
         return await cacheService.get(STORES.timeBlocks, id);
       }
 
       const { data, error } = await this.supabase
         .from('time_blocks')
-        .update(updates)
+        .update(cleanUpdates)
         .eq('id', id)
         .select();
 

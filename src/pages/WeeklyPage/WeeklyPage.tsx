@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dataService from '@/services/DataService';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -83,7 +83,7 @@ function findConflicts(dayBlocks: TimeBlock[]): Set<string> {
 
 const EMPTY_EDIT: Partial<TimeBlock> & { id?: string } = {};
 const EMPTY_QUICK: QuickAdd = { date: '', start_time: '', end_time: '', activity: '', category: 'Personal', notes: '' };
-const CATEGORIES = ['Personal', 'Work', 'Business', 'Family', 'Education', 'Social', 'Project', 'Health', 'Other'];
+const CATEGORIES = ['Personal', 'Work', 'Business', 'Family', 'Education', 'Social', 'Project'];
 const DAILY_GOALS_KEY = 'sm_daily_goals';
 function loadDG(): DailyGoal[] { try { return JSON.parse(localStorage.getItem(DAILY_GOALS_KEY) || '[]'); } catch { return []; } }
 function saveDG(goals: DailyGoal[]) { localStorage.setItem(DAILY_GOALS_KEY, JSON.stringify(goals)); }
