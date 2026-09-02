@@ -22,6 +22,7 @@ const ALL_DEFS: NavDef[] = [
   { path: '/weekly', icon: '📅', labelKey: 'weekly.title' },
   { path: '/monthly', icon: '📆', labelKey: 'monthly.title' },
   { path: '/habits', icon: '✨', labelKey: 'habits.title' },
+  { path: '/pantry', icon: '🧊', labelKey: 'nav.pantry' },
   { path: '/annual', icon: '🎯', labelKey: 'annual.title' },
   { path: '/action-plan', icon: '📋', labelKey: 'nav.actionPlan' },
   { path: '/kanban', icon: '📌', labelKey: 'kanban.title' },
@@ -33,7 +34,7 @@ const ALL_DEFS: NavDef[] = [
 
 export function BottomNav() {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
 
   return (
     <>
@@ -85,10 +86,14 @@ export function BottomNav() {
             role="dialog"
             aria-label="All views navigation sheet"
           >
-            <div className="drawer-header">
-              <h3>🧭 All Planner Spaces</h3>
+            <div className="bottom-drawer-handle" />
+            <div className="bottom-drawer-header">
+              <div className="bottom-drawer-title-wrapper">
+                <span className="bottom-drawer-title-icon">🧭</span>
+                <h3>{language === 'id' ? 'Semua Ruang Perencana' : 'All Planner Spaces'}</h3>
+              </div>
               <button
-                className="drawer-close-btn"
+                className="bottom-drawer-close"
                 onClick={() => setDrawerOpen(false)}
                 aria-label="Close navigation sheet"
               >
@@ -96,7 +101,7 @@ export function BottomNav() {
               </button>
             </div>
 
-            <div className="drawer-grid">
+            <div className="bottom-drawer-grid">
               {ALL_DEFS.map((item) => {
                 const label = t(item.labelKey);
                 return (
@@ -104,7 +109,7 @@ export function BottomNav() {
                     key={item.path}
                     to={item.path}
                     className={({ isActive }) =>
-                      `drawer-grid-item ${isActive ? 'active' : ''}`
+                      `bottom-drawer-item ${isActive ? 'active' : ''}`
                     }
                     onClick={() => setDrawerOpen(false)}
                   >
@@ -120,3 +125,6 @@ export function BottomNav() {
     </>
   );
 }
+
+export default BottomNav;
+
